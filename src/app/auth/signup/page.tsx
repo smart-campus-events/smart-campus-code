@@ -1,6 +1,5 @@
 'use client';
 
-import { signIn } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
@@ -17,7 +16,10 @@ type SignUpForm = {
 /** The sign up page. */
 const SignUp = () => {
   const validationSchema = Yup.object().shape({
-    email: Yup.string().required('Email is required').email('Email is invalid'),
+    email: Yup.string()
+      .required('Email is required')
+      .email('Email is invalid')
+      .matches(/^[\w-.]+@hawaii\.edu$/, 'Email must be a hawaii.edu address'),
     password: Yup.string()
       .required('Password is required')
       .min(6, 'Password must be at least 6 characters')
@@ -38,9 +40,13 @@ const SignUp = () => {
 
   const onSubmit = async (data: SignUpForm) => {
     // console.log(JSON.stringify(data, null, 2));
-    await createUser(data);
-    // After creating, signIn with redirect to the add page
-    await signIn('credentials', { callbackUrl: '/add', ...data });
+    try {
+      await createUser(data);
+      alert('✅ Registered! Check your hawaii.edu email for a verification link.');
+      reset();
+    } catch (err: any) {
+      alert(`❌ Signup failed: ${err.message}`);
+    }
   };
 
   return (
