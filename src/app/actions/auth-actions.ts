@@ -3,7 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { Resend } from 'resend';
 import { hash } from 'bcryptjs';
-import VerificationEmail from '@/emails/verification-email';
+import VerificationEmail from '../../components/emails/verification-email';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
