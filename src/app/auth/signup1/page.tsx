@@ -1,7 +1,7 @@
 'use client';
 
 import { useFormState } from 'react-dom';
-import { signUp } from '@/app/actions/auth-actions';
+import { signUp } from '../../actions/auth-actions';
 
 export default function SignupPage() {
   const [state, formAction] = useFormState(signUp, { error: null });

@@ -1,7 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { signOut } from '@/app/api/auth/[...nextauth]/route';
+import { signOut } from '../../app/api/auth/[...nextauth]/route';
 
 export default function SessionButton() {
   const { data: session } = useSession();
@@ -12,7 +12,7 @@ export default function SessionButton() {
         Signed in as
         {' '}
         {session.user?.email}
-        <button onClick={() => signOut()}>Sign out</button>
+        <button type="button" onClick={() => signOut()}>Sign out</button>
       </div>
     );
   }
