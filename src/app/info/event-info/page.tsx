@@ -173,10 +173,10 @@ const EventDetailPage: React.FC = () => (
                   <p className="text-dark lh-relaxed">
                     {' '}
                     {/* text-gray-700 leading-relaxed */}
-                    Join us for UH Mānoa's biggest cultural celebration of the year! Experience the diverse cultures
-                    represented on campus through performances, food, art, and interactive activities. This year's
-                    festival features over 20 cultural organizations, live performances, workshops, and a variety of
-                    food vendors.
+                    Join us for UH Mānoa&apos;s biggest cultural celebration of the year! Experience the diverse
+                    cultures represented on campus through performances, food, art, and interactive activities.
+                    This year&apos;s festival features over 20 cultural organizations, live performances, workshops,
+                    and a variety of food vendors.
                   </p>
                 </Card.Body>
               </Card>
