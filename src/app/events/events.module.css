@@ -1,0 +1,112 @@
+.eventsContainer {
+  max-width: 1200px;
+  padding: 2rem 1rem;
+}
+
+.pageTitle {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.pageSubtitle {
+  font-size: 1.1rem;
+  color: #666;
+}
+
+.searchInput {
+  border-left: none;
+  padding-left: 0;
+}
+
+.searchIcon {
+  background-color: white;
+  border-right: none;
+}
+
+.addEventButton {
+  background-color: #008060;
+  border-color: #008060;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.eventsTabs {
+  border-bottom: 1px solid #dee2e6;
+}
+
+.eventsTabs .nav-link {
+  color: #666;
+  border: none;
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+}
+
+.eventsTabs .nav-link.active {
+  color: #008060;
+  border-bottom: 2px solid #008060;
+  background-color: transparent;
+}
+
+/* Event Card Styles */
+.eventCard {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border: none;
+  height: 100%;
+}
+
+.eventImageContainer {
+  height: 100%;
+  overflow: hidden;
+}
+
+.eventImage {
+  height: 100%;
+  object-fit: cover;
+}
+
+.eventDate {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #f0f7f4;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.eventMonth {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #008060;
+}
+
+.eventDay {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #333;
+}
+
+.eventTitle {
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.eventTime, .eventLocation, .eventAttendees {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.eventAttendees {
+  margin-top: 1rem;
+  color: #008060;
+  font-weight: 500;
+} 

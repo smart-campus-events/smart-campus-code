@@ -1,0 +1,28 @@
+.notificationBadge {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 8px;
+  height: 8px;
+  background-color: #eb5757;
+  border-radius: 50%;
+  display: block;
+}
+
+.profileLink {
+  padding: 0.25rem !important;
+}
+
+.profileAvatar {
+  width: 32px;
+  height: 32px;
+  background-color: #008060;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  border: 2px solid #eaeaea;
+} 

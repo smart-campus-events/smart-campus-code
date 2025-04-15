@@ -1,0 +1,79 @@
+.clubsContainer {
+  max-width: 1200px;
+  padding: 2rem 1rem;
+}
+
+.pageTitle {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.pageSubtitle {
+  font-size: 1.1rem;
+  color: #666;
+}
+
+.searchInput {
+  border-left: none;
+  padding-left: 0;
+}
+
+.searchIcon {
+  background-color: white;
+  border-right: none;
+}
+
+.categoryFilter {
+  height: 100%;
+}
+
+/* Club Card Styles */
+.clubCard {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border: none;
+  height: 100%;
+  position: relative;
+  transition: transform 0.2s;
+}
+
+.clubCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.clubCardImageContainer {
+  height: 160px;
+  overflow: hidden;
+  position: relative;
+}
+
+.clubCardImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.categoryBadge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background-color: #008060;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.memberCount {
+  color: #666;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 1rem;
+} 

@@ -228,3 +228,165 @@
     transform: rotate(0deg);
   }
 }
+
+.mainContent {
+  background-color: #f5f8fa;
+  min-height: 100vh;
+  padding: 2rem 0;
+}
+
+.welcomeSection {
+  max-width: 1200px;
+}
+
+.welcomeHeading {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.welcomeSubheading {
+  font-size: 1.1rem;
+  color: #666;
+}
+
+.sectionHeading {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0;
+}
+
+.seeAllLink {
+  color: #008060;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.seeAllLink:hover {
+  text-decoration: underline;
+}
+
+/* Club Card Styles */
+.clubCard {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border: none;
+  height: 100%;
+  position: relative;
+}
+
+.clubCardImageContainer {
+  height: 160px;
+  overflow: hidden;
+  position: relative;
+}
+
+.clubCardImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.categoryBadge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background-color: #008060;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.memberCount {
+  color: #666;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 1rem;
+}
+
+/* Event Card Styles */
+.eventCard {
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border: none;
+}
+
+.eventDate {
+  width: 60px;
+  height: 60px;
+  background-color: #f0f7f4;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-right: 16px;
+}
+
+.eventMonth {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #008060;
+}
+
+.eventDay {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #333;
+}
+
+.eventDetails {
+  flex: 1;
+}
+
+.eventTime, .eventLocation {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+/* Connect Card Styles */
+.connectCard {
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border: none;
+  background-color: white;
+}
+
+.connectHeading {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.connectSubheading {
+  color: #666;
+  margin-bottom: 0;
+}
+
+.connectButton {
+  background-color: #008060;
+  border-color: #008060;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+}
+
+/* Announcement Card Styles */
+.announcementCard {
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border: none;
+}

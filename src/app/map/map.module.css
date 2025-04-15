@@ -1,0 +1,121 @@
+.mapContainer {
+  height: calc(100vh - 70px);
+  overflow: hidden;
+}
+
+.sidebarCol {
+  height: 100%;
+  overflow-y: auto;
+  border-right: 1px solid #dee2e6;
+  padding: 1.5rem;
+  background-color: white;
+}
+
+.sidebarTitle {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+}
+
+.searchIcon {
+  background-color: white;
+  border-right: none;
+}
+
+.searchInput {
+  border-left: none;
+  padding-left: 0;
+}
+
+.filterButtons {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+.filterButton {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  font-size: 0.9rem;
+}
+
+.locationsTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.locationsList {
+  margin-top: 1.5rem;
+}
+
+.locationItem {
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  transition: all 0.2s;
+}
+
+.locationItem:hover {
+  border-color: #008060;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.locationName {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+
+.locationCategory {
+  display: inline-block;
+  background-color: #f0f7f4;
+  color: #008060;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.locationAddress {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.locationDescription {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 0;
+  line-height: 1.4;
+}
+
+.mapCol {
+  height: 100%;
+  padding: 0;
+}
+
+.mapPlaceholder {
+  height: 100%;
+  background-color: #f8f9fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mapContent {
+  text-align: center;
+  max-width: 500px;
+  padding: 2rem;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+} 
