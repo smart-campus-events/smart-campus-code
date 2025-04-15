@@ -1,0 +1,46 @@
+body, html {
+    height: 100%;
+    font-family: "Inter", sans-serif;
+  }
+  
+  /* Apply gradient to the main container */
+  .club-detail-page {
+    min-height: 100vh;
+    background: linear-gradient(to bottom, #eff6ff, #ffffff); /* Approximates from-blue-50 to-white */
+  }
+  
+  /* Ensure Font Awesome icons align well */
+  .icon-baseline {
+    vertical-align: -0.125em; /* Adjust if needed for better alignment */
+  }
+  
+  /* Specific styling for the event date block */
+  .event-date-box {
+    background-color: var(--bs-info-bg-subtle); /* Bootstrap's light blue */
+    color: var(--bs-info-text-emphasis); /* Bootstrap's darker blue text */
+    padding: 0.75rem;
+    border-radius: var(--bs-border-radius-lg);
+    text-align: center;
+    min-width: 60px;
+    flex-shrink: 0; /* Prevent shrinking */
+  }
+  
+  .event-date-box .month {
+    font-size: 0.875rem; /* text-sm */
+    font-weight: 500; /* font-medium */
+  }
+  
+  .event-date-box .day {
+    font-size: 1.25rem; /* text-xl */
+    font-weight: 700; /* font-bold */
+  }
+  
+  /* Hide scrollbar if desired */
+  ::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Optional: If you need the exact max-width from Tailwind */
+  .mw-lg-4xl {
+    max-width: 56rem; /* Equivalent to max-w-4xl */
+  }
