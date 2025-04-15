@@ -1,9 +1,10 @@
+'use client';
+
 import React from 'react';
 import { Container, Row, Col, Button, Image, Badge, Card, Breadcrumb } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faArrowLeft,
-  faChevronRight,
   faShare,
   faLocationDot,
   faUsers,
@@ -22,7 +23,7 @@ import {
 } from '@fortawesome/free-brands-svg-icons';
 
 // Import the custom CSS
-import './ClubDetailPage.css';
+import '../ClubInformationPage.css';
 
 const ClubDetailPage: React.FC = () => (
   <div className="club-detail-page">
