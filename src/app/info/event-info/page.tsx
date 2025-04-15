@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import {
   Container,
@@ -83,8 +85,8 @@ const EventDetailPage: React.FC = () => (
             <Image
               className="event-header-image" // Use custom class for specific height/fit
               src="https://storage.googleapis.com/uxpilot-auth.appspot.com/1ee76558c3-465d4a6b77953789b4f6.png"
-              alt="university campus cultural festival with students participating in activities, vibrant
-               and lively atmosphere"
+              alt="university campus cultural festival with students participating in activities, vibrant and
+              lively atmosphere"
               fluid
             />
             <div className="position-absolute top-0 end-0 p-3 d-flex gap-2">
@@ -171,10 +173,10 @@ const EventDetailPage: React.FC = () => (
                   <p className="text-dark lh-relaxed">
                     {' '}
                     {/* text-gray-700 leading-relaxed */}
-                    Join us for UH Mānoa&apos;s biggest cultural celebration of the year! Experience the diverse
-                    cultures represented on campus through performances, food, art, and interactive activities.
-                    This year&apos;s festival features over 20 cultural organizations, live performances, workshops,
-                    and a variety of food vendors.
+                    Join us for UH Mānoa's biggest cultural celebration of the year! Experience the diverse cultures
+                    represented on campus through performances, food, art, and interactive activities. This year's
+                    festival features over 20 cultural organizations, live performances, workshops, and a variety of
+                    food vendors.
                   </p>
                 </Card.Body>
               </Card>
