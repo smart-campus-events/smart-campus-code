@@ -103,100 +103,99 @@ const branchOutSuggestions: SuggestionItem[] = [
 ];
 
 const SuggestedEventsPage: React.FC = () => (
-  // You might want a background similar to the EventDetailPage
-  // Add <div className="gradient-background"> here if desired
-  <Container className="py-5">
-    {/* --- Interest-Based Suggestions --- */}
-    <section className="mb-5">
-      <h2 className="mb-4">Based on Your Interests</h2>
-      <Row xs={1} md={2} lg={3} className="g-4">
-        {' '}
-        {/* Adjust columns based on screen size, g-4 for gutters */}
-        {interestBasedSuggestions.map((item) => (
-          <Col key={item.id}>
-            <Card
-              as="a" // Make the entire card a link
-              href={item.url}
-              target="_blank" // Open in new tab
-              rel="noopener noreferrer"
-              className="h-100 shadow-sm text-decoration-none text-dark card-hover"
-            >
-              <Card.Img
-                variant="top"
-                src={item.imageUrl}
-                alt={`${item.title} image`}
-                style={{ height: '200px', objectFit: 'cover' }}
-              />
-              <Card.Body className="d-flex flex-column">
-                {' '}
-                {/* Flex column for alignment */}
-                <Card.Title as="h5" className="mb-2">{item.title}</Card.Title>
-                <Card.Text className="text-muted small mb-3">
-                  {/* Example: Add icon based on type */}
-                  <FontAwesomeIcon icon={item.type === 'event' ? faCalendarAlt : faUsers} className="me-2" />
-                  {item.description}
-                </Card.Text>
-                <div className="mt-auto">
+  <div className="gradient-background">
+    <Container className="py-5">
+      {/* --- Interest-Based Suggestions --- */}
+      <section className="mb-5">
+        <h2 className="mb-4">Based on Your Interests</h2>
+        <Row xs={1} md={2} lg={3} className="g-4">
+          {' '}
+          {/* Adjust columns based on screen size, g-4 for gutters */}
+          {interestBasedSuggestions.map((item) => (
+            <Col key={item.id}>
+              <Card
+                as="a" // Make the entire card a link
+                href={item.url}
+                target="_blank" // Open in new tab
+                rel="noopener noreferrer"
+                className="h-100 shadow-sm text-decoration-none text-dark card-hover"
+              >
+                <Card.Img
+                  variant="top"
+                  src={item.imageUrl}
+                  alt={`${item.title} image`}
+                  style={{ height: '200px', objectFit: 'cover' }}
+                />
+                <Card.Body className="d-flex flex-column">
                   {' '}
-                  {/* Push tags to the bottom */}
-                  {item.tags.map((tag) => (
-                    <Badge key={`${item.id}-${tag.label}`} pill bg={tag.bg} text={tag.text} className="me-1 mb-1">
-                      {tag.label}
-                    </Badge>
-                  ))}
-                </div>
-                {/* Optional: Add an explicit link icon/text if card-as-link isn't obvious enough */}
-                {/* <div className="mt-2 text-primary small">
+                  {/* Flex column for alignment */}
+                  <Card.Title as="h5" className="mb-2">{item.title}</Card.Title>
+                  <Card.Text className="text-muted small mb-3">
+                    {/* Example: Add icon based on type */}
+                    <FontAwesomeIcon icon={item.type === 'event' ? faCalendarAlt : faUsers} className="me-2" />
+                    {item.description}
+                  </Card.Text>
+                  <div className="mt-auto">
+                    {' '}
+                    {/* Push tags to the bottom */}
+                    {item.tags.map((tag) => (
+                      <Badge key={`${item.id}-${tag.label}`} pill bg={tag.bg} text={tag.text} className="me-1 mb-1">
+                        {tag.label}
+                      </Badge>
+                    ))}
+                  </div>
+                  {/* Optional: Add an explicit link icon/text if card-as-link isn't obvious enough */}
+                  {/* <div className="mt-2 text-primary small">
                       <FontAwesomeIcon icon={faExternalLinkAlt} className="me-1" />
                       Visit Website
                     </div> */}
-              </Card.Body>
-            </Card>
-          </Col>
-        ))}
-      </Row>
-    </section>
+                </Card.Body>
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      </section>
 
-    {/* --- Branch Out Suggestions --- */}
-    <section>
-      <h2 className="mb-4">Want to Branch Out?</h2>
-      <Row xs={1} md={2} lg={3} className="g-4">
-        {branchOutSuggestions.map((item) => (
-          <Col key={item.id}>
-            <Card
-              as="a"
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="h-100 shadow-sm text-decoration-none text-dark card-hover"
-            >
-              <Card.Img
-                variant="top"
-                src={item.imageUrl}
-                alt={`${item.title} image`}
-                style={{ height: '200px', objectFit: 'cover' }}
-              />
-              <Card.Body className="d-flex flex-column">
-                <Card.Title as="h5" className="mb-2">{item.title}</Card.Title>
-                <Card.Text className="text-muted small mb-3">
-                  <FontAwesomeIcon icon={item.type === 'event' ? faCalendarAlt : faUsers} className="me-2" />
-                  {item.description}
-                </Card.Text>
-                <div className="mt-auto">
-                  {item.tags.map((tag) => (
-                    <Badge key={tag.label} pill bg={tag.bg} text={tag.text} className="me-1 mb-1">
-                      {tag.label}
-                    </Badge>
-                  ))}
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-        ))}
-      </Row>
-    </section>
-  </Container>
-  // Close gradient div if used: </div>
+      {/* --- Branch Out Suggestions --- */}
+      <section>
+        <h2 className="mb-4">Want to Branch Out?</h2>
+        <Row xs={1} md={2} lg={3} className="g-4">
+          {branchOutSuggestions.map((item) => (
+            <Col key={item.id}>
+              <Card
+                as="a"
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-100 shadow-sm text-decoration-none text-dark card-hover"
+              >
+                <Card.Img
+                  variant="top"
+                  src={item.imageUrl}
+                  alt={`${item.title} image`}
+                  style={{ height: '200px', objectFit: 'cover' }}
+                />
+                <Card.Body className="d-flex flex-column">
+                  <Card.Title as="h5" className="mb-2">{item.title}</Card.Title>
+                  <Card.Text className="text-muted small mb-3">
+                    <FontAwesomeIcon icon={item.type === 'event' ? faCalendarAlt : faUsers} className="me-2" />
+                    {item.description}
+                  </Card.Text>
+                  <div className="mt-auto">
+                    {item.tags.map((tag) => (
+                      <Badge key={tag.label} pill bg={tag.bg} text={tag.text} className="me-1 mb-1">
+                        {tag.label}
+                      </Badge>
+                    ))}
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      </section>
+    </Container>
+  </div>
 );
 
 export default SuggestedEventsPage;
