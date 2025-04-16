@@ -4,8 +4,16 @@
 
 // import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
-import { Container, Nav, Navbar, NavDropdown, Button } from 'react-bootstrap';
-import { BoxArrowRight, Lock, PersonFill, PersonPlusFill } from 'react-bootstrap-icons';
+import { Container,
+   Nav,
+   Navbar,
+   // NavDropdown,
+   Button } from 'react-bootstrap';
+import { BoxArrowRight,
+  // Lock,
+  // PersonFill,
+  // PersonPlusFill
+  } from 'react-bootstrap-icons';
 
 import Link from 'next/link';
 
