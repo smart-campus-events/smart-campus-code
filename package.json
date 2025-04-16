@@ -8,6 +8,7 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
+    "lint:fix": "next lint --fix",
     "playwright-development": "npx playwright test",
     "playwright-ci": "next dev && npx playwright test"
   },
