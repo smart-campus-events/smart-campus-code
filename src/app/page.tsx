@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Button, Col, Container, Image, Row } from 'react-bootstrap';
-
+import SignupProgress from './signup/SignupProgress';
 // TODO: Replace placeholder logo URL
 // TODO: Implement actual navigation for "Get Started" and "Login"
 
@@ -11,6 +11,7 @@ export default function SignupStep1Page() {
     <div className="bg-light min-vh-100 d-flex flex-column">
       <Container className="py-4 py-md-5 flex-grow-1 d-flex flex-column">
         {/* Progress Indicator */}
+        <SignupProgress currentStep={1} totalSteps={5} />
 
         {/* Welcome Content */}
         <Row className="justify-content-center align-items-center flex-grow-1">
