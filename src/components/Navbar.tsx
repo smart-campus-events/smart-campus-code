@@ -36,6 +36,10 @@ const NavBar: React.FC = () => {
                 <Nav.Link as={Link} href="/profile" key="profile" active={pathName === '/profile'}>
                   Profile
                 </Nav.Link>,
+                // TEMPORARY: Added Sign Up link for easy dev access
+                <Nav.Link as={Link} href="/signup/step1" key="signup" active={pathName?.startsWith('/signup')}>
+                  Sign Up (Dev)
+                </Nav.Link>,
                 <Nav.Link as={Link} href="/api/auth/signout" key="signout">
                   {/* Log out might not fully work without backend, but link is present */}
                   <Button variant="outline-danger" size="sm">
