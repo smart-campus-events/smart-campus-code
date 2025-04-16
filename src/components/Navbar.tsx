@@ -3,10 +3,10 @@
 'use client';
 
 // import { useSession } from 'next-auth/react';
-import { usePathname } from 'next/navigation';
-import { Container, Nav, Navbar, Button } from 'react-bootstrap';
-import { BoxArrowRight } from 'react-bootstrap-icons';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { Button, Container, Nav, Navbar } from 'react-bootstrap';
+import { BoxArrowRight } from 'react-bootstrap-icons';
 
 const NavBar: React.FC = () => {
   // const { data: session } = useSession();
@@ -17,7 +17,7 @@ const NavBar: React.FC = () => {
   return (
     <Navbar bg="light" expand="lg">
       <Container>
-        <Navbar.Brand href="/">Next.js Application Template</Navbar.Brand>
+        <Navbar.Brand href="/">Manoa Compass</Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="ms-auto align-items-center">

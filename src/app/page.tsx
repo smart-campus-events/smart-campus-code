@@ -1,21 +1,49 @@
-import { Col, Container, Image, Row } from 'react-bootstrap';
+'use client';
 
-/** The Home page. */
-const Home = () => (
-  <main>
-    <Container id="landing-page" fluid className="py-3">
-      <Row className="align-middle text-center">
-        <Col xs={4}>
-          <Image src="next.svg" width="150px" alt="" />
-        </Col>
+import Link from 'next/link';
+import { Button, Col, Container, Image, Row } from 'react-bootstrap';
 
-        <Col xs={8} className="d-flex flex-column justify-content-center">
-          <h1>Welcome to this template</h1>
-          <p>Now get to work and modify this app!</p>
-        </Col>
-      </Row>
-    </Container>
-  </main>
-);
+// TODO: Replace placeholder logo URL
+// TODO: Implement actual navigation for "Get Started" and "Login"
 
-export default Home;
+export default function SignupStep1Page() {
+  return (
+    <div className="bg-light min-vh-100 d-flex flex-column">
+      <Container className="py-4 py-md-5 flex-grow-1 d-flex flex-column">
+        {/* Progress Indicator */}
+
+        {/* Welcome Content */}
+        <Row className="justify-content-center align-items-center flex-grow-1">
+          <Col md={8} lg={6} className="text-center">
+            <Image
+              src="https://storage.googleapis.com/uxpilot-auth.appspot.com/d8899fadb3-5df15300b4c172c2ef67.png"
+              alt="Manoa Compass Logo"
+              style={{ maxWidth: '180px', height: 'auto' }}
+              className="mb-4"
+              fluid
+            />
+            <h1 className="h2 fw-bold mb-3">Aloha! Welcome to Manoa Compass</h1>
+            <p className="lead text-muted mb-4">
+              Your personalized guide to clubs, events, and connections at UHM.
+            </p>
+
+            <div className="d-grid gap-3 col-md-8 mx-auto">
+              {/* TODO: Link to next step in signup */}
+              <Link href="/signup/step2" passHref legacyBehavior>
+                <Button variant="success" size="lg">Get Started</Button>
+              </Link>
+              {/* TODO: Link to actual login page */}
+              <p className="text-muted small mb-0">
+                Already have an account?
+                {' '}
+                <Link href="/login" className="fw-medium">Login</Link>
+                {' '}
+                { /* Assuming /login exists */ }
+              </p>
+            </div>
+          </Col>
+        </Row>
+      </Container>
+    </div>
+  );
+}
