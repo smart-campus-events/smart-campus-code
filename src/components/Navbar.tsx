@@ -4,9 +4,8 @@
 
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
-import { Container, Nav, Navbar, NavDropdown } from 'react-bootstrap';
+import { Container, Nav, Navbar, NavDropdown, Button } from 'react-bootstrap';
 import { BoxArrowRight, Lock, PersonFill, PersonPlusFill } from 'react-bootstrap-icons';
-import { Button } from 'react-bootstrap';
 import Link from 'next/link';
 
 const NavBar: React.FC = () => {
@@ -18,7 +17,7 @@ const NavBar: React.FC = () => {
   return (
     <Navbar bg="light" expand="lg">
       <Container>
-        <Navbar.Brand href="/">Next.js Application Template</Navbar.Brand>
+        <Navbar.Brand href="/">Manoa Compass</Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="ms-auto align-items-center">
@@ -50,9 +49,9 @@ const NavBar: React.FC = () => {
               ]}
             {/* Original conditional logic commented out/removed for temporary workaround
             {currentUser
-              ? [...] 
-              : [...] 
-            }*/}
+              ? [...]
+              : [...]
+            } */}
           </Nav>
         </Navbar.Collapse>
       </Container>
