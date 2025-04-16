@@ -2,18 +2,17 @@
 
 'use client';
 
-import { useSession } from 'next-auth/react';
+// import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
-import { Container, Nav, Navbar, NavDropdown } from 'react-bootstrap';
-import { BoxArrowRight, Lock, PersonFill, PersonPlusFill } from 'react-bootstrap-icons';
-import { Button } from 'react-bootstrap';
+import { Container, Nav, Navbar, Button } from 'react-bootstrap';
+import { BoxArrowRight } from 'react-bootstrap-icons';
 import Link from 'next/link';
 
 const NavBar: React.FC = () => {
-  const { data: session } = useSession();
-  const currentUser = session?.user?.email;
-  const userWithRole = session?.user as { email: string; randomKey: string };
-  const role = userWithRole?.randomKey;
+  // const { data: session } = useSession();
+  // const currentUser = session?.user?.email;
+  // const userWithRole = session?.user as { email: string; randomKey: string };
+  // const role = userWithRole?.randomKey;
   const pathName = usePathname();
   return (
     <Navbar bg="light" expand="lg">
@@ -50,9 +49,9 @@ const NavBar: React.FC = () => {
               ]}
             {/* Original conditional logic commented out/removed for temporary workaround
             {currentUser
-              ? [...] 
-              : [...] 
-            }*/}
+              ? [...]
+              : [...]
+            } */}
           </Nav>
         </Navbar.Collapse>
       </Container>
