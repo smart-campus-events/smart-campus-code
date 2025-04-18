@@ -87,7 +87,9 @@ export default function Signup() {
                     alt="Manoa Compass Logo"
                     style={{ width: '40px', height: 'auto' }}
                   />
-                  <Card.Title as="h2" className="h4 mb-0 fw-bold">Create Your Account</Card.Title>
+                  <Card.Title as="h2" className="h4 mb-0 fw-bold">
+                    Create Your Account
+                  </Card.Title>
                 </Stack>
 
                 <Form onSubmit={handleSubmit}>
@@ -130,7 +132,9 @@ export default function Signup() {
                         style={{ height: '6px' }}
                         className="mt-2"
                       />
-                      <Form.Text className={`text-${getStrengthVariant(passwordStrength)} small`}>
+                      <Form.Text
+                        className={`text-${getStrengthVariant(passwordStrength)} small`}
+                      >
                         Password strength:
                         {' '}
                         {getStrengthLabel(passwordStrength)}
@@ -160,24 +164,42 @@ export default function Signup() {
 
                     {/* Password Requirements */}
                     <Card bg="light" body className="border">
-                      <p className="small fw-medium text-dark mb-2">Password Requirements:</p>
+                      <p className="small fw-medium text-dark mb-2">
+                        Password Requirements:
+                      </p>
                       <ListGroup variant="flush" className="small">
-                        <ListGroup.Item className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${requirements.length ? 'text-success' : 'text-muted'}`}>
+                        <ListGroup.Item
+                          className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${
+                            requirements.length ? 'text-success' : 'text-muted'
+                          }`}
+                        >
                           {requirements.length ? <CheckCircleFill /> : <Circle size={12} />}
                           {' '}
                           At least 8 characters
                         </ListGroup.Item>
-                        <ListGroup.Item className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${requirements.uppercase ? 'text-success' : 'text-muted'}`}>
+                        <ListGroup.Item
+                          className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${
+                            requirements.uppercase ? 'text-success' : 'text-muted'
+                          }`}
+                        >
                           {requirements.uppercase ? <CheckCircleFill /> : <Circle size={12} />}
                           {' '}
                           One uppercase letter
                         </ListGroup.Item>
-                        <ListGroup.Item className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${requirements.number ? 'text-success' : 'text-muted'}`}>
+                        <ListGroup.Item
+                          className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${
+                            requirements.number ? 'text-success' : 'text-muted'
+                          }`}
+                        >
                           {requirements.number ? <CheckCircleFill /> : <Circle size={12} />}
                           {' '}
                           One number
                         </ListGroup.Item>
-                        <ListGroup.Item className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${requirements.special ? 'text-success' : 'text-muted'}`}>
+                        <ListGroup.Item
+                          className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${
+                            requirements.special ? 'text-success' : 'text-muted'
+                          }`}
+                        >
                           {requirements.special ? <CheckCircleFill /> : <Circle size={12} />}
                           {' '}
                           One special character
@@ -188,11 +210,15 @@ export default function Signup() {
                     <p className="text-muted small">
                       By creating an account, you agree to our
                       {' '}
-                      <Link href="/terms" className="text-decoration-none">Terms of Service</Link>
+                      <Link href="/terms" className="text-decoration-none">
+                        Terms of Service
+                      </Link>
                       {' '}
                       and
                       {' '}
-                      <Link href="/privacy" className="text-decoration-none">Privacy Policy</Link>
+                      <Link href="/privacy" className="text-decoration-none">
+                        Privacy Policy
+                      </Link>
                       .
                     </p>
 
@@ -203,7 +229,10 @@ export default function Signup() {
                     </Button>
 
                     <div className="text-center mt-2">
-                      <Link href="/auth/signin" className="text-muted small text-decoration-none">
+                      <Link
+                        href="/auth/signin"
+                        className="text-muted small text-decoration-none"
+                      >
                         <ArrowLeft className="me-1" size={12} />
                         {' '}
                         Back to Sign In

@@ -9,16 +9,24 @@ import {
   Envelope, Lock, ArrowRight, ArrowLeft,
 } from 'react-bootstrap-icons';
 import Link from 'next/link';
+import { signIn } from 'next-auth/react';
 
 /** The sign in page. */
 const SignIn = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // TODO: Implement actual login functionality
-    console.log('Login attempt:', { email });
+    const result = await signIn('credentials', {
+      callbackUrl: '/list',
+      email,
+      password,
+    });
+
+    if (result?.error) {
+      console.error('Sign in failed: ', result.error);
+    }
   };
 
   return (
@@ -34,7 +42,9 @@ const SignIn = () => {
                     alt="Manoa Compass Logo"
                     style={{ width: '40px', height: 'auto' }}
                   />
-                  <Card.Title as="h2" className="h4 mb-0 fw-bold">Welcome Back</Card.Title>
+                  <Card.Title as="h2" className="h4 mb-0 fw-bold">
+                    Welcome Back
+                  </Card.Title>
                 </Stack>
 
                 <Form onSubmit={handleSubmit}>
@@ -91,11 +101,27 @@ const SignIn = () => {
                     </Button>
 
                     <div className="text-center mt-2">
-                      <Link href="/auth/signup" className="text-muted small text-decoration-none">
+                      <Link
+                        href="/auth/signup"
+                        className="text-muted small text-decoration-none"
+                      >
                         <ArrowLeft className="me-1" size={12} />
                         {' '}
                         Create an account
                       </Link>
+                    </div>
+
+                    <div className="text-center mt-3">
+                      <p className="mb-2">Or</p>
+                      <Button
+                        variant="outline-primary"
+                        onClick={() => signIn('google', {
+                          callbackUrl: '/list',
+                        })}
+                        className="w-100"
+                      >
+                        Sign in with Google
+                      </Button>
                     </div>
                   </Stack>
                 </Form>
