@@ -1,8 +1,10 @@
 'use client';
 
+import React from 'react';
+import { Container, Row, Col, Image, Button } from 'react-bootstrap';
 import Link from 'next/link';
-import { Button, Col, Container, Image, Row } from 'react-bootstrap';
-import SignupProgress from './signup/SignupProgress';
+import SignupProgress from '../SignupProgress'; // Assuming a shared progress component
+
 // TODO: Replace placeholder logo URL
 // TODO: Implement actual navigation for "Get Started" and "Login"
 

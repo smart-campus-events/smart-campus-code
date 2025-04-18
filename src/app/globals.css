@@ -5,10 +5,55 @@ body {
   height: 100%;
   padding: 0;
   margin: 0;
+  font-family: 'Inter', sans-serif;
+  /* Default text color from HTML - adjust as needed */
+  /* color: #1f2937;  */
+  /* Or use Bootstrap's default body color */
 }
 .wrapper {
   box-sizing: border-box;
   min-height: 100%;
   display: flex;
   flex-direction: column;
+}
+
+/* src/index.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;500;600;700;800;900&display=swap');
+
+
+/* Hide scrollbars (if desired globally) */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Optional: Add custom styles if needed for things like gradients */
+.gradient-background {
+   /* Example gradient matching the HTML */
+  background: linear-gradient(to bottom, #eff6ff, #ffffff);
+  min-height: 100vh;
+}
+
+/* Optional: Replicate specific Tailwind spacing/sizing if Bootstrap utilities aren't enough */
+.icon-lg {
+    font-size: 1.25rem; /* Equivalent to text-xl */
+    line-height: 1.75rem;
+}
+
+/* Card image height */
+.event-header-image {
+  height: 400px;
+  object-fit: cover;
+  width: 100%;
+}
+
+.map-image {
+   height: 300px;
+   object-fit: cover;
+   width: 100%;
+}
+
+.card-hover:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important; /* Enhance shadow on hover */
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
