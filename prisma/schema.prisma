@@ -17,6 +17,22 @@ datasource db {
    directUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
+// OLD STUFF
+enum Condition {
+  excellent
+  good
+  fair
+  poor
+}
+
+model Stuff {
+  id        Int       @id @default(autoincrement())
+  name      String
+  quantity  Int
+  condition Condition @default(good)
+  owner     String
+}
+
 // --- Enums ---
 
 // Define User Roles
