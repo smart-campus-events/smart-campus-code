@@ -1,31 +1,39 @@
 'use client';
 
-/* eslint-disable max-len */
-import React from 'react';
-import { Container, Row, Col, Image, Button, Card, Badge, Form } from 'react-bootstrap';
-import { /* Bell, */ BoxArrowRight, PencilSquare, Star, StarFill } from 'react-bootstrap-icons';
-// import Link from 'next/link'; // Assuming navigation will use Next.js Link
-
-// TODO: Replace hardcoded data with actual data fetching and state management
-// TODO: Implement functionality for buttons (Edit Profile, Logout, Change Password, etc.)
-// TODO: Replace placeholder links/buttons (View All Events/RIOs) with actual links or modals
-// TODO: Integrate with actual authentication status for Logout button visibility/functionality
-// TODO: Verify icon names correspond correctly to the desired Font Awesome icons
+import Link from 'next/link';
+import {
+  Badge,
+  Button,
+  Card,
+  Col,
+  Container,
+  Form,
+  Image,
+  Row,
+} from 'react-bootstrap';
+import {
+  BoxArrowRight,
+  PencilSquare,
+  Star,
+  StarFill,
+} from 'react-bootstrap-icons';
 
 export default function ProfilePage() {
   // Placeholder data matching the mockup
   const profile = {
     name: 'Sarah Connor',
     memberSince: 'January 2025',
-    avatarUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg',
+    avatarUrl:
+      'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg',
     email: 'sarah.connor@hawaii.edu',
     major: 'Computer Science',
     interests: ['Programming', 'Hiking', 'Photography', 'Surfing', 'Gaming'],
     ageRange: '19-21',
     origin: 'US Mainland',
     housingStatus: 'On-Campus Dorm',
-    comfortLevel: 4, // Representing 4 out of 5 stars
-    aboutMe: 'Enthusiastic Computer Science student looking to connect with fellow tech enthusiasts and explore the beautiful island of Oahu. Always up for a coding challenge or a hiking adventure!',
+    comfortLevel: 4, // 4 out of 5 stars
+    aboutMe:
+      'Enthusiastic Computer Science student looking to connect with fellow tech enthusiasts and explore the beautiful island of Oahu. Always up for a coding challenge or a hiking adventure!',
   };
 
   const savedEvents = [
@@ -34,8 +42,18 @@ export default function ProfilePage() {
   ];
 
   const myRios = [
-    { imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg', name: 'ACM Manoa', description: 'Computer Science Club' },
-    { imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-3.jpg', name: 'Hiking Club', description: 'Outdoor Activities' },
+    {
+      imageUrl:
+        'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg',
+      name: 'ACM Manoa',
+      description: 'Computer Science Club',
+    },
+    {
+      imageUrl:
+        'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-3.jpg',
+      name: 'Hiking Club',
+      description: 'Outdoor Activities',
+    },
   ];
 
   const settings = {
@@ -44,13 +62,7 @@ export default function ProfilePage() {
   };
 
   return (
-    // Mimicking the gradient background from the mock might require custom CSS or inline styles
-    // For now, using a simple light background
     <div className="bg-light min-vh-100">
-      {/* Header/Navigation - Assuming a shared layout component handles the main nav */}
-      {/* This is a simplified header based on the mock's content area header */}
-
-      {/* Main Content */}
       <Container className="py-4 py-md-5">
         <Row className="justify-content-center">
           <Col lg={8}>
@@ -61,20 +73,26 @@ export default function ProfilePage() {
                   src={profile.avatarUrl}
                   alt="Profile"
                   roundedCircle
-                  style={{ width: '80px', height: '80px', border: '4px solid var(--bs-success)' }} // Using Bootstrap success color variable
+                  style={{
+                    width: '80px',
+                    height: '80px',
+                    border: '4px solid var(--bs-success)',
+                  }}
                 />
                 <div className="ms-3">
-                  <h1 className="h4 fw-bold mb-0">{`${profile.name}'s Profile`}</h1>
-                  <p className="text-muted mb-0">{`Member since ${profile.memberSince}`}</p>
+                  <h1 className="h4 fw-bold mb-0">
+                    {`${profile.name}'s Profile`}
+                  </h1>
+                  <p className="text-muted mb-0">
+                    {`Member since ${profile.memberSince}`}
+                  </p>
                 </div>
               </div>
               <div className="d-flex gap-2">
-                {/* TODO: Link to actual edit page */}
                 <Button variant="outline-secondary" size="sm">
                   <PencilSquare className="me-2" />
                   Edit Profile
                 </Button>
-                {/* TODO: Implement logout functionality */}
                 <Button variant="outline-danger" size="sm">
                   <BoxArrowRight className="me-2" />
                   Logout
@@ -97,8 +115,9 @@ export default function ProfilePage() {
                             <p className="text-muted mb-1">Email</p>
                             <p className="fw-medium mb-0">{profile.email}</p>
                           </div>
-                          {/* TODO: Implement Change Password */}
-                          <Button variant="link" size="sm" className="p-0">Change Password</Button>
+                          <Button variant="link" size="sm" className="p-0">
+                            Change Password
+                          </Button>
                         </div>
                       </div>
                       <div className="mb-3">
@@ -109,7 +128,12 @@ export default function ProfilePage() {
                         <p className="text-muted mb-1">Interests</p>
                         <div className="d-flex flex-wrap gap-2 mt-2">
                           {profile.interests.map((interest) => (
-                            <Badge key={interest} pill bg="success-subtle" text="success-emphasis">
+                            <Badge
+                              key={interest}
+                              pill
+                              bg="success-subtle"
+                              text="success-emphasis"
+                            >
                               {interest}
                             </Badge>
                           ))}
@@ -138,13 +162,13 @@ export default function ProfilePage() {
                         <Col sm={6} className="mb-3">
                           <p className="text-muted mb-1">Comfort Level</p>
                           <div className="d-flex align-items-center">
-                            {[...Array(5)].map((_, i) => (
-                              i < profile.comfortLevel
-                                // eslint-disable-next-line react/no-array-index-key
-                                ? <StarFill key={i} className="text-warning me-1" />
-                                // eslint-disable-next-line react/no-array-index-key
-                                : <Star key={i} className="text-warning me-1" />
-                            ))}
+                            {[...Array(5)].map((_, i) =>
+                              i < profile.comfortLevel ? (
+                                <StarFill key={i} className="text-warning me-1" />
+                              ) : (
+                                <Star key={i} className="text-warning me-1" />
+                              )
+                            )}
                           </div>
                         </Col>
                       </Row>
@@ -166,7 +190,10 @@ export default function ProfilePage() {
                       <Card.Title className="h5 mb-4">Saved Events</Card.Title>
                       <div className="d-flex flex-column gap-3">
                         {savedEvents.map((event) => (
-                          <div key={event.name} className="d-flex align-items-center gap-3">
+                          <div
+                            key={event.name}
+                            className="d-flex align-items-center gap-3"
+                          >
                             <div
                               className="bg-primary-subtle text-primary-emphasis rounded p-2 text-center flex-shrink-0"
                               style={{ width: '50px' }}
@@ -176,13 +203,22 @@ export default function ProfilePage() {
                             </div>
                             <div>
                               <p className="fw-medium mb-0">{event.name}</p>
-                              <p className="small text-muted mb-0">{event.details}</p>
+                              <p className="small text-muted mb-0">
+                                {event.details}
+                              </p>
                             </div>
                           </div>
                         ))}
                       </div>
-                      {/* TODO: Link to actual events page */}
-                      <Button variant="link" size="sm" className="w-100 mt-3 p-0 text-decoration-none">View All Events</Button>
+                      <Button
+                        as={Link}
+                        href="/events"
+                        variant="link"
+                        size="sm"
+                        className="w-100 mt-3 p-0 text-decoration-none"
+                      >
+                        View All Events
+                      </Button>
                     </Card.Body>
                   </Card>
 
@@ -193,16 +229,30 @@ export default function ProfilePage() {
                       <div className="d-flex flex-column gap-3">
                         {myRios.map((rio) => (
                           <div key={rio.name} className="d-flex align-items-center gap-3">
-                            <Image src={rio.imageUrl} alt="RIO" roundedCircle style={{ width: '40px', height: '40px' }} />
+                            <Image
+                              src={rio.imageUrl}
+                              alt="RIO"
+                              roundedCircle
+                              style={{ width: '40px', height: '40px' }}
+                            />
                             <div>
                               <p className="fw-medium mb-0">{rio.name}</p>
-                              <p className="small text-muted mb-0">{rio.description}</p>
+                              <p className="small text-muted mb-0">
+                                {rio.description}
+                              </p>
                             </div>
                           </div>
                         ))}
                       </div>
-                      {/* TODO: Link to actual RIOs list */}
-                      <Button variant="link" size="sm" className="w-100 mt-3 p-0 text-decoration-none">View All RIOs</Button>
+                      <Button
+                        as={Link}
+                        href="/clubs"
+                        variant="link"
+                        size="sm"
+                        className="w-100 mt-3 p-0 text-decoration-none"
+                      >
+                        View All RIOs
+                      </Button>
                     </Card.Body>
                   </Card>
 
@@ -212,20 +262,22 @@ export default function ProfilePage() {
                       <Card.Title className="h5 mb-4">Settings</Card.Title>
                       <Form>
                         <Form.Group className="mb-3 d-flex justify-content-between align-items-center">
-                          <Form.Label className="mb-0">Email Notifications</Form.Label>
+                          <Form.Label className="mb-0">
+                            Email Notifications
+                          </Form.Label>
                           <Form.Check
                             type="switch"
                             id="email-notifications-switch"
-                            // checked={settings.emailNotifications} // TODO: Use actual setting state
                             defaultChecked={settings.emailNotifications}
                           />
                         </Form.Group>
                         <Form.Group className="d-flex justify-content-between align-items-center">
-                          <Form.Label className="mb-0">Push Notifications</Form.Label>
+                          <Form.Label className="mb-0">
+                            Push Notifications
+                          </Form.Label>
                           <Form.Check
                             type="switch"
                             id="push-notifications-switch"
-                            // checked={settings.pushNotifications} // TODO: Use actual setting state
                             defaultChecked={settings.pushNotifications}
                           />
                         </Form.Group>
