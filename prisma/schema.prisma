@@ -123,7 +123,7 @@ model Club {
   twitter_url          String?                        // Optional Twitter profile URL
 
   // --- Operational Information ---
-  meeting_time         String?          
+  meeting_time         String?
   meeting_location     String?                        // Optional text describing meeting times/locations
   join_info            String?                        // Optional text describing how to join the club
 

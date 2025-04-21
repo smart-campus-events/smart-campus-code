@@ -1,14 +1,26 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import React, { useEffect, useState } from 'react';
 import {
-  Container, Row, Col, Card, Form, Button, InputGroup,
-  ProgressBar, ListGroup, Stack, Image,
+  Button,
+  Card,
+  Col,
+  Container,
+  Form,
+  Image,
+  InputGroup,
+  ListGroup,
+  ProgressBar,
+  Row,
+  Stack,
 } from 'react-bootstrap';
 import {
-  Envelope, Lock, CheckCircleFill, Circle, ArrowRight, ArrowLeft,
+  ArrowLeft,
+  ArrowRight,
+  CheckCircleFill, Circle,
+  Envelope, Lock,
 } from 'react-bootstrap-icons';
-import Link from 'next/link';
 import SignupProgress from '../SignupProgress'; // Assuming a shared progress component
 
 // TODO: Implement proper form validation (e.g., yup/zod with react-hook-form)

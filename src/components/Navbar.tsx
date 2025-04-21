@@ -3,18 +3,18 @@
 'use client';
 
 // import { useSession } from 'next-auth/react';
-import { usePathname } from 'next/navigation';
-import { Container,
-   Nav,
-   Navbar,
-   // NavDropdown,
-   Button } from 'react-bootstrap';
-import { BoxArrowRight,
-  // Lock,
-  // PersonFill,
-  // PersonPlusFill
-  } from 'react-bootstrap-icons';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import {
+  // NavDropdown,
+  Button,
+  Container,
+  Nav,
+  Navbar
+} from 'react-bootstrap';
+import {
+  BoxArrowRight,
+} from 'react-bootstrap-icons';
 
 const NavBar: React.FC = () => {
   // const { data: session } = useSession();
