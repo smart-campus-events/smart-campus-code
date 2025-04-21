@@ -51,6 +51,11 @@ enum HousingStatus {
   OTHER          @map("other")
 }
 
+enum AttendanceType {
+  IN_PERSON
+  ONLINE
+  HYBRID
+}
 // --- Models ---
 
 
@@ -68,10 +73,8 @@ model Event {
   cost_admission       String?   @db.VarChar(255)      // Store as text due to variability (nullable)
 
   // --- Location Information ---
-  location_text        String?   @db.Text              // Raw location string
-  location_building    String?   @db.VarChar(255)      // Parsed building name (nullable)
-  location_room        String?   @db.VarChar(255)      // Parsed room number/name (nullable)
-  location_address     String?   @db.Text              // Parsed address (nullable)
+  attendance_type      AttendanceType                 @default(IN_PERSON)
+  location        String?   @db.Text              // Raw location string
   location_virtual_url String?   @db.Text              // Parsed Zoom/online link (nullable)
 
   // --- Organizer & Contact Info ---
