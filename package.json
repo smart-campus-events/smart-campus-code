@@ -30,6 +30,8 @@
     "cheerio": "^1.0.0",
     "date-fns": "^4.1.0",
     "dotenv": "^16.5.0",
+    "google-auth-library": "^9.15.1",
+    "google-spreadsheet": "^4.1.4",
     "multiselect-react-dropdown": "^2.0.25",
     "next": "^14.2.24",
     "next-auth": "^4.24.7",
