@@ -10,7 +10,7 @@ import {
 } from 'react-bootstrap-icons';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
-import { useSearchParams } from 'next/navigation';
+// import { useSearchParams } from 'next/navigation';
 
 /** The sign in page. */
 const SignIn = () => {
@@ -18,8 +18,8 @@ const SignIn = () => {
   const [password, setPassword] = useState('');
 
   // If there's an error query param, display it (e.g., from NextAuth)
-  const searchParams = useSearchParams();
-  //const error = searchParams.get('error');
+  // const searchParams = useSearchParams();
+  // const error = searchParams.get('error');
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
