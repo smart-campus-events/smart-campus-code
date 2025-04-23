@@ -10,6 +10,7 @@ import {
   Grid3x3GapFill, ListUl, ChevronLeft, ChevronRight, Star, // Added Star as an alternative bookmark icon
 } from 'react-bootstrap-icons';
 import Link from 'next/link';
+import Image from 'next/image';
 
 // TODO: Replace hardcoded data with actual data fetching, filtering, sorting, pagination
 // TODO: Implement filter modal/offcanvas functionality
@@ -376,17 +377,15 @@ export default function EventsPage() {
                   {/* List View Specific Layout */}
                   {viewMode === 'list' && (
                     <div className="d-flex justify-content-between align-items-center mt-2">
-                      {/* Optional Thumbnail for List View */}
+                      {/* Optional Thumbnail for List View - Using next/image */}
                       {event.imageUrl && (
-                      <img
-                        src={event.imageUrl}
-                        alt={event.imageAlt || ''}
-                        style={{ width: '100px',
-                          height: '70px',
-                          objectFit: 'cover',
-                          borderRadius: 'var(--bs-border-radius)',
-                          marginRight: '1rem' }}
-                      />
+                        <Image
+                          src={event.imageUrl}
+                          alt={event.imageAlt || ''}
+                          width={100} // Adjust width as needed
+                          height={70} // Adjust height as needed
+                          style={{ objectFit: 'cover', borderRadius: 'var(--bs-border-radius)', marginRight: '1rem' }}
+                        />
                       )}
                       <div className="flex-grow-1 me-3">
                         <p className="small text-muted mb-1">
