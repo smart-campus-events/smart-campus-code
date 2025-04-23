@@ -3,10 +3,19 @@ import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import { compare } from 'bcrypt';
 import { type NextAuthOptions, type User as NextAuthUser } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import GoogleProvider from 'next-auth/providers/google';
+// Removed unused GoogleProvider import (it's commented out below)
+// import GoogleProvider from 'next-auth/providers/google';
 import { prisma } from '@/lib/prisma';
 import { Role } from '@prisma/client';
 
+/*
+Environment Variables: Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in your .env.local
+(and production environment).
+Google Cloud Setup: Create OAuth 2.0 credentials in Google Cloud Console and configure the
+consent screen with appropriate redirect URIs (e.g., http://localhost:3000/api/auth/callback/google).
+Uncomment Code : You can uncomment the GoogleProvider({...}), block in authOptions.ts now or
+when the environment variables are set. It will remain inactive without the variables.
+*/
 // Extend NextAuth User type to include our custom fields from the token/session
 declare module 'next-auth' {
   interface Session {
@@ -49,25 +58,35 @@ export const authOptions: NextAuthOptions = {
 
   // Configure providers
   providers: [
+    // Google Provider Configuration (Requires ENV Variables & GCP Setup)
+    // Uncomment and configure when ready
+    /*
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
     }),
+    */
+
+    // Credentials Provider (Email/Username + Password)
     CredentialsProvider({
       name: 'UH Email or Username',
       // Define fields for the login form
       credentials: {
-        login: { label: "@hawaii.edu Email or Username", type: "text", placeholder: "johndoe / username" },
-        password: { label: "Password", type: "password" },
+        login: {
+          label: '@hawaii.edu Email or Username',
+          type: 'text',
+          placeholder: 'user@hawaii.edu / username',
+        },
+        password: { label: 'Password', type: 'password' },
       },
       // Logic to authorize the user based on credentials
       async authorize(credentials) {
         if (!credentials?.login || !credentials.password) {
           console.log('Missing credentials');
-          return null; // Indicate failed authorization
+          return null;
         }
 
-        const { login, password } = credentials;
+        const { login, password: inputPassword } = credentials;
 
         // Try finding user by email OR username
         const user = await prisma.user.findFirst({
@@ -89,7 +108,7 @@ export const authOptions: NextAuthOptions = {
         if (!isHawaiiEmail(user.email)) {
           console.log('Credentials login attempt for non-hawaii email:', user.email);
           // Return null to deny login. You might want a specific error code/message later.
-          // throw new Error("Access restricted to @hawaii.edu emails."); // Alternative: throw error for custom handling
+          // throw new Error("Access restricted to @hawaii.edu emails."); // Alt: throw error
           return null;
         }
 
@@ -101,7 +120,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Check if the provided password matches the stored hash
-        const isPasswordValid = await compare(password, user.password);
+        const isPasswordValid = await compare(inputPassword, user.password);
 
         if (!isPasswordValid) {
           console.log('Invalid password for user:', login);
@@ -135,19 +154,23 @@ export const authOptions: NextAuthOptions = {
   // Callbacks are crucial for customizing JWT and Session
   callbacks: {
     // Called when a JWT is created (signing in) or updated (session accessed)
-    async jwt({ token, user, account, profile, isNewUser }) {
+    async jwt({ token, user /* , account, profile, isNewUser */ }) {
       // `user` parameter is only passed on initial sign-in
       // Add relevant user data from DB to the token
       if (user) {
+        // eslint-disable-next-line no-param-reassign
         token.id = user.id; // Persist the user ID from the provider/authorize response
-        // Fetch full user details from DB to get role, admin status, etc.
+        // Fetch full user details from DB
         const dbUser = await prisma.user.findUnique({
           where: { id: user.id },
-          select: { role: true, isAdmin: true, onboardingComplete: true }
+          select: { role: true, isAdmin: true, onboardingComplete: true },
         });
         if (dbUser) {
+          // eslint-disable-next-line no-param-reassign
           token.role = dbUser.role;
+          // eslint-disable-next-line no-param-reassign
           token.isAdmin = dbUser.isAdmin;
+          // eslint-disable-next-line no-param-reassign
           token.onboardingComplete = dbUser.onboardingComplete;
         }
       }
@@ -157,45 +180,48 @@ export const authOptions: NextAuthOptions = {
     // Called when a session is checked
     // The `token` object comes from the `jwt` callback
     async session({ session, token }) {
-      // Add the custom properties from the token to the session's user object
-      if (token) {
+      // eslint-disable-next-line no-param-reassign
+      if (token && session.user) {
+        // eslint-disable-next-line no-param-reassign
         session.user.id = token.id;
+        // eslint-disable-next-line no-param-reassign
         session.user.role = token.role;
+        // eslint-disable-next-line no-param-reassign
         session.user.isAdmin = token.isAdmin;
+        // eslint-disable-next-line no-param-reassign
         session.user.onboardingComplete = token.onboardingComplete;
       }
       return session;
     },
 
     // ---> ADDED: signIn callback for domain check, especially for OAuth providers <---
-    async signIn({ user, account, profile, email, credentials }) {
+    async signIn({ user, account, profile }) {
       // Check applies to all providers, but primarily useful for OAuth
       // For credentials, the check is also done in authorize, but doesn't hurt to double-check here.
       let userEmail: string | null | undefined = null;
 
       if (account?.provider === 'google' && profile) {
         userEmail = profile.email;
-      } else if (account?.provider === 'credentials' && user) {
+      } else if (user) {
         userEmail = user.email;
       }
       // Add checks for other providers if you add them later
 
       if (!userEmail) {
-        console.log('Could not determine email during sign-in');
+        console.log('Could not determine email during sign-in callback');
         return false; // Prevent sign-in if email is missing
       }
 
       if (isHawaiiEmail(userEmail)) {
         console.log('Email check passed during sign-in:', userEmail);
         return true; // Allow sign-in
-      } else {
-        console.log('Sign-in denied: Email is not a @hawaii.edu address:', userEmail);
-        // You can redirect to an error page or return false to show a generic error
-        // Example redirect: return '/auth/error?error=InvalidEmailDomain';
-        return false; // Prevent sign-in
       }
+      console.log('Sign-in denied by callback: Email is not @hawaii.edu:', userEmail);
+      // You can redirect to an error page or return false to show a generic error
+      // Example redirect: return '/auth/error?error=InvalidEmailDomain';
+      return false; // Prevent sign-in
     },
-    // ---> END ADDED signIn callback <--- 
+    // ---> END ADDED signIn callback <---
   },
 
   // Add secret (required for JWT strategy and production)

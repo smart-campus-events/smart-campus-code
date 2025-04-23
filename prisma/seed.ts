@@ -52,16 +52,16 @@ async function main() {
   const userPassword = await hashPassword('UserPass123!');
 
   const adminUser = await prisma.user.upsert({
-    where: { email: 'admin@manoa.hawaii.edu' },
-    update: { role: Role.ADMIN, isAdmin: true }, // Ensure admin status if exists
+    where: { email: 'admin@hawaii.edu' },
+    update: { role: Role.ADMIN, isAdmin: true },
     create: {
-      email: 'admin@manoa.hawaii.edu',
-      username: 'admin_manoa',
+      email: 'admin@hawaii.edu',
+      username: 'admin_uh',
       password: adminPassword,
       role: Role.ADMIN,
       isAdmin: true,
       name: 'Admin User',
-      onboardingComplete: true, // Admins likely don't need onboarding
+      onboardingComplete: true,
     },
   });
   console.log(`Upserted admin user: ${adminUser.email} (ID: ${adminUser.id})`);
