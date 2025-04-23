@@ -2,6 +2,25 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import nextAuthOptionsConfig from '@/lib/authOptions';
 import { prisma } from '@/lib/prisma';
+// Import Prisma utility types
+import { Prisma } from '@prisma/client';
+
+// Define types based on Prisma query arguments
+const clubArgs = {
+  include: {
+    categories: { select: { category: { select: { name: true } } } },
+  },
+};
+type RecommendedClub = Prisma.ClubGetPayload<typeof clubArgs>;
+
+const eventArgs = {
+  include: {
+    categories: { select: { category: { select: { name: true } } } },
+    hostClub: { select: { name: true } },
+  },
+  orderBy: { startDateTime: 'asc' as const }, // Use 'as const' for stricter typing on orderBy
+};
+type RecommendedEvent = Prisma.EventGetPayload<typeof eventArgs>;
 
 // GET /api/recommendations
 // Fetches recommended clubs and events for the logged-in user.
@@ -34,8 +53,9 @@ export async function GET(/* request: Request */) {
     });
     const userInterestCategoryIds = userInterests.map(i => i.categoryId);
 
-    let recommendedClubs = [];
-    let recommendedEvents = [];
+    // Explicitly type the arrays using types derived from args
+    let recommendedClubs: RecommendedClub[] = [];
+    let recommendedEvents: RecommendedEvent[] = [];
 
     if (userInterestCategoryIds.length > 0) {
       // Step 2: Find matching Clubs (Example)
@@ -45,7 +65,7 @@ export async function GET(/* request: Request */) {
           categories: { some: { categoryId: { in: userInterestCategoryIds } } },
           // Optional: favoritedBy: { none: { id: userId } }
         },
-        include: { categories: { select: { category: { select: { name: true } } } } }, // Include basic info
+        include: clubArgs.include,
         take: 5, // Limit results
       });
 
@@ -57,11 +77,8 @@ export async function GET(/* request: Request */) {
           categories: { some: { categoryId: { in: userInterestCategoryIds } } },
           // Optional: rsvps: { none: { userId: userId } }
         },
-        include: {
-          categories: { select: { category: { select: { name: true } } } },
-          hostClub: { select: { name: true } },
-        },
-        orderBy: { startDateTime: 'asc' },
+        include: eventArgs.include,
+        orderBy: eventArgs.orderBy,
         take: 5, // Limit results
       });
     } else {
