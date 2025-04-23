@@ -21,6 +21,7 @@
     "@fortawesome/free-regular-svg-icons": "^6.7.2",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/react-fontawesome": "^0.2.2",
+    "@google/generative-ai": "^0.24.0",
     "@hookform/resolvers": "^3.6.0",
     "@ngneat/falso": "^7.2.0",
     "@prisma/client": "^5.22.0",
