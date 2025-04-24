@@ -1,4 +1,4 @@
-
+// app/signup/step4/page.tsx
 'use client';
 
 import Link from 'next/link';
@@ -22,10 +22,13 @@ const origins = {
   mainland: 'US Mainland',
   international: 'International',
 };
+// Use the exact Prisma enum names here
 const housingStatuses = {
-  'on-campus': 'On-Campus Dorm',
-  'off-campus': 'Off-Campus Housing',
-  commuter: 'Commuter',
+  ON_CAMPUS_DORM: 'On-Campus Dorm',
+  OFF_CAMPUS: 'Off-Campus Housing',
+  COMMUTER: 'Commuter',
+  WITH_FAMILY: 'With Family',
+  OTHER: 'Other',
 };
 const comfortLevels = [
   { value: 1, label: 'Reserved' },
@@ -53,18 +56,21 @@ export default function SignupStep4Page() {
     event.preventDefault();
     setError(null);
     setLoading(true);
+
     try {
       const res = await fetch('/profileapi/profile', {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ageRange,
+          graduation_year: parseInt(ageRange.split('-')[0], 10),
           origin,
-          housingStatus,
-          comfortLevel,
-          aboutMe,
+          housing_status: housingStatus,
+          comfort_level: comfortLevel,
+          // about_me: aboutMe,  // include if your schema has an about_me field
         }),
       });
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to save details');
       router.push('/signup/step5');
@@ -83,7 +89,9 @@ export default function SignupStep4Page() {
           <Col md={10} lg={8} xl={7}>
             <div className="text-center mb-4 mb-md-5">
               <h2 className="h3 fw-bold mb-2">Tell us more about yourself</h2>
-              <p className="text-muted">These details are optional but help us offer better recommendations.</p>
+              <p className="text-muted">
+                These details are optional but help us offer better recommendations.
+              </p>
             </div>
             {error && <div className="text-danger mb-3 text-center">{error}</div>}
             <Card className="shadow-sm border-light rounded-4">
@@ -141,12 +149,12 @@ export default function SignupStep4Page() {
                         disabled={loading}
                       >
                         <option value="">Select housing status</option>
-                        {Object.entries(housingStatuses).map(([key, label]) => (
-                          <option key={key} value={key}>
+                        {Object.entries(housingStatuses).map(([enumKey, label]) => (
+                          <option key={enumKey} value={enumKey}>
                             {label}
                           </option>
                         ))}
-                        <option value="prefer-not-say">Prefer not to say</option>
+                        <option value="OTHER">Prefer not to say</option>
                       </Form.Select>
                     </Form.Group>
 
@@ -164,7 +172,10 @@ export default function SignupStep4Page() {
                           onChange={(e) => setComfortLevel(+e.target.value)}
                           disabled={loading}
                         />
-                        <span className="text-muted small" style={{ minWidth: '70px', textAlign: 'right' }}>
+                        <span
+                          className="text-muted small"
+                          style={{ minWidth: '70px', textAlign: 'right' }}
+                        >
                           {getComfortLabel(comfortLevel)}
                         </span>
                       </Stack>
@@ -196,8 +207,12 @@ export default function SignupStep4Page() {
                       </Form.Text>
                     </Form.Group>
 
-                    {/* Buttons */}
-                    <Stack direction="horizontal" gap={3} className="justify-content-between pt-3 mt-2">
+                    {/* Navigation */}
+                    <Stack
+                      direction="horizontal"
+                      gap={3}
+                      className="justify-content-between pt-3 mt-2"
+                    >
                       <Link href="/signup/step3" passHref>
                         <Button variant="outline-secondary" disabled={loading}>
                           <ArrowLeft className="me-1" /> Back

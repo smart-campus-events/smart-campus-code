@@ -1,8 +1,7 @@
-
 'use client';
 
-/* eslint-disable max-len */
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import {
   Badge,
@@ -18,7 +17,7 @@ import { X } from 'react-bootstrap-icons';
 
 const MAX_ABOUT_ME_LENGTH = 500;
 
-// Simplified user shape returned from /api/profile
+// Simplified user shape returned from /profileapi/profile
 interface ProfileData {
   name?: string;
   first_name?: string;
@@ -44,6 +43,7 @@ const availableMajors = [
 const housingStatuses = ['On-Campus Dorm', 'Off-Campus Commuter'];
 
 export default function EditProfilePage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -59,17 +59,28 @@ export default function EditProfilePage() {
 
   // Load existing profile
   useEffect(() => {
-    async function loadProfile() {
+    (async () => {
       try {
-        const res = await fetch('/api/profile');
-        if (!res.ok) throw new Error('Failed to fetch profile');
+        const res = await fetch('/profileapi/profile', {
+          credentials: 'include',   // ← include your session cookie
+        });
+        if (res.status === 401) {
+          // not authenticated
+          router.push('/login');
+          return;
+        }
+        if (!res.ok) {
+          throw new Error(`Error ${res.status}`);
+        }
+
         const data: ProfileData = await res.json();
         setProfile(data);
+
+        // initialize form
         setFullName(data.name ?? data.first_name ?? '');
         setMajor(data.major ?? '');
         setInterests(data.interests.map((i) => i.name));
         setOrigin(data.origin ?? '');
-        // Convert enum format to human text
         setHousingStatus(
           data.housing_status
             ? data.housing_status
@@ -86,16 +97,14 @@ export default function EditProfilePage() {
       } finally {
         setLoading(false);
       }
-    }
-    loadProfile();
-  }, []);
+    })();
+  }, [router]);
 
   const handleRemoveInterest = (interest: string) => {
     setInterests((prev) => prev.filter((i) => i !== interest));
   };
 
   const handleAddInterest = () => {
-    // Launch a modal or prompt here
     const newInterest = prompt('Enter new interest:');
     if (newInterest) setInterests((prev) => [...prev, newInterest]);
   };
@@ -103,6 +112,7 @@ export default function EditProfilePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile) return;
+
     const body = {
       fullName,
       major,
@@ -112,21 +122,30 @@ export default function EditProfilePage() {
       graduationYear,
       interests,
     };
-    const res = await fetch('/api/profile', {
+
+    const res = await fetch('/profileapi/profile', {
       method: 'PATCH',
+      credentials: 'include',   // ← include cookies here too
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    if (!res.ok) {
-      const { error } = await res.json();
-      alert('Update failed: ' + error);
+
+    if (res.status === 401) {
+      router.push('/login');
       return;
     }
-    window.location.href = '/profile';
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      alert('Update failed: ' + (errorData.error || res.statusText));
+      return;
+    }
+
+    router.push('/profile');
   };
 
   if (loading) return <div className="p-4">Loading profile...</div>;
-  if (error) return <div className="p-4">Error: {error}</div>;
+  if (error) return <div className="p-4 text-danger">Error: {error}</div>;
   if (!profile) return <div className="p-4">No profile data.</div>;
 
   return (
@@ -255,7 +274,7 @@ export default function EditProfilePage() {
                       <FloatingLabel label="Comfort Level">
                         <Form.Select
                           value={comfortLevel}
-                          onChange={(e) => setComfortLevel(parseInt(e.target.value, 10))}
+                          onChange={(e) => setComfortLevel(+e.target.value)}
                         >
                           {[0, 1, 2, 3, 4, 5].map((n) => (
                             <option key={n} value={n}>
@@ -270,7 +289,9 @@ export default function EditProfilePage() {
                         <Form.Control
                           type="number"
                           value={graduationYear}
-                          onChange={(e) => setGraduationYear(parseInt(e.target.value, 10) || '')}
+                          onChange={(e) =>
+                            setGraduationYear(parseInt(e.target.value, 10) || '')
+                          }
                         />
                       </FloatingLabel>
                     </Col>
