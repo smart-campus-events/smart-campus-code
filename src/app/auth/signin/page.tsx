@@ -33,8 +33,8 @@ const SignIn = () => {
 
     if (result?.error) {
       console.error('Sign in failed: ', result.error);
-      const errorMessage = result.error === 'CredentialsSignin' 
-        ? 'Invalid email or password.' 
+      const errorMessage = result.error === 'CredentialsSignin'
+        ? 'Invalid email or password.'
         : 'Sign in failed. Please try again.';
       setError(errorMessage);
     } else if (result?.ok) {
@@ -148,10 +148,10 @@ const SignIn = () => {
                       </Link>
                     </div>
 
-                    <Button 
-                      type="submit" 
-                      variant="success" 
-                      size="lg" 
+                    <Button
+                      type="submit"
+                      variant="success"
+                      size="lg"
                       className="w-100"
                       disabled={isLoading}
                     >

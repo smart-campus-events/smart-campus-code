@@ -82,7 +82,7 @@ export default function Signup() {
       setSubmitError('Password does not meet the requirements.');
       return;
     }
-    
+
     setIsSubmitting(true);
     try {
       console.log('Account creation attempt with email/password:', { email });
@@ -100,7 +100,6 @@ export default function Signup() {
       } else if (signInResult?.ok) {
         window.location.href = signInResult.url || '/list';
       }
-
     } catch (err) {
       console.error('Account creation failed:', err);
       setSubmitError('Failed to create account. Please try again.');
@@ -170,9 +169,9 @@ export default function Signup() {
                 <Form onSubmit={handleSubmit}>
                   <Stack gap={3}>
                     {submitError && (
-                       <div className="alert alert-danger small py-2" role="alert">
-                         {submitError}
-                       </div>
+                    <div className="alert alert-danger small py-2" role="alert">
+                      {submitError}
+                    </div>
                     )}
                     <Form.Group controlId="signupEmail">
                       <Form.Label>
@@ -237,8 +236,8 @@ export default function Signup() {
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           required
                           isInvalid={
-                            submitError === 'Passwords do not match.' ||
-                            (confirmPassword.length > 0 && password !== confirmPassword)
+                            submitError === 'Passwords do not match.'
+                            || (confirmPassword.length > 0 && password !== confirmPassword)
                           }
                           disabled={isSubmitting || isGoogleLoading}
                         />
@@ -309,10 +308,10 @@ export default function Signup() {
                       .
                     </p>
 
-                    <Button 
-                      type="submit" 
-                      variant="success" 
-                      size="lg" 
+                    <Button
+                      type="submit"
+                      variant="success"
+                      size="lg"
                       className="w-100"
                       disabled={isSubmitting || isGoogleLoading}
                     >
