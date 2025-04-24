@@ -1,129 +1,180 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container, Row, Col, Card, Form, Button, Badge, InputGroup,
   Dropdown, Pagination, Breadcrumb, ButtonGroup,
 } from 'react-bootstrap';
 import {
-  Search, Funnel, X, CalendarEvent, GeoAlt, // Changed Clock to CalendarEvent, Added GeoAlt
-  Grid3x3GapFill, ListUl, ChevronLeft, ChevronRight, Star, // Added Star as an alternative bookmark icon
+  Search, Funnel, X, CalendarEvent, GeoAlt,
+  Grid3x3GapFill, ListUl, ChevronLeft, ChevronRight, Star,
 } from 'react-bootstrap-icons';
 import Link from 'next/link';
-import Image from 'next/image';
+
+interface Category {
+  id: string;
+  name: string;
+}
+
+interface EventCategory {
+  eventId: string;
+  categoryId: string;
+  category: Category;
+}
+
+interface Club {
+  id: string;
+  name: string;
+  logoUrl: string | null;
+}
+
+interface Event {
+  id: string;
+  title: string;
+  description: string | null;
+  startDateTime: string;
+  endDateTime: string | null;
+  location: string | null;
+  status: string;
+  categories: EventCategory[];
+  organizerClub: Club | null;
+}
 
 // TODO: Replace hardcoded data with actual data fetching, filtering, sorting, pagination
 // TODO: Implement filter modal/offcanvas functionality
 // TODO: Implement search, sort, filter removal, view toggle, save event, pagination logic
 // TODO: Use proper linking for event cards
 
-const sampleEvents = [
-  {
-    id: 1,
-    name: 'Spring Fling Music Fest',
-    tags: ['Music', 'Social', 'Outdoor', 'Free'],
-    description: 'Enjoy live bands, food trucks, and games on the main lawn. Kick off the semester!',
-    dateTime: 'Apr 25, 2025 - 4:00 PM - 8:00 PM',
-    location: 'Campus Center Lawn',
-    slug: 'spring-fling-2025',
-    imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/placeholder-event-1.png', // Example placeholder
-    imageAlt: 'Students enjoying an outdoor music festival on a sunny day.',
-  },
-  {
-    id: 2,
-    name: 'Career Fair Prep Workshop',
-    tags: ['Workshop', 'Career', 'Academic', 'Professional'],
-    description: 'Get your resume reviewed and practice your elevator pitch before the big career fair.',
-    dateTime: 'May 2, 2025 - 1:00 PM - 3:00 PM',
-    location: 'QLC Room 412',
-    slug: 'career-fair-prep-workshop',
-    imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/placeholder-event-2.png', // Example placeholder
-    imageAlt: 'Students sitting at tables working on resumes with a presenter.',
-  },
-  {
-    id: 3,
-    name: 'Guest Lecture: AI in Modern Art',
-    tags: ['Lecture', 'Technology', 'Arts', 'Academic'],
-    description: 'Visiting Professor Dr. Evelyn Reed discusses the impact of artificial intelligence '
-      + 'on creative fields.',
-    dateTime: 'May 5, 2025 - 6:00 PM - 7:30 PM',
-    location: 'Art Building Auditorium',
-    slug: 'guest-lecture-ai-art',
-    imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/placeholder-event-3.png', // Example placeholder
-    imageAlt: 'Lecture hall with a speaker presenting slides about AI and art.',
-  },
-  {
-    id: 4,
-    name: 'International Students Potluck',
-    tags: ['Social', 'Cultural', 'Food', 'Community'],
-    description: 'Share a dish from your home country and meet fellow international and local students.',
-    dateTime: 'May 10, 2025 - 5:30 PM onwards',
-    location: 'Hemenway Hall Courtyard',
-    slug: 'international-potluck-spring',
-  },
-  {
-    id: 5,
-    name: 'Beach Cleanup Day',
-    tags: ['Volunteer', 'Environment', 'Community', 'Outdoor'],
-    description: 'Join the Environmental Warriors club to help keep our nearby beaches clean.',
-    dateTime: 'May 12, 2025 - 9:00 AM - 12:00 PM',
-    location: 'Meet at Kapiolani Park Beach Center',
-    slug: 'beach-cleanup-may',
-  },
-  {
-    id: 6,
-    name: 'End-of-Semester Board Game Night',
-    tags: ['Social', 'Games', 'Entertainment', 'Indoor'],
-    description: 'De-stress before finals with board games, card games, and good company.',
-    dateTime: 'May 15, 2025 - 7:00 PM - 10:00 PM',
-    location: 'Campus Center Ballroom',
-    slug: 'board-game-night-finals',
-  },
-];
-
-const initialActiveFilters = ['Social', 'Free']; // Example event filters
-const totalEvents = 58; // Example total count
+// Initial data for state management
 const eventsPerPage = 6; // Example items per page
 
 export default function EventsPage() {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeFilters, setActiveFilters] = useState(initialActiveFilters);
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState('Date: Soonest'); // Default sort for events
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Placeholder logic - replace with actual data fetching and filtering
-  const filteredEvents = sampleEvents;
-  const totalPages = Math.ceil(totalEvents / eventsPerPage);
+  // Fetch events from API
+  useEffect(() => {
+    async function fetchEvents() {
+      setLoading(true);
+      try {
+        // Use status=all to show both approved and pending events
+        const response = await fetch('/api/events?status=all');
+        if (!response.ok) {
+          throw new Error('Failed to fetch events');
+        }
+        const data = await response.json();
+        setEvents(data);
+        setLoading(false);
+      } catch (err) {
+        setError('Error loading events. Please try again later.');
+        setLoading(false);
+        console.error('Error fetching events:', err);
+      }
+    }
+
+    fetchEvents();
+  }, []);
+
+  // Get all unique category names from events
+  const allCategories = events
+    .flatMap(event => event.categories.map(ec => ec.category.name))
+    .filter((value, index, self) => self.indexOf(value) === index);
+
+  // Filtered events based on search and active filters
+  const filteredEvents = events.filter(event => {
+    // Search filter
+    const matchesSearch = searchTerm === ''
+      || event.title.toLowerCase().includes(searchTerm.toLowerCase())
+      || (event.description
+        && event.description.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    // Category filters
+    const matchesFilters = activeFilters.length === 0
+      || event.categories.some(ec => activeFilters.includes(ec.category.name));
+
+    return matchesSearch && matchesFilters;
+  });
+
+  // Sort events based on the selected sort option
+  const sortedEvents = [...filteredEvents].sort((a, b) => {
+    switch (sortBy) {
+      case 'Date: Soonest':
+        return new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime();
+      case 'Date: Latest':
+        return new Date(b.startDateTime).getTime() - new Date(a.startDateTime).getTime();
+      case 'A-Z':
+        return a.title.localeCompare(b.title);
+      case 'Relevance':
+        // For relevance sorting, if search term exists, prioritize items with title matches
+        // Otherwise, fall back to date sorting
+        if (searchTerm) {
+          const aTitle = a.title.toLowerCase();
+          const bTitle = b.title.toLowerCase();
+          const searchTermLower = searchTerm.toLowerCase();
+
+          // If one title contains the search term and the other doesn't, prioritize the one that does
+          const aContains = aTitle.includes(searchTermLower);
+          const bContains = bTitle.includes(searchTermLower);
+
+          if (aContains && !bContains) return -1;
+          if (!aContains && bContains) return 1;
+
+          // If both or neither contain the search term, sort alphabetically
+          return aTitle.localeCompare(bTitle);
+        }
+        // Default to date sorting if no search term
+        return new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime();
+      default:
+        return 0;
+    }
+  });
+
+  const totalPages = Math.ceil(sortedEvents.length / eventsPerPage);
+
+  // Paginated events
+  const paginatedEvents = sortedEvents.slice(
+    (currentPage - 1) * eventsPerPage,
+    currentPage * eventsPerPage,
+  );
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
-    // TODO: Implement search logic (likely debounced)
+    setCurrentPage(1); // Reset to first page when search changes
   };
 
   const handleFilterClick = () => {
-    // TODO: Open filter modal/offcanvas
+    // TODO: Implement filter modal/offcanvas
     console.log('Filter button clicked');
   };
 
   const handleSortSelect = (eventKey: string | null) => {
     if (eventKey) {
       setSortBy(eventKey);
-      // TODO: Implement sorting logic
     }
   };
 
   const handleRemoveFilter = (filterToRemove: string) => {
     setActiveFilters(activeFilters.filter(f => f !== filterToRemove));
-    // TODO: Refetch/filter data based on new filters
+  };
+
+  const handleAddFilter = (filter: string) => {
+    if (!activeFilters.includes(filter)) {
+      setActiveFilters([...activeFilters, filter]);
+    }
   };
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
-    // TODO: Fetch data for the new page
+    window.scrollTo(0, 0); // Scroll to top when changing pages
   };
 
-  const handleSaveEvent = (eventId: number) => {
+  const handleSaveEvent = (eventId: string) => {
     // TODO: Implement saving/bookmarking logic for events
     console.log(`Save event clicked for event ${eventId}`);
   };
@@ -213,7 +264,6 @@ export default function EventsPage() {
               <Col lg={5} xl={4} className="d-flex gap-2">
                 <Button variant="outline-secondary" onClick={handleFilterClick} className="flex-shrink-0">
                   <Funnel className="me-1" />
-                  {' '}
                   Filters
                 </Button>
                 <Dropdown onSelect={handleSortSelect} className="flex-grow-1">
@@ -223,7 +273,6 @@ export default function EventsPage() {
                     className="w-100 d-flex justify-content-between align-items-center"
                   >
                     Sort:
-                    {' '}
                     {sortBy}
                   </Dropdown.Toggle>
                   <Dropdown.Menu className="w-100">
@@ -263,183 +312,231 @@ export default function EventsPage() {
                 ))}
               </div>
             )}
+
+            {/* Available Categories */}
+            <div className="mt-3">
+              <span className="text-muted small me-2">Categories:</span>
+              <div className="d-flex flex-wrap gap-2 mt-1">
+                {allCategories.map(category => (
+                  <Badge
+                    key={category}
+                    pill
+                    bg={activeFilters.includes(category) ? 'info' : 'light'}
+                    text={activeFilters.includes(category) ? 'white' : 'dark'}
+                    className="d-inline-flex align-items-center py-1 px-2 cursor-pointer"
+                    onClick={() => (
+                      activeFilters.includes(category)
+                        ? handleRemoveFilter(category)
+                        : handleAddFilter(category)
+                    )}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {category}
+                  </Badge>
+                ))}
+              </div>
+            </div>
           </Card.Body>
         </Card>
 
+        {/* Loading and Error States */}
+        {loading && (
+          <div className="text-center my-5">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+            <p className="mt-2">Loading events...</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="alert alert-danger my-5" role="alert">
+            {error}
+          </div>
+        )}
+
         {/* Results Count & View Toggle */}
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <p className="text-muted mb-0">
-            Showing
-            {' '}
-            <span className="fw-medium">{filteredEvents.length}</span>
-            {' '}
-            of
-            {' '}
-            <span className="fw-medium">{totalEvents}</span>
-            {' '}
-            events
-          </p>
-          <ButtonGroup size="sm">
-            <Button
-              variant={viewMode === 'grid' ? 'secondary' : 'outline-secondary'}
-              onClick={() => setViewMode('grid')}
-              aria-label="Grid view"
-            >
-              <Grid3x3GapFill />
-            </Button>
-            <Button
-              variant={viewMode === 'list' ? 'secondary' : 'outline-secondary'}
-              onClick={() => setViewMode('list')}
-              aria-label="List view"
-            >
-              <ListUl />
-            </Button>
-          </ButtonGroup>
-        </div>
+        {!loading && !error && (
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <p className="text-muted mb-0">
+              Showing
+              {' '}
+              <span className="fw-medium">{paginatedEvents.length}</span>
+              {' '}
+              of
+              {' '}
+              <span className="fw-medium">{sortedEvents.length}</span>
+              {' '}
+              events
+            </p>
+            <ButtonGroup size="sm">
+              <Button
+                variant={viewMode === 'grid' ? 'secondary' : 'outline-secondary'}
+                onClick={() => setViewMode('grid')}
+                aria-label="Grid view"
+              >
+                <Grid3x3GapFill />
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'secondary' : 'outline-secondary'}
+                onClick={() => setViewMode('list')}
+                aria-label="List view"
+              >
+                <ListUl />
+              </Button>
+            </ButtonGroup>
+          </div>
+        )}
+
+        {/* No Results Message */}
+        {!loading && !error && sortedEvents.length === 0 && (
+          <div className="text-center my-5">
+            <p className="text-muted">No events found matching your criteria.</p>
+          </div>
+        )}
 
         {/* Events Grid/List */}
-        <Row className={`g-4 ${viewMode === 'list' ? 'row-cols-1' : 'row-cols-1 row-cols-md-2 row-cols-lg-3'}`}>
-          {filteredEvents.map(event => (
-            <Col key={event.id}>
-              {/* TODO: Link entire card to event details page */}
-              <Card className="h-100 shadow-sm hover-lift">
-                {/* Optional Image Header for Grid View */}
-                {viewMode === 'grid' && event.imageUrl && (
-                  <Card.Img
-                    variant="top"
-                    src={event.imageUrl}
-                    alt={event.imageAlt
-                     || `Image for ${event.name}`}
-                    style={{ height: '180px', objectFit: 'cover' }}
-                  />
-                )}
-                <Card.Body className="d-flex flex-column">
-                  <div className="d-flex justify-content-between align-items-start mb-2">
-                    <Link href={`/event/${event.slug}`} passHref legacyBehavior>
-                      {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-                      <a className="text-decoration-none text-dark stretched-link">
-                        <Card.Title as="h6" className="mb-1 fw-semibold">{event.name}</Card.Title>
-                      </a>
-                    </Link>
-                    {/* Using Star icon for saving events */}
-                    <Button
-                      variant="light"
-                      size="sm"
-                      className="p-1 ms-2 flex-shrink-0"
-                      onClick={(e) => { e.stopPropagation(); handleSaveEvent(event.id); }}
-                      aria-label={`Save ${event.name}`}
-                    >
-                      <Star />
-                      {/* Or use Bookmark: <Bookmark /> */}
-                    </Button>
-                  </div>
+        {!loading && !error && sortedEvents.length > 0 && (
+          <Row className={`g-4 ${viewMode === 'list' ? 'row-cols-1' : 'row-cols-1 row-cols-md-2 row-cols-lg-3'}`}>
+            {paginatedEvents.map(event => (
+              <Col key={event.id}>
+                {/* TODO: Link entire card to event details page */}
+                <Card className="h-100 shadow-sm hover-lift">
+                  <Card.Body className="d-flex flex-column">
+                    <div className="d-flex justify-content-between align-items-start mb-2">
+                      <Link href={`/event/${event.id}`} passHref legacyBehavior>
+                        {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
+                        <a className="text-decoration-none text-dark stretched-link">
+                          <Card.Title as="h6" className="mb-1 fw-semibold">{event.title}</Card.Title>
+                        </a>
+                      </Link>
+                      {/* Using Star icon for saving events */}
+                      <Button
+                        variant="light"
+                        size="sm"
+                        className="p-1 ms-2 flex-shrink-0"
+                        onClick={(e) => { e.stopPropagation(); handleSaveEvent(event.id); }}
+                        aria-label={`Save ${event.title}`}
+                      >
+                        <Star />
+                      </Button>
+                    </div>
 
-                  {/* Grid View Specific Layout */}
-                  {viewMode === 'grid' && (
-                    <>
-                      <Card.Text className="small text-muted flex-grow-1 mb-3">
-                        {event.description.substring(0, 80)}
-                        {event.description.length > 80 ? '...' : ''}
-                      </Card.Text>
-                      <div className="mt-auto">
-                        <div className="d-flex align-items-center text-muted small mb-2">
-                          <CalendarEvent size={12} className="me-1 flex-shrink-0" />
-                          <span title={event.dateTime}>
-                            {event.dateTime.split('-')[0].trim()}
-                            {' '}
-                            {/* Show only date part for brevity */}
-                          </span>
-                        </div>
-                        <div className="d-flex align-items-center text-muted small mb-3">
-                          <GeoAlt size={12} className="me-1 flex-shrink-0" />
-                          <span className="text-truncate" title={event.location}>{event.location}</span>
-                        </div>
-                        <div className="d-flex flex-wrap gap-1">
-                          {event.tags.slice(0, 3).map(tag => (
-                            <Badge key={tag} pill bg="light" text="dark" className="fw-normal">
-                              {tag}
-                            </Badge>
-                          ))}
-                          {event.tags.length > 3 && (
-                            <Badge pill bg="light" text="dark" className="fw-normal">
-                              +
+                    {/* Grid View Specific Layout */}
+                    {viewMode === 'grid' && (
+                      <>
+                        <Card.Text className="small text-muted flex-grow-1 mb-3">
+                          {event.description
+                            ? (event.description.substring(0, 80) + (event.description.length > 80 ? '...' : ''))
+                            : 'No description available'}
+                        </Card.Text>
+                        <div className="mt-auto">
+                          <div className="d-flex align-items-center text-muted small mb-2">
+                            <CalendarEvent size={12} className="me-1 flex-shrink-0" />
+                            <span title={new Date(event.startDateTime).toLocaleString()}>
+                              {new Date(event.startDateTime).toLocaleDateString()}
                               {' '}
-                              {event.tags.length - 3}
+                              {new Date(event.startDateTime).toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          </div>
+                          <div className="d-flex align-items-center text-muted small mb-3">
+                            <GeoAlt size={12} className="me-1 flex-shrink-0" />
+                            <span className="text-truncate" title={event.location || 'No location specified'}>
+                              {event.location || 'No location specified'}
+                            </span>
+                          </div>
+                          <div className="d-flex flex-wrap gap-1">
+                            {event.categories.slice(0, 3).map(ec => (
+                              <Badge key={ec.categoryId} pill bg="light" text="dark" className="fw-normal">
+                                {ec.category.name}
+                              </Badge>
+                            ))}
+                            {event.categories.length > 3 && (
+                              <Badge pill bg="light" text="dark" className="fw-normal">
+                                +
+                                {' '}
+                                {event.categories.length - 3}
+                                {' '}
+                                more
+                              </Badge>
+                            )}
+                          </div>
+                          {event.organizerClub && (
+                            <div className="mt-2 small text-muted">
+                              Organized by:
                               {' '}
-                              more
-                            </Badge>
+                              {event.organizerClub.name}
+                            </div>
                           )}
                         </div>
-                      </div>
-                    </>
-                  )}
+                      </>
+                    )}
 
-                  {/* List View Specific Layout */}
-                  {viewMode === 'list' && (
-                    <div className="d-flex justify-content-between align-items-center mt-2">
-                      {/* Optional Thumbnail for List View - Using next/image */}
-                      {event.imageUrl && (
-                        <Image
-                          src={event.imageUrl}
-                          alt={event.imageAlt || ''}
-                          width={100} // Adjust width as needed
-                          height={70} // Adjust height as needed
-                          style={{ objectFit: 'cover', borderRadius: 'var(--bs-border-radius)', marginRight: '1rem' }}
-                        />
-                      )}
-                      <div className="flex-grow-1 me-3">
-                        <p className="small text-muted mb-1">
-                          {event.description.substring(0, 120)}
-                          {event.description.length > 120 ? '...' : ''}
-                        </p>
-                        <div className="d-flex align-items-center text-muted small mb-1">
-                          <CalendarEvent size={12} className="me-1 flex-shrink-0" />
-                          <span>{event.dateTime}</span>
+                    {/* List View Specific Layout */}
+                    {viewMode === 'list' && (
+                      <div className="d-flex justify-content-between align-items-center mt-2">
+                        <div className="flex-grow-1 me-3">
+                          <p className="small text-muted mb-1">
+                            {event.description
+                              ? (event.description.substring(0, 120) + (event.description.length > 120 ? '...' : ''))
+                              : 'No description available'}
+                          </p>
+                          <div className="d-flex align-items-center text-muted small mb-1">
+                            <CalendarEvent size={12} className="me-1 flex-shrink-0" />
+                            <span>{new Date(event.startDateTime).toLocaleString()}</span>
+                          </div>
+                          <div className="d-flex align-items-center text-muted small">
+                            <GeoAlt size={12} className="me-1 flex-shrink-0" />
+                            <span>{event.location || 'No location specified'}</span>
+                          </div>
+                          {event.organizerClub && (
+                            <div className="mt-1 small text-muted">
+                              Organized by:
+                              {' '}
+                              {event.organizerClub.name}
+                            </div>
+                          )}
                         </div>
-                        <div className="d-flex align-items-center text-muted small">
-                          <GeoAlt size={12} className="me-1 flex-shrink-0" />
-                          <span>{event.location}</span>
-                        </div>
-                      </div>
-                      <div className="text-end flex-shrink-0" style={{ minWidth: '100px' }}>
-                        {' '}
-                        {/* Ensure tags don't get too squished */}
-
-                        <div className="d-flex flex-wrap gap-1 justify-content-end">
-                          {event.tags.map(tag => (
-                            <Badge key={tag} pill bg="light" text="dark" className="fw-normal">
-                              {tag}
-                            </Badge>
-                          ))}
+                        <div className="text-end flex-shrink-0" style={{ minWidth: '100px' }}>
+                          <div className="d-flex flex-wrap gap-1 justify-content-end">
+                            {event.categories.map(ec => (
+                              <Badge key={ec.categoryId} pill bg="light" text="dark" className="fw-normal">
+                                {ec.category.name}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </Card.Body>
-              </Card>
-            </Col>
-          ))}
-        </Row>
+                    )}
+                  </Card.Body>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        )}
 
         {/* Pagination */}
-        {totalPages > 1 && (
-        <div className="d-flex justify-content-center mt-5">
-          <Pagination size="sm">
-            <Pagination.Prev
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft size={14} />
-            </Pagination.Prev>
-            {paginationItems}
-            <Pagination.Next
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              <ChevronRight size={14} />
-            </Pagination.Next>
-          </Pagination>
-        </div>
+        {!loading && !error && totalPages > 1 && (
+          <div className="d-flex justify-content-center mt-5">
+            <Pagination size="sm">
+              <Pagination.Prev
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft size={14} />
+              </Pagination.Prev>
+              {paginationItems}
+              <Pagination.Next
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight size={14} />
+              </Pagination.Next>
+            </Pagination>
+          </div>
         )}
       </Container>
 
