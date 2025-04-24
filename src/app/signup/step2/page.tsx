@@ -6,15 +6,17 @@ import {
   ProgressBar, ListGroup, Stack, Image,
 } from 'react-bootstrap';
 import {
-  Envelope, Lock, CheckCircleFill, Circle, ArrowRight, ArrowLeft,
+  Envelope, Lock, CheckCircleFill, Circle, ArrowRight, ArrowLeft, Google,
 } from 'react-bootstrap-icons';
 import Link from 'next/link';
+import { signIn } from 'next-auth/react';
 import SignupProgress from '../SignupProgress'; // Assuming a shared progress component
 
 // TODO: Implement proper form validation (e.g., yup/zod with react-hook-form)
 // TODO: Implement actual account creation API call
 // TODO: Implement robust password strength checking
 // TODO: Link to actual Terms of Service and Privacy Policy pages
+// TODO: Handle errors from API calls and Google Sign-In more gracefully
 
 // Simple password strength check (example)
 const checkPasswordStrength = (password: string) => {
@@ -37,6 +39,10 @@ export default function SignupStep2Page() {
     number: false,
     special: false,
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
 
   useEffect(() => {
     const strengthValue = checkPasswordStrength(password);
@@ -73,15 +79,41 @@ export default function SignupStep2Page() {
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // TODO: Add validation (e.g., email format, password match)
+    setSubmitError(null);
+    setGoogleError(null);
+
     if (password !== confirmPassword) {
-      // alert('Passwords do not match!'); // Replace with better error handling
+      setSubmitError('Passwords do not match!');
       return;
     }
-    // TODO: Call API to create account
+    if (passwordStrength < 3) {
+      setSubmitError('Password does not meet the requirements.');
+      return;
+    }
+
+    setIsSubmitting(true);
     console.log('Account creation attempt:', { email });
-    // On success, navigate to next step (e.g., using Next.js router)
-    // router.push('/signup/step3');
+    setTimeout(() => {
+      console.log('Simulated API call complete.');
+      setIsSubmitting(false);
+      alert('Account created successfully (simulated)! Proceeding to next step...');
+    }, 1500);
+  };
+
+  const handleGoogleSignUp = async () => {
+    setIsGoogleLoading(true);
+    setGoogleError(null);
+    setSubmitError(null);
+    try {
+      await signIn('google', {
+        callbackUrl: '/signup/step3',
+        redirect: true,
+      });
+    } catch (err) {
+      console.error('Google sign up failed:', err);
+      setGoogleError('An unexpected error occurred during Google sign up.');
+      setIsGoogleLoading(false);
+    }
   };
 
   return (
@@ -104,7 +136,36 @@ export default function SignupStep2Page() {
                   <Card.Title as="h2" className="h4 mb-0 fw-bold">Create Your Account</Card.Title>
                 </Stack>
 
+                <div className="text-center mb-4">
+                  <Button
+                    variant="outline-primary"
+                    onClick={handleGoogleSignUp}
+                    className="w-100"
+                    disabled={isGoogleLoading || isSubmitting}
+                  >
+                    {isGoogleLoading ? (
+                      'Processing...'
+                    ) : (
+                      <>
+                        <Google className="me-2" />
+                        Sign up with Google
+                      </>
+                    )}
+                  </Button>
+                  {googleError && (
+                    <div className="text-danger mt-2 small">{googleError}</div>
+                  )}
+                  <div className="mt-3">
+                    <span className="text-muted">or sign up with email</span>
+                  </div>
+                </div>
+
                 <Form onSubmit={handleSubmit}>
+                  {submitError && (
+                    <div className="alert alert-danger small py-2" role="alert">
+                      {submitError}
+                    </div>
+                  )}
                   <Stack gap={3}>
                     <Form.Group controlId="signupEmail">
                       <Form.Label>
@@ -119,6 +180,7 @@ export default function SignupStep2Page() {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
+                          disabled={isSubmitting || isGoogleLoading}
                         />
                       </InputGroup>
                     </Form.Group>
@@ -136,6 +198,7 @@ export default function SignupStep2Page() {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           required
+                          disabled={isSubmitting || isGoogleLoading}
                         />
                       </InputGroup>
                       <ProgressBar
@@ -164,10 +227,12 @@ export default function SignupStep2Page() {
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           required
-                          isInvalid={confirmPassword.length > 0 && password !== confirmPassword}
+                          isInvalid={(submitError === 'Passwords do not match!')
+                          || (confirmPassword.length > 0 && password !== confirmPassword)}
+                          disabled={isSubmitting || isGoogleLoading}
                         />
                         <Form.Control.Feedback type="invalid">
-                          Passwords do not match.
+                          {submitError === 'Passwords do not match!' ? submitError : 'Passwords do not match.'}
                         </Form.Control.Feedback>
                       </InputGroup>
                     </Form.Group>
@@ -177,25 +242,42 @@ export default function SignupStep2Page() {
                       <p className="small fw-medium text-dark mb-2">Password Requirements:</p>
                       <ListGroup variant="flush" className="small">
                         {/* eslint-disable-next-line max-len */}
-                        <ListGroup.Item className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${requirements.length ? 'text-success' : 'text-muted'}`}>
+                        <ListGroup.Item
+                          className={[
+                            'd-flex', 'align-items-center', 'gap-2', 'px-0', 'py-1', 'border-0', 'bg-transparent',
+                            requirements.length ? 'text-success' : 'text-muted',
+                          ].join(' ')}
+                        >
                           {requirements.length ? <CheckCircleFill /> : <Circle size={12} />}
                           {' '}
                           At least 8 characters
                         </ListGroup.Item>
                         {/* eslint-disable-next-line max-len */}
-                        <ListGroup.Item className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${requirements.uppercase ? 'text-success' : 'text-muted'}`}>
+                        <ListGroup.Item
+                          className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${
+                            requirements.uppercase ? 'text-success' : 'text-muted'
+                          }`}
+                        >
                           {requirements.uppercase ? <CheckCircleFill /> : <Circle size={12} />}
                           {' '}
                           One uppercase letter
                         </ListGroup.Item>
                         {/* eslint-disable-next-line max-len */}
-                        <ListGroup.Item className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${requirements.number ? 'text-success' : 'text-muted'}`}>
+                        <ListGroup.Item
+                          className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${
+                            requirements.number ? 'text-success' : 'text-muted'
+                          }`}
+                        >
                           {requirements.number ? <CheckCircleFill /> : <Circle size={12} />}
                           {' '}
                           One number
                         </ListGroup.Item>
                         {/* eslint-disable-next-line max-len */}
-                        <ListGroup.Item className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${requirements.special ? 'text-success' : 'text-muted'}`}>
+                        <ListGroup.Item
+                          className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${
+                            requirements.special ? 'text-success' : 'text-muted'
+                          }`}
+                        >
                           {requirements.special ? <CheckCircleFill /> : <Circle size={12} />}
                           {' '}
                           One special character
@@ -207,20 +289,31 @@ export default function SignupStep2Page() {
                       By creating an account, you agree to our
                       {' '}
                       {/* TODO: Link to actual terms */}
-                      <Link href="/terms" className="text-decoration-none">Terms of Service</Link>
+                      <Link href="/terms" className="text-decoration-none">
+                        Terms of Service
+                      </Link>
                       {' '}
                       and
                       {' '}
                       {/* TODO: Link to actual policy */}
-                      <Link href="/privacy" className="text-decoration-none">Privacy Policy</Link>
+                      <Link href="/privacy" className="text-decoration-none">
+                        Privacy Policy
+                      </Link>
                       .
                     </p>
 
                     {/* TODO: Link to next step on successful submission */}
-                    <Button type="submit" variant="success" size="lg" className="w-100">
-                      Create Account
+                    <Button
+                      type="submit"
+                      variant="success"
+                      size="lg"
+                      className="w-100"
+                      disabled={isSubmitting || isGoogleLoading}
+                    >
+                      {/* Disable if Google loading */}
+                      {isSubmitting ? 'Creating Account...' : 'Create Account'}
                       {' '}
-                      <ArrowRight className="ms-1" />
+                      {!isSubmitting && <ArrowRight className="ms-1" />}
                     </Button>
 
                     <div className="text-center mt-2">

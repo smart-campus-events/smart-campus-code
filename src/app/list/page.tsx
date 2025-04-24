@@ -7,6 +7,7 @@ import authOptions from '@/lib/authOptions';
 
 /** Render a list of stuff for the logged in user. */
 const ListPage = async () => {
+  console.log('Value of prisma:', prisma); // <--- Add this line
   // Protect the page, only logged in users can access it.
   const session = await getServerSession(authOptions);
   loggedInProtectedPage(
@@ -16,6 +17,8 @@ const ListPage = async () => {
     } | null,
   );
   const owner = (session && session.user && session.user.email) || '';
+
+  console.log('Value of prisma:', prisma); // <--- Add this line
   const stuff = await prisma.stuff.findMany({
     where: {
       owner,
