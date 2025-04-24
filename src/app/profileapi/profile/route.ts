@@ -1,4 +1,5 @@
 // src/app/profileapi/profile/route.ts
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/naming-convention */
 
 import authOptions from '@/lib/authOptions';
 import { prisma } from '@/lib/prisma';
@@ -18,7 +19,7 @@ export async function GET(req: Request) {
     select: {
       name: true,
       first_name: true,
-      last_name:true,
+      last_name: true,
       email: true,
       avatar_url: true,
       major: true,
@@ -34,7 +35,6 @@ export async function GET(req: Request) {
       created_at: true,
     },
   });
-  
 
   if (!user) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -85,14 +85,12 @@ export async function PATCH(req: Request) {
   if (interests.length > 0) {
     // upsert interests and replace
     const upserted = await Promise.all(
-      interests.map((name) =>
-        prisma.interest.upsert({
-          where: { name },
-          update: {},
-          create: { name },
-          select: { id: true },
-        })
-      )
+      interests.map((name) => prisma.interest.upsert({
+        where: { name },
+        update: {},
+        create: { name },
+        select: { id: true },
+      })),
     );
     dataToUpdate.interests = {
       set: upserted.map((i) => ({ id: i.id })),

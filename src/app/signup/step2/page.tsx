@@ -1,4 +1,6 @@
 // app/signup/step2/page.tsx
+/* eslint-disable @typescript-eslint/no-unused-vars, max-len */
+
 'use client';
 
 import { signIn } from 'next-auth/react';
@@ -121,7 +123,10 @@ export default function SignupStep2Page() {
 
                     {/* First and Last Name */}
                     <Form.Group controlId="signupFirstName">
-                      <Form.Label>First Name <span className="text-danger">*</span></Form.Label>
+                      <Form.Label>
+                        First Name
+                        <span className="text-danger">*</span>
+                      </Form.Label>
                       <Form.Control
                         type="text"
                         placeholder="First Name"
@@ -132,7 +137,10 @@ export default function SignupStep2Page() {
                       />
                     </Form.Group>
                     <Form.Group controlId="signupLastName">
-                      <Form.Label>Last Name <span className="text-danger">*</span></Form.Label>
+                      <Form.Label>
+                        Last Name
+                        <span className="text-danger">*</span>
+                      </Form.Label>
                       <Form.Control
                         type="text"
                         placeholder="Last Name"
@@ -145,7 +153,10 @@ export default function SignupStep2Page() {
 
                     {/* Email */}
                     <Form.Group controlId="signupEmail">
-                      <Form.Label>Email Address <span className="text-danger">*</span></Form.Label>
+                      <Form.Label>
+                        Email Address
+                        <span className="text-danger">*</span>
+                      </Form.Label>
                       <InputGroup>
                         <InputGroup.Text><Envelope /></InputGroup.Text>
                         <Form.Control
@@ -161,7 +172,10 @@ export default function SignupStep2Page() {
 
                     {/* Password + Confirmation */}
                     <Form.Group controlId="signupPassword">
-                      <Form.Label>Password <span className="text-danger">*</span></Form.Label>
+                      <Form.Label>
+                        Password
+                        <span className="text-danger">*</span>
+                      </Form.Label>
                       <InputGroup>
                         <InputGroup.Text><Lock /></InputGroup.Text>
                         <Form.Control
@@ -179,11 +193,16 @@ export default function SignupStep2Page() {
                         className="mt-2"
                       />
                       <Form.Text className={`text-${['danger', 'warning', 'info', 'success'][passwordStrength - 1] || 'secondary'} small`}>
-                        Password strength: {['Weak', 'Fair', 'Good', 'Strong'][passwordStrength - 1] || ''}
+                        Password strength:
+                        {' '}
+                        {['Weak', 'Fair', 'Good', 'Strong'][passwordStrength - 1] || ''}
                       </Form.Text>
                     </Form.Group>
                     <Form.Group controlId="confirmPassword">
-                      <Form.Label>Confirm Password <span className="text-danger">*</span></Form.Label>
+                      <Form.Label>
+                        Confirm Password
+                        <span className="text-danger">*</span>
+                      </Form.Label>
                       <InputGroup>
                         <InputGroup.Text><Lock /></InputGroup.Text>
                         <Form.Control
@@ -212,24 +231,35 @@ export default function SignupStep2Page() {
                           { ok: requirements.special, text: 'One special character' },
                         ].map(({ ok, text }) => (
                           <ListGroup.Item key={text} className={`d-flex gap-2 px-0 py-1 bg-transparent ${ok ? 'text-success' : 'text-muted'}`}>
-                            {ok ? <CheckCircleFill /> : <Circle size={12} />} {text}
+                            {ok ? <CheckCircleFill /> : <Circle size={12} />}
+                            {' '}
+                            {text}
                           </ListGroup.Item>
                         ))}
                       </ListGroup>
                     </Card>
 
                     <p className="text-muted small">
-                      By creating an account, you agree to our{' '}
-                      <Link href="/terms" className="text-decoration-none">Terms of Service</Link> and{' '}
-                      <Link href="/privacy" className="text-decoration-none">Privacy Policy</Link>.
+                      By creating an account, you agree to our
+                      {' '}
+                      <Link href="/terms" className="text-decoration-none">Terms of Service</Link>
+                      {' '}
+                      and
+                      {' '}
+                      <Link href="/privacy" className="text-decoration-none">Privacy Policy</Link>
+                      .
                     </p>
 
                     <Button type="submit" variant="success" size="lg" className="w-100" disabled={loading}>
-                      Create Account <ArrowRight className="ms-1" />
+                      Create Account
+                      {' '}
+                      <ArrowRight className="ms-1" />
                     </Button>
                     <div className="text-center mt-2">
                       <Link href="/signup/step1" className="text-muted small text-decoration-none">
-                        <ArrowLeft className="me-1" size={12} /> Back to Welcome
+                        <ArrowLeft className="me-1" size={12} />
+                        {' '}
+                        Back to Welcome
                       </Link>
                     </div>
                   </Stack>

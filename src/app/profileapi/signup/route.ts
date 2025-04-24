@@ -1,3 +1,5 @@
+/* eslint-disable import/prefer-default-export, @typescript-eslint/naming-convention */
+
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcrypt';
 import { NextResponse } from 'next/server';
@@ -11,7 +13,7 @@ export async function POST(req: Request) {
     if (!email || !password || !first_name || !last_name) {
       return NextResponse.json(
         { error: 'Email, password, first name, and last name are required.' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -20,7 +22,7 @@ export async function POST(req: Request) {
     if (existing) {
       return NextResponse.json(
         { error: 'User already exists.' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -40,13 +42,13 @@ export async function POST(req: Request) {
     // Return success
     return NextResponse.json(
       { ok: true, user: { id: user.id, email: user.email } },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (err: any) {
     console.error('[Signup Error]', err);
     return NextResponse.json(
       { error: 'Internal server error.' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

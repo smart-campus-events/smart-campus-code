@@ -118,11 +118,9 @@ export default function EditProfilePage() {
   }, [router]);
 
   const handleToggleInterest = (interest: string) => {
-    setInterests((prev) =>
-      prev.includes(interest)
-        ? prev.filter((i) => i !== interest)
-        : [...prev, interest]
-    );
+    setInterests((prev) => (prev.includes(interest)
+      ? prev.filter((i) => i !== interest)
+      : [...prev, interest]));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -155,7 +153,7 @@ export default function EditProfilePage() {
 
     if (!res.ok) {
       const errorData = await res.json();
-      alert('Update failed: ' + (errorData.error || res.statusText));
+      alert(`Update failed: ${errorData.error || res.statusText}`);
       return;
     }
 
@@ -163,7 +161,14 @@ export default function EditProfilePage() {
   };
 
   if (loading) return <div className="p-4">Loading profile...</div>;
-  if (error) return <div className="p-4 text-danger">Error: {error}</div>;
+  if (error) {
+    return (
+      <div className="p-4 text-danger">
+        Error:
+        {error}
+      </div>
+    );
+  }
   if (!profile) return <div className="p-4">No profile data.</div>;
 
   return (
@@ -296,9 +301,7 @@ export default function EditProfilePage() {
                         <Form.Control
                           type="number"
                           value={graduationYear}
-                          onChange={(e) =>
-                            setGraduationYear(parseInt(e.target.value, 10) || '')
-                          }
+                          onChange={(e) => setGraduationYear(parseInt(e.target.value, 10) || '')}
                         />
                       </FloatingLabel>
                     </Col>
@@ -314,7 +317,9 @@ export default function EditProfilePage() {
                       onChange={(e) => setAboutMe(e.target.value)}
                     />
                     <div className="text-end text-muted small mt-1">
-                      {aboutMe.length}/{MAX_ABOUT_ME_LENGTH}
+                      {aboutMe.length}
+                      /
+                      {MAX_ABOUT_ME_LENGTH}
                     </div>
                   </FloatingLabel>
 

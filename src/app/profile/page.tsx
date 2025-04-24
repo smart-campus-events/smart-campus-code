@@ -1,3 +1,5 @@
+/* eslint-disable react/no-unescaped-entities, react/no-array-index-key */
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -44,7 +46,6 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-
   useEffect(() => {
     (async () => {
       try {
@@ -75,7 +76,12 @@ export default function ProfilePage() {
   }
 
   if (error) {
-    return <div className="p-4 text-center text-danger">Failed to load profile: {error}</div>;
+    return (
+      <div className="p-4 text-center text-danger">
+        Failed to load profile:
+        {error}
+      </div>
+    );
   }
 
   if (!profile) {
@@ -101,9 +107,6 @@ export default function ProfilePage() {
     },
   ];
 
-
-
-
   return (
     <div className="bg-light min-vh-100">
       <Container className="py-4 py-md-5">
@@ -119,16 +122,18 @@ export default function ProfilePage() {
               />
               <div className="ms-3">
                 <h1 className="h4 fw-bold mb-0">
-                {profile.first_name && profile.last_name
-                ? `${profile.first_name} ${profile.last_name}`
-                : profile.name || profile.email}'s Profile
+                  {profile.first_name && profile.last_name
+                    ? `${profile.first_name} ${profile.last_name}`
+                    : profile.name || profile.email}
+                  's Profile
                 </h1>
                 <p className="text-muted mb-0">
-                Member since{' '}
-                {new Date(profile.created_at).toLocaleDateString(undefined, {
-                year: 'numeric',
-                month: 'long',
-                })}
+                  Member since
+                  {' '}
+                  {new Date(profile.created_at).toLocaleDateString(undefined, {
+                    year: 'numeric',
+                    month: 'long',
+                  })}
                 </p>
               </div>
             </div>
@@ -138,14 +143,18 @@ export default function ProfilePage() {
                 size="sm"
                 onClick={() => router.push('/profile/edit')}
               >
-                <PencilSquare className="me-1" /> Edit Profile
+                <PencilSquare className="me-1" />
+                {' '}
+                Edit Profile
               </Button>
               <Button
                 variant="outline-danger"
                 size="sm"
                 onClick={() => router.push('/api/auth/signout')}
               >
-                <BoxArrowRight className="me-1" /> Logout
+                <BoxArrowRight className="me-1" />
+                {' '}
+                Logout
               </Button>
             </div>
           </Col>
@@ -225,9 +234,7 @@ export default function ProfilePage() {
                         <Col sm={6} className="mb-3">
                           <p className="text-muted mb-1">Comfort Level</p>
                           <div className="d-flex text-warning">
-                            {[...Array(5)].map((_, i) =>
-                              i < level ? <StarFill key={i} /> : <Star key={i} />
-                            )}
+                            {[...Array(5)].map((_, i) => (i < level ? <StarFill key={i} /> : <Star key={i} />))}
                           </div>
                         </Col>
                       );

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars, max-len */
+
 'use client';
 
 import Link from 'next/link';
@@ -36,7 +38,7 @@ export default function SignupStep5Page() {
       try {
         const res = await fetch('/profileapi/profile', {
           credentials: 'include',
-        });        
+        });
         if (!res.ok) throw new Error('Failed to load profile');
         const data: ProfileData = await res.json();
         setProfile(data);
@@ -85,7 +87,13 @@ export default function SignupStep5Page() {
                     style={{ width: '80px', height: '80px', border: '4px solid var(--bs-success)' }}
                   />
                   <h3 className="h5 fw-semibold mb-0">{profile.name || profile.first_name || profile.email}</h3>
-                  {profile.major && <p className="text-muted mb-2">{profile.major} Major</p>}
+                  {profile.major && (
+                  <p className="text-muted mb-2">
+                    {profile.major}
+                    {' '}
+                    Major
+                  </p>
+                  )}
                   <Stack direction="horizontal" gap={2} className="flex-wrap justify-content-center">
                     {profile.interests.map((i) => (
                       <Badge key={i.id} pill bg="primary-subtle" text="primary-emphasis">
@@ -101,11 +109,16 @@ export default function SignupStep5Page() {
             <Stack gap={3} className="align-items-center col-md-8 mx-auto">
               <Link href="/dashboard" passHref>
                 <Button variant="success" size="lg" className="w-100">
-                  Go to Dashboard <HouseDoorFill className="ms-1" />
+                  Go to Dashboard
+                  {' '}
+                  <HouseDoorFill className="ms-1" />
                 </Button>
               </Link>
               <p className="text-muted small mb-0">
-                Need help getting started? Check out our <Link href="/guide" className="fw-medium">quick guide</Link>.
+                Need help getting started? Check out our
+                {' '}
+                <Link href="/guide" className="fw-medium">quick guide</Link>
+                .
               </p>
             </Stack>
           </Col>

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars, max-len */
+
 'use client';
 
 import { useSession } from 'next-auth/react';

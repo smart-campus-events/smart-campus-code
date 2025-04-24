@@ -47,8 +47,7 @@ export default function SignupStep4Page() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const getComfortLabel = (level: number) =>
-    comfortLevels.find((l) => l.value === level)?.label || 'Moderate';
+  const getComfortLabel = (level: number) => comfortLevels.find((l) => l.value === level)?.label || 'Moderate';
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -99,7 +98,9 @@ export default function SignupStep4Page() {
                     {/* Age Range */}
                     <Form.Group controlId="ageRange">
                       <Form.Label>
-                        Age Range <span className="text-muted small fw-normal">(Optional)</span>
+                        Age Range
+                        {' '}
+                        <span className="text-muted small fw-normal">(Optional)</span>
                       </Form.Label>
                       <Form.Select
                         value={ageRange}
@@ -109,7 +110,9 @@ export default function SignupStep4Page() {
                         <option value="">Select age range</option>
                         {ageRanges.map((range) => (
                           <option key={range} value={range}>
-                            {range} years
+                            {range}
+                            {' '}
+                            years
                           </option>
                         ))}
                         <option value="prefer-not-say">Prefer not to say</option>
@@ -119,7 +122,9 @@ export default function SignupStep4Page() {
                     {/* Origin */}
                     <Form.Group controlId="origin">
                       <Form.Label>
-                        Origin <span className="text-muted small fw-normal">(Optional)</span>
+                        Origin
+                        {' '}
+                        <span className="text-muted small fw-normal">(Optional)</span>
                       </Form.Label>
                       <Form.Select
                         value={origin}
@@ -139,7 +144,9 @@ export default function SignupStep4Page() {
                     {/* Housing Status */}
                     <Form.Group controlId="housingStatus">
                       <Form.Label>
-                        Housing Status <span className="text-muted small fw-normal">(Optional)</span>
+                        Housing Status
+                        {' '}
+                        <span className="text-muted small fw-normal">(Optional)</span>
                       </Form.Label>
                       <Form.Select
                         value={housingStatus}
@@ -159,7 +166,9 @@ export default function SignupStep4Page() {
                     {/* Comfort Level */}
                     <Form.Group controlId="comfortLevel">
                       <Form.Label>
-                        Social Comfort Level <span className="text-muted small fw-normal">(Optional)</span>
+                        Social Comfort Level
+                        {' '}
+                        <span className="text-muted small fw-normal">(Optional)</span>
                       </Form.Label>
                       <Stack direction="horizontal" gap={3} className="align-items-center">
                         <Form.Range
@@ -186,9 +195,14 @@ export default function SignupStep4Page() {
                     {/* About Me */}
                     <Form.Group controlId="aboutMe">
                       <Form.Label>
-                        About Me{' '}
+                        About Me
+                        {' '}
                         <span className="text-muted small fw-normal">
-                          (Optional - Max {MAX_ABOUT_ME_LENGTH} chars)
+                          (Optional - Max
+                          {' '}
+                          {MAX_ABOUT_ME_LENGTH}
+                          {' '}
+                          chars)
                         </span>
                       </Form.Label>
                       <Form.Control
@@ -201,7 +215,11 @@ export default function SignupStep4Page() {
                         disabled={loading}
                       />
                       <Form.Text muted>
-                        Remaining: {MAX_ABOUT_ME_LENGTH - aboutMe.length} characters
+                        Remaining:
+                        {' '}
+                        {MAX_ABOUT_ME_LENGTH - aboutMe.length}
+                        {' '}
+                        characters
                       </Form.Text>
                     </Form.Group>
 
@@ -213,11 +231,15 @@ export default function SignupStep4Page() {
                     >
                       <Link href="/signup/step3" passHref>
                         <Button variant="outline-secondary" disabled={loading}>
-                          <ArrowLeft className="me-1" /> Back
+                          <ArrowLeft className="me-1" />
+                          {' '}
+                          Back
                         </Button>
                       </Link>
                       <Button type="submit" variant="success" disabled={loading}>
-                        Continue <ArrowRight className="ms-1" />
+                        Continue
+                        {' '}
+                        <ArrowRight className="ms-1" />
                       </Button>
                     </Stack>
                   </Stack>

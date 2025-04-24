@@ -1,4 +1,5 @@
 // app/signup/step3/page.tsx
+
 'use client';
 
 import Link from 'next/link';
@@ -53,13 +54,10 @@ export default function SignupStep3Page() {
   };
 
   const toggleInterest = (interest: string) => {
-    setSelectedInterests(prev =>
-      prev.includes(interest) ? prev.filter(i => i !== interest) : [...prev, interest]
-    );
+    setSelectedInterests(prev => (prev.includes(interest) ? prev.filter(i => i !== interest) : [...prev, interest]));
   };
 
-  const isInterestSelected = (interest: string) =>
-    selectedInterests.includes(interest);
+  const isInterestSelected = (interest: string) => selectedInterests.includes(interest);
 
   const canContinue = !!selectedMajor && selectedInterests.length >= MIN_INTERESTS;
 
@@ -80,7 +78,7 @@ export default function SignupStep3Page() {
     setLoading(true);
 
     try {
-      const res = await fetch('/profileapi/profile', {    // ← now points at your App-Router route
+      const res = await fetch('/profileapi/profile', { // ← now points at your App-Router route
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -129,7 +127,9 @@ export default function SignupStep3Page() {
                 {/* Major selector */}
                 <Form.Group controlId="majorSelect">
                   <Form.Label className="fw-medium">
-                    Select Your Major <span className="text-danger">*</span>
+                    Select Your Major
+                    {' '}
+                    <span className="text-danger">*</span>
                   </Form.Label>
                   <InputGroup className="mb-2">
                     <Form.Control
@@ -161,9 +161,14 @@ export default function SignupStep3Page() {
                 {/* Interests selector */}
                 <Form.Group controlId="interestSelect">
                   <Form.Label className="fw-medium">
-                    Select Your Interests <span className="text-danger">*</span>
+                    Select Your Interests
+                    {' '}
+                    <span className="text-danger">*</span>
                     <span className="text-muted small fw-normal ms-1">
-                      (Select at least {MIN_INTERESTS})
+                      (Select at least
+                      {' '}
+                      {MIN_INTERESTS}
+                      )
                     </span>
                   </Form.Label>
                   <Row className="g-3">
@@ -175,7 +180,9 @@ export default function SignupStep3Page() {
                               as="h6"
                               className="text-muted small text-uppercase mb-3"
                             >
-                              {getCategoryIcon(cat)} {cat}
+                              {getCategoryIcon(cat)}
+                              {' '}
+                              {cat}
                             </Card.Title>
                             <Stack direction="horizontal" gap={2} className="flex-wrap">
                               {ints.map(int => (
@@ -202,7 +209,11 @@ export default function SignupStep3Page() {
                   </Row>
                   {selectedInterests.length > 0 && selectedInterests.length < MIN_INTERESTS && (
                     <Form.Text className="text-danger d-block mt-2">
-                      Please select at least {MIN_INTERESTS - selectedInterests.length} more interest(s).
+                      Please select at least
+                      {' '}
+                      {MIN_INTERESTS - selectedInterests.length}
+                      {' '}
+                      more interest(s).
                     </Form.Text>
                   )}
                 </Form.Group>
@@ -215,7 +226,9 @@ export default function SignupStep3Page() {
                 >
                   <Link href="/signup/step2" passHref>
                     <Button variant="outline-secondary" disabled={loading}>
-                      <ArrowLeft className="me-1" /> Back
+                      <ArrowLeft className="me-1" />
+                      {' '}
+                      Back
                     </Button>
                   </Link>
                   <Button
@@ -223,7 +236,9 @@ export default function SignupStep3Page() {
                     variant="success"
                     disabled={!canContinue || loading}
                   >
-                    Continue <ArrowRight className="ms-1" />
+                    Continue
+                    {' '}
+                    <ArrowRight className="ms-1" />
                   </Button>
                 </Stack>
               </Stack>
