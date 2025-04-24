@@ -16,6 +16,7 @@ export const EditStuffSchema = Yup.object({
 });
 */
 
+/* Temporarily commented out due to deployment issues with zod
 import { z } from 'zod';
 import { AttendanceType, ContentStatus } from '@prisma/client';
 
@@ -43,5 +44,42 @@ export const UpdateEventSchema = EventSchema.partial().extend({
 });
 
 export const ClubEventSchema = EventSchema.omit({ organizerClubId: true });
+*/
+
+// Using simple validation functions instead of zod for now
+import { AttendanceType, ContentStatus } from '@prisma/client';
+
+// Simple type definitions for the schemas
+export type EventSchemaType = {
+  title: string;
+  description?: string;
+  startDateTime: string | Date;
+  endDateTime?: string | Date;
+  allDay?: boolean;
+  attendanceType?: AttendanceType;
+  location?: string;
+  locationVirtualUrl?: string;
+  contactName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  eventUrl?: string;
+  eventPageUrl?: string;
+  organizerClubId?: string;
+  status?: ContentStatus;
+  categoryIds?: string[];
+};
+
+export type UpdateEventSchemaType = Partial<EventSchemaType> & { id: string };
+
+export type ClubEventSchemaType = Omit<EventSchemaType, 'organizerClubId'>;
+
+// Placeholder for future validation implementation
+export const validateEvent = (data: any): { valid: boolean; errors?: string[] } => {
+  // Basic validation - can be expanded as needed
+  if (!data.title || data.title.length < 3) {
+    return { valid: false, errors: ['Title must be at least 3 characters long'] };
+  }
+  return { valid: true };
+};
 
 // Future schemas for other entities can be added here
