@@ -106,16 +106,14 @@ export default function ClubsPage() {
   );
 
   // Step 4: Cleanup the debounced function on component unmount
-  useEffect(() => {
-    return () => {
-      debouncedSearch.cancel();
-    };
+  useEffect(() => () => {
+    debouncedSearch.cancel();
   }, [debouncedSearch]);
 
   // Initial fetch when component mounts or page/sortBy changes
   useEffect(() => {
     fetchClubs(currentPage, searchTerm);
-  }, [currentPage, fetchClubs]); // fetchClubs already depends on sortBy
+  }, [currentPage, fetchClubs, searchTerm]); // Added searchTerm to dependency array
 
   // --- Event Handlers ---
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
