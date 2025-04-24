@@ -219,16 +219,19 @@ export default function ProfilePage() {
                         </p>
                       </Col>
                     )}
-                    {typeof profile.comfort_level === 'number' && (
-                      <Col sm={6} className="mb-3">
-                        <p className="text-muted mb-1">Comfort Level</p>
-                        <div className="d-flex text-warning">
-                          {[...Array(5)].map((_, i) =>
-                            i < profile.comfort_level ? <StarFill key={i} /> : <Star key={i} />
-                          )}
-                        </div>
-                      </Col>
-                    )}
+                    {typeof profile.comfort_level === 'number' && (() => {
+                      const level = profile.comfort_level as number;
+                      return (
+                        <Col sm={6} className="mb-3">
+                          <p className="text-muted mb-1">Comfort Level</p>
+                          <div className="d-flex text-warning">
+                            {[...Array(5)].map((_, i) =>
+                              i < level ? <StarFill key={i} /> : <Star key={i} />
+                            )}
+                          </div>
+                        </Col>
+                      );
+                    })()}
                   </Row>
                   {profile.about_me && (
                     <Row className="mt-3">
