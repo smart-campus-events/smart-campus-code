@@ -9,56 +9,65 @@ export const prisma = new PrismaClient();
 
 /**
  * Saves event data to the database using Prisma upsert.
- * @param {object} eventData - The structured event data from parsing.
+ * Aligned with the updated Event schema (camelCase fields).
+ * @param {object} eventData - The structured event data from parsing (using camelCase keys).
  * @returns {Promise<void>}
  */
 export async function saveEvent(eventData) {
-  if (!eventData || !eventData.event_id) {
-    console.error('Invalid event data passed to saveEvent');
+  // Ensure eventData and the ID (mapped from et_id) exist
+  if (!eventData || !eventData.id) {
+    console.error('Invalid event data or missing ID passed to saveEvent');
     return;
   }
 
-  // Ensure date fields are valid Date objects or null for Prisma
+  // Prepare data for Prisma, ensuring correct types
   const dataToSave = {
-    ...eventData, // Spread incoming data
-    // Convert ISO strings back to Date objects or null
-    start_datetime: eventData.start_datetime ? new Date(eventData.start_datetime) : null,
-    end_datetime: eventData.end_datetime ? new Date(eventData.end_datetime) : null,
-    // Overwrite last_scraped_at with the current time just before saving
-    last_scraped_at: new Date(),
+    ...eventData, // Spread incoming data (should be camelCase now)
+    // Convert valid ISO strings back to Date objects or null
+    startDateTime: eventData.startDateTime ? new Date(eventData.startDateTime) : null,
+    endDateTime: eventData.endDateTime ? new Date(eventData.endDateTime) : null,
+    // Ensure boolean is correct type
+    allDay: Boolean(eventData.allDay),
+    // Overwrite lastScrapedAt with the current time just before saving
+    lastScrapedAt: new Date(),
+    // Remove categoryTags as it's now a relation 'categories'
+    // Handling relations requires separate logic (e.g., connecting or creating categories)
+    // categoryTags: undefined, // Or simply ensure it's not passed if using {...eventData}
   };
+  // Explicitly delete the field if it might exist on eventData from parsing
+  delete dataToSave.categoryTags;
 
   // Validate dates before attempting to save
-  if (dataToSave.start_datetime && !isDateValid(dataToSave.start_datetime)) {
-    console.error(`[${eventData.event_id}] Invalid start_datetime before saving. Setting to null.`);
-    // Set to null to avoid DB error, maybe log or handle differently
-    dataToSave.start_datetime = null;
+  if (dataToSave.startDateTime && !isDateValid(dataToSave.startDateTime)) {
+    console.error(`[${eventData.id}] Invalid startDateTime before saving. Setting to null.`);
+    dataToSave.startDateTime = null;
   }
-  if (dataToSave.end_datetime && !isDateValid(dataToSave.end_datetime)) {
-    console.warn(`[${eventData.event_id}] Invalid end_datetime before saving. Setting to null.`);
-    dataToSave.end_datetime = null;
+  if (dataToSave.endDateTime && !isDateValid(dataToSave.endDateTime)) {
+    console.warn(`[${eventData.id}] Invalid endDateTime before saving. Setting to null.`);
+    dataToSave.endDateTime = null;
   }
-  // Ensure boolean is correct type
-  dataToSave.all_day = Boolean(dataToSave.all_day);
 
   try {
     const event = await prisma.event.upsert({
       where: {
-        event_id: dataToSave.event_id, // Unique identifier
+        // Use 'id' as the primary key, mapped from the original 'et_id'
+        id: dataToSave.id,
       },
       update: {
         ...dataToSave, // Spread all fields for update
-        // updated_at is handled automatically by @updatedAt
+        // updatedAt is handled automatically by @updatedAt
+        // id should not be included in the update payload itself
+        id: undefined,
       },
       create: {
         ...dataToSave, // Spread all fields for creation
-        // created_at is handled automatically by @default(now())
+        // createdAt handled by @default(now()), updatedAt by @updatedAt
       },
     });
-    console.log(`[${event.event_id}] Successfully upserted event: ${event.title}`);
+    console.log(`[${event.id}] Successfully upserted event: ${event.title}`);
   } catch (error) {
-    console.error(`[${eventData.event_id}] Error upserting event:`, error);
-    // Consider more specific error handling (e.g., constraint violations)
+    console.error(`[${eventData.id}] Error upserting event:`, error);
+    // Consider more specific error handling
   }
 }
 

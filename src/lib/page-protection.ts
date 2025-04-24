@@ -1,22 +1,22 @@
 import { redirect } from 'next/navigation';
-import { Role } from '@prisma/client';
+import type { Session } from 'next-auth';
 
 /**
- * Redirects to the login page if the user is not logged in.
+ * Redirects to the sign-in page if the user session is not valid.
  */
-export const loggedInProtectedPage = (session: { user: { email: string; id: string; randomKey: string } } | null) => {
-  if (!session) {
+export const loggedInProtectedPage = (session: Session | null) => {
+  if (!session?.user) {
     redirect('/auth/signin');
   }
 };
 
 /**
- * Redirects to the login page if the user is not logged in.
- * Redirects to the not-authorized page if the user is not an admin.
+ * Redirects to sign-in if not logged in.
+ * Redirects to not-authorized if the logged-in user is not an ADMIN.
  */
-export const adminProtectedPage = (session: { user: { email: string; id: string; randomKey: string } } | null) => {
+export const adminProtectedPage = (session: Session | null) => {
   loggedInProtectedPage(session);
-  if (session && session.user.randomKey !== Role.ADMIN) {
+  if (session && !session.user.isAdmin) {
     redirect('/not-authorized');
   }
 };
