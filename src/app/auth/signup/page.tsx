@@ -6,9 +6,10 @@ import {
   ProgressBar, ListGroup, Stack, Image,
 } from 'react-bootstrap';
 import {
-  Envelope, Lock, CheckCircleFill, Circle, ArrowRight, ArrowLeft,
+  Envelope, Lock, CheckCircleFill, Circle, ArrowRight, ArrowLeft, Google,
 } from 'react-bootstrap-icons';
 import Link from 'next/link';
+import { signIn } from 'next-auth/react';
 
 // Simple password strength check (example)
 const checkPasswordStrength = (password: string) => {
@@ -31,6 +32,10 @@ export default function Signup() {
     number: false,
     special: false,
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
 
   useEffect(() => {
     const strengthValue = checkPasswordStrength(password);
@@ -65,13 +70,58 @@ export default function Signup() {
     }
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setSubmitError(null);
+
     if (password !== confirmPassword) {
+      setSubmitError('Passwords do not match.');
       return;
     }
-    // TODO: Implement actual account creation
-    console.log('Account creation attempt:', { email });
+    if (passwordStrength < 3) {
+      setSubmitError('Password does not meet the requirements.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      console.log('Account creation attempt with email/password:', { email });
+      await new Promise(resolve => { setTimeout(resolve, 1000); });
+
+      const signInResult = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+        callbackUrl: '/list',
+      });
+
+      if (signInResult?.error) {
+        setSubmitError('Account created, but sign-in failed. Please try signing in manually.');
+      } else if (signInResult?.ok) {
+        window.location.href = signInResult.url || '/list';
+      }
+    } catch (err) {
+      console.error('Account creation failed:', err);
+      setSubmitError('Failed to create account. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    setIsGoogleLoading(true);
+    setGoogleError(null);
+    setSubmitError(null);
+    try {
+      await signIn('google', {
+        callbackUrl: '/list',
+        redirect: true,
+      });
+    } catch (err) {
+      console.error('Google sign up failed:', err);
+      setGoogleError('An unexpected error occurred during Google sign up.');
+      setIsGoogleLoading(false);
+    }
   };
 
   return (
@@ -92,8 +142,37 @@ export default function Signup() {
                   </Card.Title>
                 </Stack>
 
+                <div className="text-center mb-4">
+                  <Button
+                    variant="outline-primary"
+                    onClick={handleGoogleSignUp}
+                    className="w-100"
+                    disabled={isGoogleLoading || isSubmitting}
+                  >
+                    {isGoogleLoading ? (
+                      'Processing...'
+                    ) : (
+                      <>
+                        <Google className="me-2" />
+                        Sign up with Google
+                      </>
+                    )}
+                  </Button>
+                  {googleError && !submitError && (
+                    <div className="text-danger mt-2 small">{googleError}</div>
+                  )}
+                  <div className="mt-3">
+                    <span className="text-muted">or</span>
+                  </div>
+                </div>
+
                 <Form onSubmit={handleSubmit}>
                   <Stack gap={3}>
+                    {submitError && (
+                    <div className="alert alert-danger small py-2" role="alert">
+                      {submitError}
+                    </div>
+                    )}
                     <Form.Group controlId="signupEmail">
                       <Form.Label>
                         Email Address
@@ -107,6 +186,7 @@ export default function Signup() {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
+                          disabled={isSubmitting || isGoogleLoading}
                         />
                       </InputGroup>
                     </Form.Group>
@@ -124,6 +204,7 @@ export default function Signup() {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           required
+                          disabled={isSubmitting || isGoogleLoading}
                         />
                       </InputGroup>
                       <ProgressBar
@@ -154,58 +235,63 @@ export default function Signup() {
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           required
-                          isInvalid={confirmPassword.length > 0 && password !== confirmPassword}
+                          isInvalid={
+                            submitError === 'Passwords do not match.'
+                            || (confirmPassword.length > 0 && password !== confirmPassword)
+                          }
+                          disabled={isSubmitting || isGoogleLoading}
                         />
                         <Form.Control.Feedback type="invalid">
-                          Passwords do not match.
+                          {submitError === 'Passwords do not match.' ? submitError : 'Passwords do not match.'}
                         </Form.Control.Feedback>
                       </InputGroup>
                     </Form.Group>
 
-                    {/* Password Requirements */}
-                    <Card bg="light" body className="border">
-                      <p className="small fw-medium text-dark mb-2">
-                        Password Requirements:
-                      </p>
-                      <ListGroup variant="flush" className="small">
-                        <ListGroup.Item
-                          className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${
-                            requirements.length ? 'text-success' : 'text-muted'
-                          }`}
-                        >
-                          {requirements.length ? <CheckCircleFill /> : <Circle size={12} />}
-                          {' '}
-                          At least 8 characters
-                        </ListGroup.Item>
-                        <ListGroup.Item
-                          className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${
-                            requirements.uppercase ? 'text-success' : 'text-muted'
-                          }`}
-                        >
-                          {requirements.uppercase ? <CheckCircleFill /> : <Circle size={12} />}
-                          {' '}
-                          One uppercase letter
-                        </ListGroup.Item>
-                        <ListGroup.Item
-                          className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${
-                            requirements.number ? 'text-success' : 'text-muted'
-                          }`}
-                        >
-                          {requirements.number ? <CheckCircleFill /> : <Circle size={12} />}
-                          {' '}
-                          One number
-                        </ListGroup.Item>
-                        <ListGroup.Item
-                          className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${
-                            requirements.special ? 'text-success' : 'text-muted'
-                          }`}
-                        >
-                          {requirements.special ? <CheckCircleFill /> : <Circle size={12} />}
-                          {' '}
-                          One special character
-                        </ListGroup.Item>
-                      </ListGroup>
-                    </Card>
+                    {password.length > 0 && (
+                      <Card bg="light" body className="border">
+                        <p className="small fw-medium text-dark mb-2">
+                          Password Requirements:
+                        </p>
+                        <ListGroup variant="flush" className="small">
+                          <ListGroup.Item
+                            className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${
+                              requirements.length ? 'text-success' : 'text-muted'
+                            }`}
+                          >
+                            {requirements.length ? <CheckCircleFill /> : <Circle size={12} />}
+                            {' '}
+                            At least 8 characters
+                          </ListGroup.Item>
+                          <ListGroup.Item
+                            className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${
+                              requirements.uppercase ? 'text-success' : 'text-muted'
+                            }`}
+                          >
+                            {requirements.uppercase ? <CheckCircleFill /> : <Circle size={12} />}
+                            {' '}
+                            One uppercase letter
+                          </ListGroup.Item>
+                          <ListGroup.Item
+                            className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${
+                              requirements.number ? 'text-success' : 'text-muted'
+                            }`}
+                          >
+                            {requirements.number ? <CheckCircleFill /> : <Circle size={12} />}
+                            {' '}
+                            One number
+                          </ListGroup.Item>
+                          <ListGroup.Item
+                            className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${
+                              requirements.special ? 'text-success' : 'text-muted'
+                            }`}
+                          >
+                            {requirements.special ? <CheckCircleFill /> : <Circle size={12} />}
+                            {' '}
+                            One special character
+                          </ListGroup.Item>
+                        </ListGroup>
+                      </Card>
+                    )}
 
                     <p className="text-muted small">
                       By creating an account, you agree to our
@@ -222,10 +308,20 @@ export default function Signup() {
                       .
                     </p>
 
-                    <Button type="submit" variant="success" size="lg" className="w-100">
-                      Create Account
-                      {' '}
-                      <ArrowRight className="ms-1" />
+                    <Button
+                      type="submit"
+                      variant="success"
+                      size="lg"
+                      className="w-100"
+                      disabled={isSubmitting || isGoogleLoading}
+                    >
+                      {isSubmitting ? 'Creating Account...' : (
+                        <>
+                          Create Account
+                          {' '}
+                          <ArrowRight className="ms-1" />
+                        </>
+                      )}
                     </Button>
 
                     <div className="text-center mt-2">
