@@ -1,4 +1,3 @@
-// app/signup/step4/page.tsx
 'use client';
 
 import Link from 'next/link';
@@ -22,7 +21,6 @@ const origins = {
   mainland: 'US Mainland',
   international: 'International',
 };
-// Use the exact Prisma enum names here
 const housingStatuses = {
   ON_CAMPUS_DORM: 'On-Campus Dorm',
   OFF_CAMPUS: 'Off-Campus Housing',
@@ -63,11 +61,11 @@ export default function SignupStep4Page() {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          graduation_year: parseInt(ageRange.split('-')[0], 10),
-          origin,
-          housing_status: housingStatus,
+          ...(ageRange && { age_range: ageRange }),
+          ...(origin && { origin }),
+          ...(housingStatus && { housing_status: housingStatus }),
           comfort_level: comfortLevel,
-          // about_me: aboutMe,  // include if your schema has an about_me field
+          ...(aboutMe && { about_me: aboutMe }),
         }),
       });
 

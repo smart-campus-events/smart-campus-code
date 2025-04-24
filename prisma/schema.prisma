@@ -173,6 +173,8 @@ model User {
   comfort_level       Int?           @map("comfort_level")
   onboarding_complete Boolean        @default(false) @map("onboarding_complete")
   email_notifications Boolean        @default(true) @map("email_notifications")
+  about_me            String?
+  age_range           String?
 
   // --- Application Specific ---
   role Role @default(USER)

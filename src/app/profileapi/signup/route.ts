@@ -5,12 +5,12 @@ import { NextResponse } from 'next/server';
 // POST /api/signup
 export async function POST(req: Request) {
   try {
-    const { email, password } = await req.json();
+    const { email, password, first_name, last_name } = await req.json();
 
     // Validate input
-    if (!email || !password) {
+    if (!email || !password || !first_name || !last_name) {
       return NextResponse.json(
-        { error: 'Email and password are required.' },
+        { error: 'Email, password, first name, and last name are required.' },
         { status: 400 }
       );
     }
@@ -32,6 +32,8 @@ export async function POST(req: Request) {
       data: {
         email,
         password: hashedPassword,
+        first_name,
+        last_name, // ✅ include this in the DB insert
       },
     });
 

@@ -13,15 +13,13 @@ import {
   Form,
   Row,
 } from 'react-bootstrap';
-import { X } from 'react-bootstrap-icons';
 
 const MAX_ABOUT_ME_LENGTH = 500;
 
-// Simplified user shape returned from /profileapi/profile
 interface ProfileData {
-  name?: string;
-  first_name?: string;
   email: string;
+  first_name?: string;
+  last_name?: string;
   major?: string;
   interests: { id: string; name: string }[];
   origin?: string;
@@ -29,6 +27,7 @@ interface ProfileData {
   comfort_level?: number;
   graduation_year?: number;
   email_notifications: boolean;
+  about_me?: string;
 }
 
 const availableMajors = [
@@ -40,7 +39,35 @@ const availableMajors = [
   'Engineering',
   'Art',
 ];
-const housingStatuses = ['On-Campus Dorm', 'Off-Campus Commuter'];
+
+const availableInterests = [
+  'Hiking',
+  'Volunteering',
+  'Music',
+  'Gaming',
+  'Culture',
+  'Surfing',
+  'Art',
+  'Leadership',
+];
+
+const housingStatuses = [
+  { label: 'On-Campus Dorm', value: 'on_campus_dorm' },
+  { label: 'On-Campus Apartment', value: 'on_campus_apt' },
+  { label: 'Off-Campus', value: 'off_campus' },
+  { label: 'Commuter', value: 'commuter' },
+  { label: 'With Family', value: 'with_family' },
+  { label: 'Other', value: 'other' },
+];
+
+const prismaHousingStatusMap: Record<string, string> = {
+  on_campus_dorm: 'ON_CAMPUS_DORM',
+  on_campus_apt: 'ON_CAMPUS_APT',
+  off_campus: 'OFF_CAMPUS',
+  commuter: 'COMMUTER',
+  with_family: 'WITH_FAMILY',
+  other: 'OTHER',
+};
 
 export default function EditProfilePage() {
   const router = useRouter();
@@ -48,50 +75,40 @@ export default function EditProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<ProfileData | null>(null);
 
-  // Form fields
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [major, setMajor] = useState('');
   const [interests, setInterests] = useState<string[]>([]);
   const [origin, setOrigin] = useState('');
   const [housingStatus, setHousingStatus] = useState('');
   const [comfortLevel, setComfortLevel] = useState(0);
   const [graduationYear, setGraduationYear] = useState<number | ''>('');
+  const [aboutMe, setAboutMe] = useState('');
 
-  // Load existing profile
   useEffect(() => {
     (async () => {
       try {
         const res = await fetch('/profileapi/profile', {
-          credentials: 'include',   // ← include your session cookie
+          credentials: 'include',
         });
         if (res.status === 401) {
-          // not authenticated
           router.push('/login');
           return;
         }
-        if (!res.ok) {
-          throw new Error(`Error ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`Error ${res.status}`);
 
         const data: ProfileData = await res.json();
         setProfile(data);
 
-        // initialize form
-        setFullName(data.name ?? data.first_name ?? '');
+        setFirstName(data.first_name ?? '');
+        setLastName(data.last_name ?? '');
         setMajor(data.major ?? '');
         setInterests(data.interests.map((i) => i.name));
         setOrigin(data.origin ?? '');
-        setHousingStatus(
-          data.housing_status
-            ? data.housing_status
-                .toLowerCase()
-                .split('_')
-                .map((w) => w[0].toUpperCase() + w.slice(1))
-                .join(' ')
-            : ''
-        );
+        setHousingStatus(data.housing_status ?? '');
         setComfortLevel(data.comfort_level ?? 0);
         setGraduationYear(data.graduation_year ?? '');
+        setAboutMe(data.about_me ?? '');
       } catch (e: any) {
         setError(e.message);
       } finally {
@@ -100,13 +117,12 @@ export default function EditProfilePage() {
     })();
   }, [router]);
 
-  const handleRemoveInterest = (interest: string) => {
-    setInterests((prev) => prev.filter((i) => i !== interest));
-  };
-
-  const handleAddInterest = () => {
-    const newInterest = prompt('Enter new interest:');
-    if (newInterest) setInterests((prev) => [...prev, newInterest]);
+  const handleToggleInterest = (interest: string) => {
+    setInterests((prev) =>
+      prev.includes(interest)
+        ? prev.filter((i) => i !== interest)
+        : [...prev, interest]
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -114,18 +130,20 @@ export default function EditProfilePage() {
     if (!profile) return;
 
     const body = {
-      fullName,
+      first_name: firstName,
+      last_name: lastName,
       major,
       origin,
-      housingStatus,
-      comfortLevel,
-      graduationYear,
+      housing_status: prismaHousingStatusMap[housingStatus] ?? null,
+      comfort_level: comfortLevel,
+      graduation_year: graduationYear,
+      about_me: aboutMe,
       interests,
     };
 
     const res = await fetch('/profileapi/profile', {
       method: 'PATCH',
-      credentials: 'include',   // ← include cookies here too
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
@@ -162,22 +180,31 @@ export default function EditProfilePage() {
             <Card className="shadow-sm">
               <Card.Body className="p-4 p-md-5">
                 <Form onSubmit={handleSubmit}>
-                  {/* Basic Info */}
                   <h2 className="h5 fw-semibold pb-2 mb-4 border-bottom">
                     Basic Information
                   </h2>
                   <Row className="g-3 mb-4">
                     <Col md={6}>
-                      <FloatingLabel label="Full Name">
+                      <FloatingLabel label="First Name">
                         <Form.Control
                           type="text"
-                          value={fullName}
-                          onChange={(e) => setFullName(e.target.value)}
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
                           required
                         />
                       </FloatingLabel>
                     </Col>
                     <Col md={6}>
+                      <FloatingLabel label="Last Name">
+                        <Form.Control
+                          type="text"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          required
+                        />
+                      </FloatingLabel>
+                    </Col>
+                    <Col md={12}>
                       <FloatingLabel label="Email Address">
                         <Form.Control
                           type="email"
@@ -204,47 +231,27 @@ export default function EditProfilePage() {
                     </Col>
                   </Row>
 
-                  {/* Interests */}
-                  <h2 className="h5 fw-semibold pb-2 mb-4 border-bottom">
-                    Interests
-                  </h2>
-                  <Form.Group className="mb-4">
-                    <Form.Label>Select your interests</Form.Label>
-                    <div className="d-flex flex-wrap gap-2">
-                      {interests.map((i) => (
-                        <Badge
-                          key={i}
-                          pill
-                          bg="success-subtle"
-                          text="success-emphasis"
-                          className="d-inline-flex align-items-center py-2 px-3"
-                        >
-                          {i}
-                          <Button
-                            variant="link"
-                            size="sm"
-                            className="p-0 ms-2 lh-1"
-                            onClick={() => handleRemoveInterest(i)}
-                          >
-                            <X size={16} />
-                          </Button>
-                        </Badge>
-                      ))}
-                      <Button
-                        variant="outline-secondary"
-                        size="sm"
-                        className="rounded-pill"
-                        onClick={handleAddInterest}
+                  <h2 className="h5 fw-semibold pb-2 mb-4 border-bottom">Interests</h2>
+                  <div className="d-flex flex-wrap gap-2 mb-4">
+                    {availableInterests.map((interest) => (
+                      <Badge
+                        key={interest}
+                        pill
+                        bg={
+                          interests.includes(interest)
+                            ? 'success'
+                            : 'secondary-subtle'
+                        }
+                        text={interests.includes(interest) ? 'light' : 'dark'}
+                        className="py-2 px-3 cursor-pointer"
+                        onClick={() => handleToggleInterest(interest)}
                       >
-                        + Add Interest
-                      </Button>
-                    </div>
-                  </Form.Group>
+                        {interest}
+                      </Badge>
+                    ))}
+                  </div>
 
-                  {/* Additional Details */}
-                  <h2 className="h5 fw-semibold pb-2 mb-4 border-bottom">
-                    Additional Details
-                  </h2>
+                  <h2 className="h5 fw-semibold pb-2 mb-4 border-bottom">Additional Details</h2>
                   <Row className="g-3 mb-4">
                     <Col md={6}>
                       <FloatingLabel label="Origin">
@@ -263,8 +270,8 @@ export default function EditProfilePage() {
                         >
                           <option value="">Select housing</option>
                           {housingStatuses.map((hs) => (
-                            <option key={hs} value={hs}>
-                              {hs}
+                            <option key={hs.value} value={hs.value}>
+                              {hs.label}
                             </option>
                           ))}
                         </Form.Select>
@@ -297,7 +304,20 @@ export default function EditProfilePage() {
                     </Col>
                   </Row>
 
-                  {/* Actions */}
+                  <h2 className="h5 fw-semibold pb-2 mb-4 border-bottom">About Me</h2>
+                  <FloatingLabel label="Write a few sentences about yourself..." className="mb-4">
+                    <Form.Control
+                      as="textarea"
+                      style={{ height: '150px' }}
+                      maxLength={MAX_ABOUT_ME_LENGTH}
+                      value={aboutMe}
+                      onChange={(e) => setAboutMe(e.target.value)}
+                    />
+                    <div className="text-end text-muted small mt-1">
+                      {aboutMe.length}/{MAX_ABOUT_ME_LENGTH}
+                    </div>
+                  </FloatingLabel>
+
                   <div className="d-flex justify-content-end gap-2 pt-4 border-top">
                     <Link href="/profile" passHref>
                       <Button variant="outline-secondary">Cancel</Button>

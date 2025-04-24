@@ -12,23 +12,29 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  // 2) Fetch user profile + interests
+  // 2) Fetch user profile + interests + additional details
   const user = await prisma.user.findUnique({
     where: { email: session.user.email },
     select: {
       name: true,
       first_name: true,
+      last_name:true,
       email: true,
-      major: true,
       avatar_url: true,
+      major: true,
+      graduation_year: true,
       interests: {
-        select: {
-          id: true,
-          name: true,
-        },
+        select: { id: true, name: true },
       },
+      age_range: true,
+      origin: true,
+      housing_status: true,
+      comfort_level: true,
+      about_me: true,
+      created_at: true,
     },
   });
+  
 
   if (!user) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -45,7 +51,7 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  // 2) Parse request body, defaulting interests to []
+  // 2) Parse request body
   const {
     major,
     interests = [],
@@ -53,6 +59,8 @@ export async function PATCH(req: Request) {
     origin,
     housing_status,
     comfort_level,
+    age_range,
+    about_me,
   }: {
     major?: string;
     interests?: string[];
@@ -60,17 +68,22 @@ export async function PATCH(req: Request) {
     origin?: string;
     housing_status?: string;
     comfort_level?: number;
+    age_range?: string;
+    about_me?: string;
   } = await req.json();
 
-  // 3) Build up data object
+  // 3) Build update payload
   const dataToUpdate: any = {};
-
-  if (major !== undefined) {
-    dataToUpdate.major = major;
-  }
+  if (major !== undefined) dataToUpdate.major = major;
+  if (graduation_year !== undefined) dataToUpdate.graduation_year = graduation_year;
+  if (origin !== undefined) dataToUpdate.origin = origin;
+  if (housing_status !== undefined) dataToUpdate.housing_status = housing_status;
+  if (comfort_level !== undefined) dataToUpdate.comfort_level = comfort_level;
+  if (age_range !== undefined) dataToUpdate.age_range = age_range;
+  if (about_me !== undefined) dataToUpdate.about_me = about_me;
 
   if (interests.length > 0) {
-    // Upsert each interest → get back its id
+    // upsert interests and replace
     const upserted = await Promise.all(
       interests.map((name) =>
         prisma.interest.upsert({
@@ -86,27 +99,12 @@ export async function PATCH(req: Request) {
     };
   }
 
-  if (graduation_year !== undefined) {
-    dataToUpdate.graduation_year = graduation_year;
-  }
-  if (origin !== undefined) {
-    dataToUpdate.origin = origin;
-  }
-  if (housing_status !== undefined) {
-    dataToUpdate.housing_status = housing_status;
-  }
-  if (comfort_level !== undefined) {
-    dataToUpdate.comfort_level = comfort_level;
-  }
-
   try {
     // 4) Apply update
     await prisma.user.update({
       where: { email: session.user.email },
       data: dataToUpdate,
     });
-
-    // 5) Return empty JSON on success so client can call res.json()
     return NextResponse.json({}, { status: 200 });
   } catch (err: any) {
     console.error('Profile PATCH Error:', err);

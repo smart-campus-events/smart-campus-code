@@ -24,6 +24,7 @@ interface ProfileData {
   email: string;
   name?: string;
   first_name?: string;
+  last_name?: string;
   avatar_url?: string;
   major?: string;
   interests: { id: string; name: string }[];
@@ -34,7 +35,7 @@ interface ProfileData {
   graduation_year?: number;
   email_notifications?: boolean;
   about_me?: string;
-  createdAt: string;
+  created_at: string;
 }
 
 export default function ProfilePage() {
@@ -42,6 +43,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
 
   useEffect(() => {
     (async () => {
@@ -99,6 +101,9 @@ export default function ProfilePage() {
     },
   ];
 
+
+
+
   return (
     <div className="bg-light min-vh-100">
       <Container className="py-4 py-md-5">
@@ -114,11 +119,13 @@ export default function ProfilePage() {
               />
               <div className="ms-3">
                 <h1 className="h4 fw-bold mb-0">
-                  {profile.name || profile.first_name || profile.email}'s Profile
+                {profile.first_name && profile.last_name
+                ? `${profile.first_name} ${profile.last_name}`
+                : profile.name || profile.email}'s Profile
                 </h1>
                 <p className="text-muted mb-0">
                 Member since{' '}
-                {new Date(profile.createdAt).toLocaleDateString(undefined, {
+                {new Date(profile.created_at).toLocaleDateString(undefined, {
                 year: 'numeric',
                 month: 'long',
                 })}
@@ -157,9 +164,6 @@ export default function ProfilePage() {
                       <p className="text-muted mb-1">Email</p>
                       <p className="fw-medium mb-0">{profile.email}</p>
                     </div>
-                    <Button variant="link" size="sm" className="p-0">
-                      Change Password
-                    </Button>
                   </div>
                   {profile.major && (
                     <div className="mb-3">
