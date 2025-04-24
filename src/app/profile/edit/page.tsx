@@ -1,230 +1,335 @@
 'use client';
 
-/* eslint-disable max-len */
-import React, { useState } from 'react';
-import { Container, Row, Col, Card, Form, Button, Badge, FloatingLabel } from 'react-bootstrap';
-import { X } from 'react-bootstrap-icons';
 import Link from 'next/link';
-
-// TODO: Replace hardcoded data with actual data fetched from user profile
-// TODO: Implement form submission logic (e.g., API call to update profile)
-// TODO: Implement actual interest adding functionality (e.g., modal with search/select)
-// TODO: Add form validation (e.g., using react-hook-form and yup/zod)
-// TODO: Consider using react-hook-form for better state management and validation
+import { useRouter } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
+import {
+  Badge,
+  Button,
+  Card,
+  Col,
+  Container,
+  FloatingLabel,
+  Form,
+  Row,
+} from 'react-bootstrap';
 
 const MAX_ABOUT_ME_LENGTH = 500;
 
-// TODO: Replace with actual data fetching for the user
-// eslint-disable-next-line max-len
-/*
-const currentUserData = {
-  name: 'Sarah K.',
-  email: 'sarahk@hawaii.edu',
-  // ... existing code ...
-};
-*/
+interface ProfileData {
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  major?: string;
+  interests: { id: string; name: string }[];
+  origin?: string;
+  housing_status?: string;
+  comfort_level?: number;
+  graduation_year?: number;
+  email_notifications: boolean;
+  about_me?: string;
+}
 
-// TODO: Replace with actual data fetching for available majors/interests
-const availableMajors = ['Computer Science', 'Marine Biology', 'Hawaiian Studies', 'Business Administration', 'Psychology', 'Engineering', 'Art'];
-// eslint-disable-next-line max-len
-/*
-const availableInterests = [
-  { id: 'tech', name: 'Technology & Programming' },
-  { id: 'hiking', name: 'Hiking & Outdoors' },
-  // ... existing code ...
+const availableMajors = [
+  'Computer Science',
+  'Marine Biology',
+  'Hawaiian Studies',
+  'Business Administration',
+  'Psychology',
+  'Engineering',
+  'Art',
 ];
-*/
 
-const ageRanges = ['19-21', '22-24', '25+'];
-const origins = ['Hawaiʻi Resident', 'US Mainland', 'International'];
-const housingStatuses = ['On-Campus Dorm', 'Off-Campus Commuter'];
+const availableInterests = [
+  'Hiking',
+  'Volunteering',
+  'Music',
+  'Gaming',
+  'Culture',
+  'Surfing',
+  'Art',
+  'Leadership',
+];
+
+const housingStatuses = [
+  { label: 'On-Campus Dorm', value: 'on_campus_dorm' },
+  { label: 'On-Campus Apartment', value: 'on_campus_apt' },
+  { label: 'Off-Campus', value: 'off_campus' },
+  { label: 'Commuter', value: 'commuter' },
+  { label: 'With Family', value: 'with_family' },
+  { label: 'Other', value: 'other' },
+];
+
+const prismaHousingStatusMap: Record<string, string> = {
+  on_campus_dorm: 'ON_CAMPUS_DORM',
+  on_campus_apt: 'ON_CAMPUS_APT',
+  off_campus: 'OFF_CAMPUS',
+  commuter: 'COMMUTER',
+  with_family: 'WITH_FAMILY',
+  other: 'OTHER',
+};
 
 export default function EditProfilePage() {
-  // Placeholder state - replace with actual profile data and state management
-  const [fullName, setFullName] = useState('Sarah Johnson');
-  const [major, setMajor] = useState('Computer Science');
-  const [interests, setInterests] = useState(['Hiking', 'Technology', 'Photography']);
-  const [ageRange, setAgeRange] = useState('19-21');
-  const [origin, setOrigin] = useState('US Mainland');
-  const [housingStatus, setHousingStatus] = useState('On-Campus Dorm');
-  const [aboutMe, setAboutMe] = useState('Enthusiastic Computer Science student looking to connect with fellow tech enthusiasts and explore the beautiful islands!');
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
 
-  const email = 'sarah.j@hawaii.edu'; // Assuming email is not editable
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [major, setMajor] = useState('');
+  const [interests, setInterests] = useState<string[]>([]);
+  const [origin, setOrigin] = useState('');
+  const [housingStatus, setHousingStatus] = useState('');
+  const [comfortLevel, setComfortLevel] = useState(0);
+  const [graduationYear, setGraduationYear] = useState<number | ''>('');
+  const [aboutMe, setAboutMe] = useState('');
 
-  const handleRemoveInterest = (interestToRemove: string) => {
-    setInterests(interests.filter(interest => interest !== interestToRemove));
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/profileapi/profile', {
+          credentials: 'include',
+        });
+        if (res.status === 401) {
+          router.push('/login');
+          return;
+        }
+        if (!res.ok) throw new Error(`Error ${res.status}`);
+
+        const data: ProfileData = await res.json();
+        setProfile(data);
+
+        setFirstName(data.first_name ?? '');
+        setLastName(data.last_name ?? '');
+        setMajor(data.major ?? '');
+        setInterests(data.interests.map((i) => i.name));
+        setOrigin(data.origin ?? '');
+        setHousingStatus(data.housing_status ?? '');
+        setComfortLevel(data.comfort_level ?? 0);
+        setGraduationYear(data.graduation_year ?? '');
+        setAboutMe(data.about_me ?? '');
+      } catch (e: any) {
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [router]);
+
+  const handleToggleInterest = (interest: string) => {
+    setInterests((prev) => (prev.includes(interest)
+      ? prev.filter((i) => i !== interest)
+      : [...prev, interest]));
   };
 
-  const handleAddInterest = () => {
-    // TODO: Implement modal or input for adding new interests
-    console.log('Add interest clicked');
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profile) return;
+
+    const body = {
+      first_name: firstName,
+      last_name: lastName,
+      major,
+      origin,
+      housing_status: prismaHousingStatusMap[housingStatus] ?? null,
+      comfort_level: comfortLevel,
+      graduation_year: graduationYear,
+      about_me: aboutMe,
+      interests,
+    };
+
+    const res = await fetch('/profileapi/profile', {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (res.status === 401) {
+      router.push('/login');
+      return;
+    }
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      alert(`Update failed: ${errorData.error || res.statusText}`);
+      return;
+    }
+
+    router.push('/profile');
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    // TODO: Gather form data and submit to backend
-    console.log('Form submitted:', { fullName, major, interests, ageRange, origin, housingStatus, aboutMe });
-    // Potentially redirect to profile page on success
-  };
+  if (loading) return <div className="p-4">Loading profile...</div>;
+  if (error) {
+    return (
+      <div className="p-4 text-danger">
+        Error:
+        {error}
+      </div>
+    );
+  }
+  if (!profile) return <div className="p-4">No profile data.</div>;
 
   return (
     <div className="bg-light min-vh-100">
-      {/* Assuming Header/Navigation is handled by the main layout */}
       <Container className="py-4 py-md-5">
         <Row className="justify-content-center">
           <Col lg={8} xl={7}>
-            {/* Page Header */}
-            <div className="mb-4 mb-md-5 text-center text-md-start">
+            <div className="mb-4 text-center text-md-start">
               <h1 className="h2 fw-bold mb-2">Edit Profile</h1>
-              <p className="text-muted">Update your information to get better recommendations for events and connections.</p>
+              <p className="text-muted">
+                Update your information to get better recommendations.
+              </p>
             </div>
-
-            {/* Profile Form */}
             <Card className="shadow-sm">
               <Card.Body className="p-4 p-md-5">
                 <Form onSubmit={handleSubmit}>
-
-                  {/* Basic Information Section */}
-                  <h2 className="h5 fw-semibold pb-2 mb-4 border-bottom">Basic Information</h2>
+                  <h2 className="h5 fw-semibold pb-2 mb-4 border-bottom">
+                    Basic Information
+                  </h2>
                   <Row className="g-3 mb-4">
                     <Col md={6}>
-                      <FloatingLabel controlId="floatingFullName" label="Full Name">
+                      <FloatingLabel label="First Name">
                         <Form.Control
                           type="text"
-                          placeholder="Enter your full name"
-                          value={fullName}
-                          onChange={(e) => setFullName(e.target.value)}
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
                           required
                         />
                       </FloatingLabel>
                     </Col>
                     <Col md={6}>
-                      <FloatingLabel controlId="floatingEmail" label="Email Address">
+                      <FloatingLabel label="Last Name">
                         <Form.Control
-                          type="email"
-                          placeholder="your.email@hawaii.edu"
-                          value={email}
-                          disabled
-                          readOnly
+                          type="text"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          required
                         />
                       </FloatingLabel>
                     </Col>
                     <Col md={12}>
-                      <FloatingLabel controlId="floatingMajor" label="Major">
+                      <FloatingLabel label="Email Address">
+                        <Form.Control
+                          type="email"
+                          value={profile.email}
+                          readOnly
+                          disabled
+                        />
+                      </FloatingLabel>
+                    </Col>
+                    <Col md={12}>
+                      <FloatingLabel label="Major">
                         <Form.Select
-                          aria-label="Select your major"
                           value={major}
                           onChange={(e) => setMajor(e.target.value)}
                         >
-                          <option value="">Select your major</option>
-                          {availableMajors.map(m => <option key={m} value={m}>{m}</option>)}
-                          {/* Add an "Other" option if needed */}
+                          <option value="">Select major</option>
+                          {availableMajors.map((m) => (
+                            <option key={m} value={m}>
+                              {m}
+                            </option>
+                          ))}
                         </Form.Select>
                       </FloatingLabel>
                     </Col>
                   </Row>
 
-                  {/* Interests Section */}
                   <h2 className="h5 fw-semibold pb-2 mb-4 border-bottom">Interests</h2>
-                  <Form.Group className="mb-4">
-                    <Form.Label className="mb-2">Select your interests (minimum 3)</Form.Label>
-                    <div className="d-flex flex-wrap gap-2">
-                      {interests.map((interest) => (
-                        <Badge key={interest} pill bg="success-subtle" text="success-emphasis" className="d-inline-flex align-items-center py-2 px-3">
-                          {interest}
-                          <Button
-                            variant="link"
-                            size="sm"
-                            className="p-0 ms-2 lh-1 text-success-emphasis"
-                            onClick={() => handleRemoveInterest(interest)}
-                            aria-label={`Remove ${interest} interest`}
-                          >
-                            <X size={16} />
-                          </Button>
-                        </Badge>
-                      ))}
-                      {/* TODO: Replace with a proper add mechanism */}
-                      <Button
-                        variant="outline-secondary"
-                        size="sm"
-                        className="rounded-pill"
-                        onClick={handleAddInterest}
+                  <div className="d-flex flex-wrap gap-2 mb-4">
+                    {availableInterests.map((interest) => (
+                      <Badge
+                        key={interest}
+                        pill
+                        bg={
+                          interests.includes(interest)
+                            ? 'success'
+                            : 'secondary-subtle'
+                        }
+                        text={interests.includes(interest) ? 'light' : 'dark'}
+                        className="py-2 px-3 cursor-pointer"
+                        onClick={() => handleToggleInterest(interest)}
                       >
-                        + Add Interest
-                      </Button>
-                    </div>
-                    <Form.Text muted>
-                      Adding diverse interests helps us find relevant RIOs and events for you.
-                    </Form.Text>
-                  </Form.Group>
+                        {interest}
+                      </Badge>
+                    ))}
+                  </div>
 
-                  {/* Additional Details Section */}
                   <h2 className="h5 fw-semibold pb-2 mb-4 border-bottom">Additional Details</h2>
                   <Row className="g-3 mb-4">
-                    <Col md={4}>
-                      <FloatingLabel controlId="floatingAgeRange" label="Age Range">
-                        <Form.Select
-                          aria-label="Select your age range"
-                          value={ageRange}
-                          onChange={(e) => setAgeRange(e.target.value)}
-                        >
-                          <option value="">Select...</option>
-                          {ageRanges.map(ar => <option key={ar} value={ar}>{ar}</option>)}
-                        </Form.Select>
-                      </FloatingLabel>
-                    </Col>
-                    <Col md={4}>
-                      <FloatingLabel controlId="floatingOrigin" label="Origin">
-                        <Form.Select
-                          aria-label="Select your origin"
+                    <Col md={6}>
+                      <FloatingLabel label="Origin">
+                        <Form.Control
+                          type="text"
                           value={origin}
                           onChange={(e) => setOrigin(e.target.value)}
-                        >
-                          <option value="">Select...</option>
-                          {origins.map(o => <option key={o} value={o}>{o}</option>)}
-                        </Form.Select>
+                        />
                       </FloatingLabel>
                     </Col>
-                    <Col md={4}>
-                      <FloatingLabel controlId="floatingHousing" label="Housing Status">
+                    <Col md={6}>
+                      <FloatingLabel label="Housing Status">
                         <Form.Select
-                          aria-label="Select your housing status"
                           value={housingStatus}
                           onChange={(e) => setHousingStatus(e.target.value)}
                         >
-                          <option value="">Select...</option>
-                          {housingStatuses.map(hs => <option key={hs} value={hs}>{hs}</option>)}
+                          <option value="">Select housing</option>
+                          {housingStatuses.map((hs) => (
+                            <option key={hs.value} value={hs.value}>
+                              {hs.label}
+                            </option>
+                          ))}
                         </Form.Select>
                       </FloatingLabel>
                     </Col>
-                    <Col md={12}>
-                      <FloatingLabel controlId="floatingAboutMe" label="About Me">
+                    <Col md={4}>
+                      <FloatingLabel label="Comfort Level">
+                        <Form.Select
+                          value={comfortLevel}
+                          onChange={(e) => setComfortLevel(+e.target.value)}
+                        >
+                          {[0, 1, 2, 3, 4, 5].map((n) => (
+                            <option key={n} value={n}>
+                              {n}
+                            </option>
+                          ))}
+                        </Form.Select>
+                      </FloatingLabel>
+                    </Col>
+                    <Col md={4}>
+                      <FloatingLabel label="Graduation Year">
                         <Form.Control
-                          as="textarea"
-                          placeholder="Tell us about yourself..."
-                          style={{ height: '100px' }}
-                          value={aboutMe}
-                          onChange={(e) => setAboutMe(e.target.value)}
-                          maxLength={MAX_ABOUT_ME_LENGTH} // Added based on mock text
+                          type="number"
+                          value={graduationYear}
+                          onChange={(e) => setGraduationYear(parseInt(e.target.value, 10) || '')}
                         />
                       </FloatingLabel>
-                      <Form.Text muted>
-                        Max
-                        {' '}
-                        {MAX_ABOUT_ME_LENGTH}
-                        {' '}
-                        characters. Helps tailor recommendations.
-                      </Form.Text>
                     </Col>
                   </Row>
 
-                  {/* Action Buttons */}
+                  <h2 className="h5 fw-semibold pb-2 mb-4 border-bottom">About Me</h2>
+                  <FloatingLabel label="Write a few sentences about yourself..." className="mb-4">
+                    <Form.Control
+                      as="textarea"
+                      style={{ height: '150px' }}
+                      maxLength={MAX_ABOUT_ME_LENGTH}
+                      value={aboutMe}
+                      onChange={(e) => setAboutMe(e.target.value)}
+                    />
+                    <div className="text-end text-muted small mt-1">
+                      {aboutMe.length}
+                      /
+                      {MAX_ABOUT_ME_LENGTH}
+                    </div>
+                  </FloatingLabel>
+
                   <div className="d-flex justify-content-end gap-2 pt-4 border-top">
-                    {/* TODO: Link Cancel button back to profile page or previous page */}
-                    <Link href="/profile" passHref legacyBehavior>
+                    <Link href="/profile" passHref>
                       <Button variant="outline-secondary">Cancel</Button>
                     </Link>
-                    <Button type="submit" variant="success">Save Changes</Button>
+                    <Button type="submit" variant="success">
+                      Save Changes
+                    </Button>
                   </div>
                 </Form>
               </Card.Body>

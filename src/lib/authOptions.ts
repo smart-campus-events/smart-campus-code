@@ -1,57 +1,10 @@
 /* eslint-disable arrow-body-style */
-import { PrismaAdapter } from '@next-auth/prisma-adapter';
-import { compare } from 'bcrypt';
-import { type NextAuthOptions, type User as NextAuthUser } from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
-// Removed unused GoogleProvider import (it's commented out below)
-// import GoogleProvider from 'next-auth/providers/google';
 import { prisma } from '@/lib/prisma';
-import { Role } from '@prisma/client';
+import { compare } from 'bcrypt';
+import { type NextAuthOptions } from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
 
-/*
-Environment Variables: Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in your .env.local
-(and production environment).
-Google Cloud Setup: Create OAuth 2.0 credentials in Google Cloud Console and configure the
-consent screen with appropriate redirect URIs (e.g., http://localhost:3000/api/auth/callback/google).
-Uncomment Code : You can uncomment the GoogleProvider({...}), block in authOptions.ts now or
-when the environment variables are set. It will remain inactive without the variables.
-*/
-// Extend NextAuth User type to include our custom fields from the token/session
-declare module 'next-auth' {
-  interface Session {
-    user: NextAuthUser & {
-      id: string; // User ID from DB
-      role: Role;
-      isAdmin: boolean;
-      onboardingComplete: boolean;
-    };
-  }
-  // Also extend profile type if needed for Google email check
-  interface Profile {
-    email_verified?: boolean;
-    email?: string;
-  }
-}
-
-declare module 'next-auth/jwt' {
-  interface JWT {
-    id: string;
-    role: Role;
-    isAdmin: boolean;
-    onboardingComplete: boolean;
-  }
-}
-
-// Helper function to check email domain
-const isHawaiiEmail = (email: string | null | undefined): boolean => {
-  return typeof email === 'string' && email.endsWith('@hawaii.edu');
-};
-
-export const authOptions: NextAuthOptions = {
-  // Use Prisma Adapter to store users, accounts, sessions, etc.
-  adapter: PrismaAdapter(prisma),
-
-  // Configure session strategy (JWT is recommended)
+const authOptions: NextAuthOptions = {
   session: {
     strategy: 'jwt',
   },
