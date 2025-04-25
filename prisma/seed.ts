@@ -108,13 +108,15 @@ async function main() {
   if (techCategoryId) {
     await prisma.userInterest.upsert({
       where: { userId_categoryId: { userId: regularUser1.id, categoryId: techCategoryId } },
-      update: {}, create: { userId: regularUser1.id, categoryId: techCategoryId },
+      update: {},
+      create: { userId: regularUser1.id, categoryId: techCategoryId },
     });
   }
   if (gamingCategoryId) {
     await prisma.userInterest.upsert({
       where: { userId_categoryId: { userId: regularUser1.id, categoryId: gamingCategoryId } },
-      update: {}, create: { userId: regularUser1.id, categoryId: gamingCategoryId },
+      update: {},
+      create: { userId: regularUser1.id, categoryId: gamingCategoryId },
     });
   }
   // Mark regularUser1 as onboarded now that interests are added
@@ -123,13 +125,15 @@ async function main() {
   if (sportsCategoryId) {
     await prisma.userInterest.upsert({
       where: { userId_categoryId: { userId: googleUser.id, categoryId: sportsCategoryId } },
-      update: {}, create: { userId: googleUser.id, categoryId: sportsCategoryId },
+      update: {},
+      create: { userId: googleUser.id, categoryId: sportsCategoryId },
     });
   }
   if (outdoorsCategoryId) {
     await prisma.userInterest.upsert({
       where: { userId_categoryId: { userId: googleUser.id, categoryId: outdoorsCategoryId } },
-      update: {}, create: { userId: googleUser.id, categoryId: outdoorsCategoryId },
+      update: {},
+      create: { userId: googleUser.id, categoryId: outdoorsCategoryId },
     });
   }
   console.log('Finished seeding User Interests.');
@@ -141,7 +145,8 @@ async function main() {
     update: { status: ContentStatus.APPROVED }, // Ensure approved if exists
     create: {
       name: 'ACM Manoa',
-      purpose: 'Association for Computing Machinery student chapter at UH Manoa. Focuses on technology workshops, networking, and projects.',
+      purpose: 'Association for Computing Machinery student chapter at UH Manoa. '
+               + 'Focuses on technology workshops, networking, and projects.',
       contactEmail: 'acmmanoa@hawaii.edu',
       websiteUrl: 'https://acmmanoa.org',
       status: ContentStatus.APPROVED,
@@ -181,19 +186,22 @@ async function main() {
   if (techCategoryId) {
     await prisma.clubCategory.upsert({
       where: { clubId_categoryId: { clubId: club1.id, categoryId: techCategoryId } },
-      update: {}, create: { clubId: club1.id, categoryId: techCategoryId },
+      update: {},
+      create: { clubId: club1.id, categoryId: techCategoryId },
     });
   }
   if (outdoorsCategoryId) {
     await prisma.clubCategory.upsert({
       where: { clubId_categoryId: { clubId: club2.id, categoryId: outdoorsCategoryId } },
-      update: {}, create: { clubId: club2.id, categoryId: outdoorsCategoryId },
+      update: {},
+      create: { clubId: club2.id, categoryId: outdoorsCategoryId },
     });
   }
   if (gamingCategoryId) {
     await prisma.clubCategory.upsert({
       where: { clubId_categoryId: { clubId: pendingClub.id, categoryId: gamingCategoryId } },
-      update: {}, create: { clubId: pendingClub.id, categoryId: gamingCategoryId },
+      update: {},
+      create: { clubId: pendingClub.id, categoryId: gamingCategoryId },
     });
   }
   console.log('Finished seeding Club Categories.');
@@ -245,19 +253,22 @@ async function main() {
   if (techCategoryId) {
     await prisma.eventCategory.upsert({
       where: { eventId_categoryId: { eventId: event1.id, categoryId: techCategoryId } },
-      update: {}, create: { eventId: event1.id, categoryId: techCategoryId },
+      update: {},
+      create: { eventId: event1.id, categoryId: techCategoryId },
     });
   }
   if (outdoorsCategoryId) {
     await prisma.eventCategory.upsert({
       where: { eventId_categoryId: { eventId: event2.id, categoryId: outdoorsCategoryId } },
-      update: {}, create: { eventId: event2.id, categoryId: outdoorsCategoryId },
+      update: {},
+      create: { eventId: event2.id, categoryId: outdoorsCategoryId },
     });
   }
   if (gamingCategoryId) {
     await prisma.eventCategory.upsert({
       where: { eventId_categoryId: { eventId: pendingEvent.id, categoryId: gamingCategoryId } },
-      update: {}, create: { eventId: pendingEvent.id, categoryId: gamingCategoryId },
+      update: {},
+      create: { eventId: pendingEvent.id, categoryId: gamingCategoryId },
     });
   }
   console.log('Finished seeding Event Categories.');
@@ -267,12 +278,14 @@ async function main() {
   // googleUser RSVPs to the hike
   await prisma.rSVP.upsert({
     where: { userId_eventId: { userId: googleUser.id, eventId: event2.id } },
-    update: {}, create: { userId: googleUser.id, eventId: event2.id },
+    update: {},
+    create: { userId: googleUser.id, eventId: event2.id },
   });
   // regularUser1 RSVPs to the Git workshop
   await prisma.rSVP.upsert({
     where: { userId_eventId: { userId: regularUser1.id, eventId: event1.id } },
-    update: {}, create: { userId: regularUser1.id, eventId: event1.id },
+    update: {},
+    create: { userId: regularUser1.id, eventId: event1.id },
   });
   console.log('Finished seeding RSVPs.');
 
