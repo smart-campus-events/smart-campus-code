@@ -1,6 +1,3 @@
-// app/signup/step2/page.tsx
-/* eslint-disable @typescript-eslint/no-unused-vars, max-len */
-
 'use client';
 
 import { signIn } from 'next-auth/react';
@@ -8,11 +5,26 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import {
-  Button, Card, Col, Container, Form, Image, InputGroup,
-  ListGroup, ProgressBar, Row, Stack,
+  Button,
+  Card,
+  Col,
+  Container,
+  Form,
+  Image,
+  InputGroup,
+  ListGroup,
+  ProgressBar,
+  Row,
+  Stack,
 } from 'react-bootstrap';
 import {
-  ArrowLeft, ArrowRight, CheckCircleFill, Circle, Envelope, Lock,
+  ArrowLeft,
+  ArrowRight,
+  CheckCircleFill,
+  Circle,
+  Envelope,
+  Google,
+  Lock,
 } from 'react-bootstrap-icons';
 import SignupProgress from '../SignupProgress';
 
@@ -41,6 +53,8 @@ export default function SignupStep2Page() {
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
 
   useEffect(() => {
     const value = checkPasswordStrength(password);
@@ -53,9 +67,23 @@ export default function SignupStep2Page() {
     });
   }, [password]);
 
+  const handleGoogleSignUp = async () => {
+    setGoogleError(null);
+    setIsGoogleLoading(true);
+    try {
+      await signIn('google', { callbackUrl: '/signup/step3', redirect: true });
+    } catch (err) {
+      console.error('Google sign-up error:', err);
+      setGoogleError('Google sign-up failed. Please try again.');
+      setIsGoogleLoading(false);
+    }
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+    setGoogleError(null);
+
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
       return;
@@ -73,15 +101,9 @@ export default function SignupStep2Page() {
           last_name: lastName,
         }),
       });
-
       const text = await res.text();
       let data: any;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        throw new Error(text);
-      }
-
+      try { data = JSON.parse(text); } catch { throw new Error(text); }
       if (!res.ok) throw new Error(data.error || 'Signup failed');
 
       const signInResult = await signIn('credentials', {
@@ -117,46 +139,51 @@ export default function SignupStep2Page() {
                     Create Your Account
                   </Card.Title>
                 </Stack>
+
+                {/* Google Sign-Up Button */}
+                <Button
+                  variant="outline-primary"
+                  onClick={handleGoogleSignUp}
+                  className="w-100 mb-3"
+                  disabled={loading || isGoogleLoading}
+                >
+                  {isGoogleLoading ? (
+                    'Processing...'
+                  ) : (
+                    <><Google className="me-2" /> Sign up with Google</>
+                  )}
+                </Button>
+                {googleError && <div className="text-danger small mb-3">{googleError}</div>}
+
                 <Form onSubmit={handleSubmit}>
                   <Stack gap={3}>
                     {error && <div className="text-danger small mb-2">{error}</div>}
-
                     {/* First and Last Name */}
                     <Form.Group controlId="signupFirstName">
-                      <Form.Label>
-                        First Name
-                        <span className="text-danger">*</span>
-                      </Form.Label>
+                      <Form.Label>First Name <span className="text-danger">*</span></Form.Label>
                       <Form.Control
                         type="text"
                         placeholder="First Name"
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
                         required
-                        disabled={loading}
+                        disabled={loading || isGoogleLoading}
                       />
                     </Form.Group>
                     <Form.Group controlId="signupLastName">
-                      <Form.Label>
-                        Last Name
-                        <span className="text-danger">*</span>
-                      </Form.Label>
+                      <Form.Label>Last Name <span className="text-danger">*</span></Form.Label>
                       <Form.Control
                         type="text"
                         placeholder="Last Name"
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
                         required
-                        disabled={loading}
+                        disabled={loading || isGoogleLoading}
                       />
                     </Form.Group>
-
-                    {/* Email */}
+                    {/* ... rest of fields unchanged ... */}
                     <Form.Group controlId="signupEmail">
-                      <Form.Label>
-                        Email Address
-                        <span className="text-danger">*</span>
-                      </Form.Label>
+                      <Form.Label>Email Address <span className="text-danger">*</span></Form.Label>
                       <InputGroup>
                         <InputGroup.Text><Envelope /></InputGroup.Text>
                         <Form.Control
@@ -165,17 +192,12 @@ export default function SignupStep2Page() {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
-                          disabled={loading}
+                          disabled={loading || isGoogleLoading}
                         />
                       </InputGroup>
                     </Form.Group>
-
-                    {/* Password + Confirmation */}
                     <Form.Group controlId="signupPassword">
-                      <Form.Label>
-                        Password
-                        <span className="text-danger">*</span>
-                      </Form.Label>
+                      <Form.Label>Password <span className="text-danger">*</span></Form.Label>
                       <InputGroup>
                         <InputGroup.Text><Lock /></InputGroup.Text>
                         <Form.Control
@@ -184,25 +206,18 @@ export default function SignupStep2Page() {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           required
-                          disabled={loading}
+                          disabled={loading || isGoogleLoading}
                         />
                       </InputGroup>
                       <ProgressBar
-                        variant={['danger', 'warning', 'info', 'success'][passwordStrength - 1] || 'secondary'}
+                        variant={[ 'danger', 'warning', 'info', 'success' ][passwordStrength - 1] || 'secondary'}
                         now={(passwordStrength / 4) * 100}
                         className="mt-2"
                       />
-                      <Form.Text className={`text-${['danger', 'warning', 'info', 'success'][passwordStrength - 1] || 'secondary'} small`}>
-                        Password strength:
-                        {' '}
-                        {['Weak', 'Fair', 'Good', 'Strong'][passwordStrength - 1] || ''}
-                      </Form.Text>
+                      <Form.Text className={`text-${[ 'danger', 'warning', 'info', 'success' ][passwordStrength - 1] || 'secondary'} small`}>Password strength: {[ 'Weak', 'Fair', 'Good', 'Strong' ][passwordStrength - 1] || ''}</Form.Text>
                     </Form.Group>
                     <Form.Group controlId="confirmPassword">
-                      <Form.Label>
-                        Confirm Password
-                        <span className="text-danger">*</span>
-                      </Form.Label>
+                      <Form.Label>Confirm Password <span className="text-danger">*</span></Form.Label>
                       <InputGroup>
                         <InputGroup.Text><Lock /></InputGroup.Text>
                         <Form.Control
@@ -212,15 +227,11 @@ export default function SignupStep2Page() {
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           required
                           isInvalid={confirmPassword.length > 0 && password !== confirmPassword}
-                          disabled={loading}
+                          disabled={loading || isGoogleLoading}
                         />
-                        <Form.Control.Feedback type="invalid">
-                          Passwords do not match.
-                        </Form.Control.Feedback>
+                        <Form.Control.Feedback type="invalid">Passwords do not match.</Form.Control.Feedback>
                       </InputGroup>
                     </Form.Group>
-
-                    {/* Password Requirements */}
                     <Card bg="light" body className="border">
                       <p className="small fw-medium text-dark mb-2">Password Requirements:</p>
                       <ListGroup variant="flush" className="small">
@@ -231,35 +242,20 @@ export default function SignupStep2Page() {
                           { ok: requirements.special, text: 'One special character' },
                         ].map(({ ok, text }) => (
                           <ListGroup.Item key={text} className={`d-flex gap-2 px-0 py-1 bg-transparent ${ok ? 'text-success' : 'text-muted'}`}>
-                            {ok ? <CheckCircleFill /> : <Circle size={12} />}
-                            {' '}
-                            {text}
+                            {ok ? <CheckCircleFill /> : <Circle size={12} />} {text}
                           </ListGroup.Item>
                         ))}
                       </ListGroup>
                     </Card>
-
                     <p className="text-muted small">
-                      By creating an account, you agree to our
-                      {' '}
-                      <Link href="/terms" className="text-decoration-none">Terms of Service</Link>
-                      {' '}
-                      and
-                      {' '}
-                      <Link href="/privacy" className="text-decoration-none">Privacy Policy</Link>
-                      .
+                      By creating an account, you agree to our <Link href="/terms" className="text-decoration-none">Terms of Service</Link> and <Link href="/privacy" className="text-decoration-none">Privacy Policy</Link>.
                     </p>
-
-                    <Button type="submit" variant="success" size="lg" className="w-100" disabled={loading}>
-                      Create Account
-                      {' '}
-                      <ArrowRight className="ms-1" />
+                    <Button type="submit" variant="success" size="lg" className="w-100" disabled={loading || isGoogleLoading}>
+                      Create Account <ArrowRight className="ms-1" />
                     </Button>
                     <div className="text-center mt-2">
                       <Link href="/signup/step1" className="text-muted small text-decoration-none">
-                        <ArrowLeft className="me-1" size={12} />
-                        {' '}
-                        Back to Welcome
+                        <ArrowLeft className="me-1" size={12} /> Back to Welcome
                       </Link>
                     </div>
                   </Stack>
