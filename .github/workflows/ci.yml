@@ -1,4 +1,4 @@
-name: ci-nextjs-application-template
+name: ci-manoa-compass
 on:
   push:
     branches: [main, master]
