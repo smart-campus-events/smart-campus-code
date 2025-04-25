@@ -18,8 +18,8 @@ const MAX_ABOUT_ME_LENGTH = 500;
 
 interface ProfileData {
   email: string;
-  first_name?: string;
-  last_name?: string;
+  firstName?: string;
+  lastName?: string;
   major?: string;
   interests: { id: string; name: string }[];
   origin?: string;
@@ -88,7 +88,7 @@ export default function EditProfilePage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/profileapi/profile', {
+        const res = await fetch('/api/profileapi/profile', {
           credentials: 'include',
         });
         if (res.status === 401) {
@@ -100,8 +100,8 @@ export default function EditProfilePage() {
         const data: ProfileData = await res.json();
         setProfile(data);
 
-        setFirstName(data.first_name ?? '');
-        setLastName(data.last_name ?? '');
+        setFirstName(data.firstName ?? '');
+        setLastName(data.lastName ?? '');
         setMajor(data.major ?? '');
         setInterests(data.interests.map((i) => i.name));
         setOrigin(data.origin ?? '');
@@ -128,18 +128,18 @@ export default function EditProfilePage() {
     if (!profile) return;
 
     const body = {
-      first_name: firstName,
-      last_name: lastName,
+      firstName,
+      lastName,
       major,
       origin,
-      housing_status: prismaHousingStatusMap[housingStatus] ?? null,
-      comfort_level: comfortLevel,
-      graduation_year: graduationYear,
-      about_me: aboutMe,
+      housingStatus: prismaHousingStatusMap[housingStatus] ?? null,
+      comfortLevel,
+      graduationYear,
+      aboutMe,
       interests,
     };
 
-    const res = await fetch('/profileapi/profile', {
+    const res = await fetch('/api/profileapi/profile', {
       method: 'PATCH',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -152,8 +152,16 @@ export default function EditProfilePage() {
     }
 
     if (!res.ok) {
-      const errorData = await res.json();
-      alert(`Update failed: ${errorData.error || res.statusText}`);
+      const clone = res.clone();
+      let errorMsg: string;
+      try {
+        const json = await res.json();
+        errorMsg = json.error || `${res.status} ${res.statusText}`;
+      } catch {
+        const txt = await clone.text();
+        errorMsg = txt.trim() || `${res.status} ${res.statusText}`;
+      }
+      alert(`Update failed: ${errorMsg}`);
       return;
     }
 
@@ -165,6 +173,7 @@ export default function EditProfilePage() {
     return (
       <div className="p-4 text-danger">
         Error:
+        {' '}
         {error}
       </div>
     );
@@ -178,16 +187,13 @@ export default function EditProfilePage() {
           <Col lg={8} xl={7}>
             <div className="mb-4 text-center text-md-start">
               <h1 className="h2 fw-bold mb-2">Edit Profile</h1>
-              <p className="text-muted">
-                Update your information to get better recommendations.
-              </p>
+              <p className="text-muted">Update your information to get better recommendations.</p>
             </div>
             <Card className="shadow-sm">
               <Card.Body className="p-4 p-md-5">
                 <Form onSubmit={handleSubmit}>
-                  <h2 className="h5 fw-semibold pb-2 mb-4 border-bottom">
-                    Basic Information
-                  </h2>
+                  {/* Basic Information */}
+                  <h2 className="h5 fw-semibold pb-2 mb-4 border-bottom">Basic Information</h2>
                   <Row className="g-3 mb-4">
                     <Col md={6}>
                       <FloatingLabel label="First Name">
@@ -211,42 +217,30 @@ export default function EditProfilePage() {
                     </Col>
                     <Col md={12}>
                       <FloatingLabel label="Email Address">
-                        <Form.Control
-                          type="email"
-                          value={profile.email}
-                          readOnly
-                          disabled
-                        />
+                        <Form.Control type="email" value={profile.email} readOnly disabled />
                       </FloatingLabel>
                     </Col>
                     <Col md={12}>
                       <FloatingLabel label="Major">
-                        <Form.Select
-                          value={major}
-                          onChange={(e) => setMajor(e.target.value)}
-                        >
+                        <Form.Select value={major} onChange={(e) => setMajor(e.target.value)}>
                           <option value="">Select major</option>
                           {availableMajors.map((m) => (
-                            <option key={m} value={m}>
-                              {m}
-                            </option>
+                            <option key={m} value={m}>{m}</option>
                           ))}
                         </Form.Select>
                       </FloatingLabel>
                     </Col>
                   </Row>
 
+                  {/* Interests */}
                   <h2 className="h5 fw-semibold pb-2 mb-4 border-bottom">Interests</h2>
                   <div className="d-flex flex-wrap gap-2 mb-4">
                     {availableInterests.map((interest) => (
                       <Badge
                         key={interest}
                         pill
-                        bg={
-                          interests.includes(interest)
-                            ? 'success'
-                            : 'secondary-subtle'
-                        }
+                        bg={interests.includes(interest)
+                          ? 'success' : 'secondary-subtle'}
                         text={interests.includes(interest) ? 'light' : 'dark'}
                         className="py-2 px-3 cursor-pointer"
                         onClick={() => handleToggleInterest(interest)}
@@ -256,42 +250,29 @@ export default function EditProfilePage() {
                     ))}
                   </div>
 
+                  {/* Additional Details */}
                   <h2 className="h5 fw-semibold pb-2 mb-4 border-bottom">Additional Details</h2>
                   <Row className="g-3 mb-4">
                     <Col md={6}>
                       <FloatingLabel label="Origin">
-                        <Form.Control
-                          type="text"
-                          value={origin}
-                          onChange={(e) => setOrigin(e.target.value)}
-                        />
+                        <Form.Control type="text" value={origin} onChange={(e) => setOrigin(e.target.value)} />
                       </FloatingLabel>
                     </Col>
                     <Col md={6}>
                       <FloatingLabel label="Housing Status">
-                        <Form.Select
-                          value={housingStatus}
-                          onChange={(e) => setHousingStatus(e.target.value)}
-                        >
+                        <Form.Select value={housingStatus} onChange={(e) => setHousingStatus(e.target.value)}>
                           <option value="">Select housing</option>
                           {housingStatuses.map((hs) => (
-                            <option key={hs.value} value={hs.value}>
-                              {hs.label}
-                            </option>
+                            <option key={hs.value} value={hs.value}>{hs.label}</option>
                           ))}
                         </Form.Select>
                       </FloatingLabel>
                     </Col>
                     <Col md={4}>
                       <FloatingLabel label="Comfort Level">
-                        <Form.Select
-                          value={comfortLevel}
-                          onChange={(e) => setComfortLevel(+e.target.value)}
-                        >
+                        <Form.Select value={comfortLevel} onChange={(e) => setComfortLevel(+e.target.value)}>
                           {[0, 1, 2, 3, 4, 5].map((n) => (
-                            <option key={n} value={n}>
-                              {n}
-                            </option>
+                            <option key={n} value={n}>{n}</option>
                           ))}
                         </Form.Select>
                       </FloatingLabel>
@@ -307,6 +288,7 @@ export default function EditProfilePage() {
                     </Col>
                   </Row>
 
+                  {/* About Me */}
                   <h2 className="h5 fw-semibold pb-2 mb-4 border-bottom">About Me</h2>
                   <FloatingLabel label="Write a few sentences about yourself..." className="mb-4">
                     <Form.Control
@@ -323,13 +305,12 @@ export default function EditProfilePage() {
                     </div>
                   </FloatingLabel>
 
+                  {/* Actions */}
                   <div className="d-flex justify-content-end gap-2 pt-4 border-top">
                     <Link href="/profile" passHref>
                       <Button variant="outline-secondary">Cancel</Button>
                     </Link>
-                    <Button type="submit" variant="success">
-                      Save Changes
-                    </Button>
+                    <Button type="submit" variant="success">Save Changes</Button>
                   </div>
                 </Form>
               </Card.Body>

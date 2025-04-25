@@ -78,7 +78,7 @@ export default function SignupStep3Page() {
     setLoading(true);
 
     try {
-      const res = await fetch('/profileapi/profile', { // ← now points at your App-Router route
+      const res = await fetch('/api/profileapi/profile', { // ← now points at your App-Router route
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

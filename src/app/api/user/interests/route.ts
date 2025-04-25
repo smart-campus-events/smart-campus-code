@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
 import nextAuthOptionsConfig from '@/lib/authOptions';
+import { getServerSession } from 'next-auth/next';
+import { NextResponse } from 'next/server';
 // import { prisma } from '@/lib/prisma'; // Assuming prisma might be needed for validation
 
 // POST /api/user/interests

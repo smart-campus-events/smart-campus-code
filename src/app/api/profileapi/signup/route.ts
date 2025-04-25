@@ -1,3 +1,5 @@
+// File: src/app/api/signup/route.ts
+
 /* eslint-disable import/prefer-default-export, @typescript-eslint/naming-convention */
 
 import { prisma } from '@/lib/prisma';
@@ -7,10 +9,11 @@ import { NextResponse } from 'next/server';
 // POST /api/signup
 export async function POST(req: Request) {
   try {
-    const { email, password, first_name, last_name } = await req.json();
+    // Expect camelCase fields to match front-end
+    const { email, password, firstName, lastName } = await req.json();
 
     // Validate input
-    if (!email || !password || !first_name || !last_name) {
+    if (!email || !password || !firstName || !lastName) {
       return NextResponse.json(
         { error: 'Email, password, first name, and last name are required.' },
         { status: 400 },
@@ -34,8 +37,9 @@ export async function POST(req: Request) {
       data: {
         email,
         password: hashedPassword,
-        first_name,
-        last_name, // ✅ include this in the DB insert
+        firstName,
+        lastName,
+        name: `${firstName} ${lastName}`, // store full name
       },
     });
 
