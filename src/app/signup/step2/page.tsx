@@ -91,6 +91,7 @@ export default function SignupStep2Page() {
 
     setLoading(true);
     try {
+      // 1) Create the user record
       const res = await fetch('/profileapi/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -106,14 +107,20 @@ export default function SignupStep2Page() {
       try { data = JSON.parse(text); } catch { throw new Error(text); }
       if (!res.ok) throw new Error(data.error || 'Signup failed');
 
+      // 2) Sign in via credentials with a callback to step 3
       const signInResult = await signIn('credentials', {
         redirect: false,
         email,
         password,
+        callbackUrl: '/signup/step3',
       });
-      if (signInResult?.error) throw new Error(signInResult.error);
 
-      router.push('/signup/step3');
+      if (signInResult?.error) {
+        throw new Error(signInResult.error);
+      }
+
+      // 3) Navigate to step 3
+      router.push(signInResult.url || '/signup/step3');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -181,7 +188,7 @@ export default function SignupStep2Page() {
                         disabled={loading || isGoogleLoading}
                       />
                     </Form.Group>
-                    {/* ... rest of fields unchanged ... */}
+                    {/* Email & Password Fields */}
                     <Form.Group controlId="signupEmail">
                       <Form.Label>Email Address <span className="text-danger">*</span></Form.Label>
                       <InputGroup>
@@ -210,11 +217,13 @@ export default function SignupStep2Page() {
                         />
                       </InputGroup>
                       <ProgressBar
-                        variant={[ 'danger', 'warning', 'info', 'success' ][passwordStrength - 1] || 'secondary'}
+                        variant={['danger','warning','info','success'][passwordStrength-1] || 'secondary'}
                         now={(passwordStrength / 4) * 100}
                         className="mt-2"
                       />
-                      <Form.Text className={`text-${[ 'danger', 'warning', 'info', 'success' ][passwordStrength - 1] || 'secondary'} small`}>Password strength: {[ 'Weak', 'Fair', 'Good', 'Strong' ][passwordStrength - 1] || ''}</Form.Text>
+                      <Form.Text className={`text-${['danger','warning','info','success'][passwordStrength-1] || 'secondary'} small`}>
+                        Password strength: {['Weak','Fair','Good','Strong'][passwordStrength-1] || ''}
+                      </Form.Text>
                     </Form.Group>
                     <Form.Group controlId="confirmPassword">
                       <Form.Label>Confirm Password <span className="text-danger">*</span></Form.Label>
@@ -229,7 +238,9 @@ export default function SignupStep2Page() {
                           isInvalid={confirmPassword.length > 0 && password !== confirmPassword}
                           disabled={loading || isGoogleLoading}
                         />
-                        <Form.Control.Feedback type="invalid">Passwords do not match.</Form.Control.Feedback>
+                        <Form.Control.Feedback type="invalid">
+                          Passwords do not match.
+                        </Form.Control.Feedback>
                       </InputGroup>
                     </Form.Group>
                     <Card bg="light" body className="border">
@@ -241,16 +252,27 @@ export default function SignupStep2Page() {
                           { ok: requirements.number, text: 'One number' },
                           { ok: requirements.special, text: 'One special character' },
                         ].map(({ ok, text }) => (
-                          <ListGroup.Item key={text} className={`d-flex gap-2 px-0 py-1 bg-transparent ${ok ? 'text-success' : 'text-muted'}`}>
+                          <ListGroup.Item
+                            key={text}
+                            className={`d-flex gap-2 px-0 py-1 bg-transparent ${ok ? 'text-success' : 'text-muted'}`}
+                          >
                             {ok ? <CheckCircleFill /> : <Circle size={12} />} {text}
                           </ListGroup.Item>
                         ))}
                       </ListGroup>
                     </Card>
                     <p className="text-muted small">
-                      By creating an account, you agree to our <Link href="/terms" className="text-decoration-none">Terms of Service</Link> and <Link href="/privacy" className="text-decoration-none">Privacy Policy</Link>.
+                      By creating an account, you agree to our{' '}
+                      <Link href="/terms" className="text-decoration-none">Terms of Service</Link> and{' '}
+                      <Link href="/privacy" className="text-decoration-none">Privacy Policy</Link>.
                     </p>
-                    <Button type="submit" variant="success" size="lg" className="w-100" disabled={loading || isGoogleLoading}>
+                    <Button
+                      type="submit"
+                      variant="success"
+                      size="lg"
+                      className="w-100"
+                      disabled={loading || isGoogleLoading}
+                    >
                       Create Account <ArrowRight className="ms-1" />
                     </Button>
                     <div className="text-center mt-2">
