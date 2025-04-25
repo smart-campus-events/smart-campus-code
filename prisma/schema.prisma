@@ -9,16 +9,31 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
+  provider = "postgresql"
   // for local development
-  url       = env("DATABASE_URL")
+  url      = env("DATABASE_URL")
   // for Vercel
   // url       = env("POSTGRES_PRISMA_URL")
   // directUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
-// --- Enums ---
+// OLD STUFF
+enum Condition {
+  excellent
+  good
+  fair
+  poor
+}
 
+model Stuff {
+  id        Int       @id @default(autoincrement())
+  name      String
+  quantity  Int
+  condition Condition @default(good)
+  owner     String
+}
+
+// --- Enums ---
 // Define User Roles
 enum Role {
   USER
@@ -51,245 +66,135 @@ enum AttendanceType {
 
 // --- Models ---
 
+
+model Event {
+  // --- Identifiers ---
+  event_id             String    @id @db.VarChar(255) // Extracted unique ID (e.g., from et_id or URL)
+
+  // --- Core Event Details ---
+  title                String    @db.VarChar(512)
+  start_datetime       DateTime  @db.Timestamptz      // Stored with Time Zone (e.g., HST)
+  end_datetime         DateTime? @db.Timestamptz      // Nullable for all-day or TBD events
+  all_day              Boolean?  @default(false)       // Whether the event spans all day
+  description          String?   @db.Text              // Event summary/details (nullable)
+  category_tags        String?   @db.Text              // Comma-separated string or JSON for tags/categories (nullable)
+  cost_admission       String?   @db.VarChar(255)      // Store as text due to variability (nullable)
+
+  // --- Location Information ---
+  attendance_type      AttendanceType                 @default(IN_PERSON)
+  location        String?   @db.Text              // Raw location string
+  location_virtual_url String?   @db.Text              // Parsed Zoom/online link (nullable)
+
+  // --- Organizer & Contact Info ---
+  organizer_sponsor    String?   @db.VarChar(512)      // Name of the organizing unit (nullable)
+  contact_name         String?   @db.VarChar(255)      // Parsed contact name (nullable)
+  contact_phone        String?   @db.VarChar(50)       // Parsed contact phone (nullable)
+  contact_email        String?   @db.VarChar(255)      // Parsed contact email (nullable)
+
+  // --- Links ---
+  event_url            String    @db.Text              // Link to the event detail page on hawaii.edu
+  event_page_url       String?   @db.Text              // Link from 'More Information' section (nullable)
+
+  // --- Timestamps ---
+  last_scraped_at      DateTime  @db.Timestamptz       // Tracks when the record was last scraped/verified
+  created_at           DateTime  @default(now()) @db.Timestamptz // First insert timestamp
+  updated_at           DateTime  @updatedAt @db.Timestamptz       // Last modified timestamp
+
+  // --- Relationships ---
+  rsvped_users         User[]     @relation("EventRsvps")       // Users who RSVP'd
+  interests            Interest[] @relation("EventInterests")   // Interests related to this event
+
+  // --- Organizer Club (Optional) ---
+  organizer_club_id    String?
+  organizer_club       Club?      @relation("OrganizedEvents", fields: [organizer_club_id], references: [id])
+
+  // --- Indexes ---
+  @@index([start_datetime])
+}
+
+
+model Club {
+  // --- Identifiers & Timestamps ---
+  id                   String    @id @default(cuid()) // Unique identifier (CUID recommended)
+  created_at           DateTime  @default(now())      // Timestamp of record creation
+  updated_at           DateTime  @updatedAt           // Timestamp of last record update
+
+  // --- Core Club Details ---
+  name                 String    @unique              // Unique name of the club
+  logo_url             String?                        // Optional URL to a logo image file
+  purpose              String                         // Core purpose/mission statement (required)
+  category             String                         // Classification (e.g., Academic, Social, Sports)
+
+  // --- Contact & Online Presence ---
+  primary_contact_name String                         // Name of the main student contact
+  contact_email        String                         // Contact email address
+  website_url          String?                        // Optional official club website URL
+  instagram_url        String?                        // Optional Instagram profile URL
+  facebook_url         String?                        // Optional Facebook page URL
+  twitter_url          String?                        // Optional Twitter profile URL
+
+  // --- Operational Information ---
+  meeting_time         String?
+  meeting_location     String?                        // Optional text describing meeting times/locations
+  join_info            String?                        // Optional text describing how to join the club
+
+  // --- Relationships (Updated) ---
+  followers User[]     @relation("UserFollowedClubs") // Users following this club
+  interests Interest[] @relation("ClubInterests")   // Interests related to this club - Added Relationship
+
+  // Link to organized Events
+  organized_events Event[] @relation("OrganizedEvents")
+
+  // --- Indexes (Example) ---
+  // @@index([category]) // Example: Add database index for faster lookups by category
+}
+
+model Interest {
+  id         String    @id @default(cuid())
+  name       String    @unique
+
+  // --- Relationships ---
+  users      User[]    @relation("UserInterests") // Users with this interest
+  clubs      Club[]    @relation("ClubInterests") // Clubs related to this interest
+  events     Event[]   @relation("EventInterests") // Events related to this interest
+
+  // --- Timestamps ---
+  created_at DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updated_at DateTime  @updatedAt      @db.Timestamptz(6) @map("updated_at")
+}
+
 model User {
   id                   String         @id @default(cuid())
 
   // --- Authentication & Basic Info ---
-  googleId             String?        @unique // From Google OAuth
-  email                String         @unique // Primary identifier
-  username             String?        @unique // Optional username for non-OAuth signup
-  password             String?        // Hashed password for email/password signup (nullable for OAuth-only users)
-  name                 String?        // Full name, potentially from Google or profile
-  firstName            String?
-  lastName             String?
-  avatarUrl            String?        // Profile picture URL
-  emailVerified        DateTime?      // For NextAuth email verification flows
+  google_id            String?        @unique @map("google_id")
+  email                String         @unique
+  name                 String?
+  first_name           String?        @map("first_name")
+  last_name            String?        @map("last_name")
+  avatar_url           String?        @map("avatar_url")
+  password             String
 
   // --- Profile & Preferences ---
   major                String?
-  graduationYear       Int?
-  origin               String?        // e.g., hometown, state, country
-  housingStatus        HousingStatus?
-  comfortLevel         Int?           // User's self-reported comfort level (meaning TBD)
-  onboardingComplete   Boolean        @default(false) // Replaces hasOnboarded
-  emailNotifications   Boolean        @default(true)
+  graduation_year      Int?           @map("graduation_year")
+  origin               String?
+  housing_status       HousingStatus? @map("housing_status") // ← Now using enum
+  comfort_level        Int?           @map("comfort_level")
+  onboarding_complete  Boolean        @default(false) @map("onboarding_complete")
+  email_notifications  Boolean        @default(true)  @map("email_notifications")
+  about_me             String?
+  age_range            String?
 
   // --- Application Specific ---
-  role                 Role           @default(USER)
-  isAdmin              Boolean        @default(false) // Explicit admin flag
-
-  // --- Timestamps ---
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @updatedAt
+  role                 Role       @default(USER)
 
   // --- Relationships ---
-  accounts             Account[]      // For NextAuth provider linking
-  sessions             Session[]      // For NextAuth active sessions
-  interests            UserInterest[] // User's selected interests
-  submittedClubs       Club[]         @relation("SubmittedByUser")
-  submittedEvents      Event[]        @relation("SubmittedByUser")
-  followedClubs        Club[]         @relation("UserFollowedClubs") // Clubs the user follows/favorites
-  rsvps                RSVP[]         // Re-added: Events the user has RSVPed to
-}
-
-// --- NextAuth Required Models ---
-model Account {
-  id                String   @id @default(cuid())
-  userId            String
-  type              String
-  provider          String // e.g., "google", "credentials"
-  providerAccountId String // ID from the provider (e.g., Google subject ID)
-  refresh_token     String?  @db.Text
-  access_token      String?  @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?  @db.Text
-  session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-  @@index([userId])
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-}
-// --- End NextAuth Models ---
-
-model Category {
-  id            String          @id @default(cuid())
-  name          String          @unique // e.g., "Sports", "Technology", "Arts", "Community Service"
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-
-  // Relationships
-  clubs         ClubCategory[]
-  events        EventCategory[]
-  userInterests UserInterest[]
-}
-
-model Club {
-  id                   String         @id @default(cuid())
-
-  // --- Core Club Details ---
-  name                 String         @unique // Unique name of the club
-  logoUrl              String?        // Optional URL to a logo image file
-  purpose              String         @db.Text // Core purpose/mission statement (required)
-  categoryDescription  String?        // From schema2, use instead of single category field? Maybe store primary category via relation?
-                                      // Using category relation instead based on Plan
-
-  // --- Contact & Online Presence ---
-  primaryContactName String?        // Name of the main student contact
-  contactEmail       String?        // Contact email address
-  websiteUrl         String?        // Optional official club website URL
-  instagramUrl       String?        // Optional Instagram profile URL
-  facebookUrl        String?        // Optional Facebook page URL
-  twitterUrl         String?        // Optional Twitter profile URL
-
-  // --- Operational Information ---
-  meetingTime        String?        // Text description
-  meetingLocation    String?        // Text description
-  joinInfo           String?        @db.Text // Optional text describing how to join the club
-
-  // --- Submission & Admin ---
-  status             ContentStatus  @default(PENDING)
-  submittedByUserId  String?        // Link to the user who submitted it (optional)
+  interests            Interest[]     @relation("UserInterests")
+  rsvped_events        Event[]        @relation("EventRsvps")
+  followed_clubs       Club[]         @relation("UserFollowedClubs")
 
   // --- Timestamps ---
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
-
-  // --- Relationships ---
-  submittedBy        User?          @relation("SubmittedByUser", fields: [submittedByUserId], references: [id], onDelete: SetNull) // SetNull so deleting user doesn't delete club
-  categories         ClubCategory[] // Categories assigned to this club
-  hostedEvents       Event[]        @relation("OrganizedEvents") // Events hosted by this club
-  favoritedBy        User[]         @relation("UserFollowedClubs") // Users following this club
-
-  @@index([submittedByUserId])
-}
-
-model Event {
-  id                   String          @id @default(cuid()) // Changed from VarChar based on scraping
-
-  // --- Core Event Details ---
-  title                String
-  startDateTime        DateTime        // Stored with Time Zone (e.g., HST)
-  endDateTime          DateTime?       // Nullable for all-day or TBD events
-  allDay               Boolean?        @default(false)
-  description          String?         @db.Text
-  categoryTags         String?         @db.Text // Comma-separated string or JSON for tags/categories (consider relation instead)
-                                                // Using category relation instead based on Plan
-  costAdmission        String?         // Store as text due to variability
-
-  // --- Location Information ---
-  attendanceType       AttendanceType  @default(IN_PERSON)
-  location             String?         @db.Text // Raw location string
-  locationVirtualUrl   String?         @db.Text // Parsed Zoom/online link
-
-  // --- Organizer & Contact Info ---
-  organizerSponsor     String?         // Name of the organizing unit
-  contactName          String?
-  contactPhone         String?
-  contactEmail         String?
-
-  // --- Links ---
-  eventUrl             String?         @db.Text // Link to the event detail page on hawaii.edu (optional now)
-  eventPageUrl         String?         @db.Text // Link from 'More Information' section
-
-  // --- Admin & Submission ---
-  status               ContentStatus   @default(PENDING)
-  submittedByUserId    String?
-
-  // --- Timestamps ---
-  lastScrapedAt        DateTime?       // Tracks when the record was last scraped/verified (optional)
-  createdAt            DateTime        @default(now())
-  updatedAt            DateTime        @updatedAt
-
-  // --- Relationships ---
-  submittedBy          User?           @relation("SubmittedByUser", fields: [submittedByUserId], references: [id], onDelete: SetNull)
-  categories           EventCategory[]
-  organizerClubId      String?
-  organizerClub        Club?           @relation("OrganizedEvents", fields: [organizerClubId], references: [id], onDelete: SetNull) // SetNull so deleting club doesn't delete event
-  rsvps                RSVP[]          // Re-added: RSVPs for this event
-
-  // --- Indexes ---
-  @@index([startDateTime])
-  @@index([submittedByUserId])
-  @@index([organizerClubId])
-}
-
-// --- RSVP Model (Re-added) ---
-model RSVP {
-  id        String   @id @default(cuid())
-  userId    String
-  eventId   String
-  createdAt DateTime @default(now())
-
-  // Relationships
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, eventId]) // Ensure a user can RSVP only once per event
-  @@index([userId])
-  @@index([eventId])
-}
-
-// --- Join Tables ---
-
-// User <-> Category (Many-to-Many)
-model UserInterest {
-  userId     String
-  categoryId String
-  assignedAt DateTime @default(now())
-
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-
-  @@id([userId, categoryId])
-  @@index([userId])
-  @@index([categoryId])
-}
-
-// Club <-> Category (Many-to-Many)
-model ClubCategory {
-  clubId     String
-  categoryId String
-  assignedAt DateTime @default(now())
-
-  club       Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-
-  @@id([clubId, categoryId])
-  @@index([clubId])
-  @@index([categoryId])
-}
-
-// Event <-> Category (Many-to-Many)
-model EventCategory {
-  eventId    String
-  categoryId String
-  assignedAt DateTime @default(now())
-
-  event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-
-  @@id([eventId, categoryId])
-  @@index([eventId])
-  @@index([categoryId])
+  created_at           DateTime       @default(now()) @db.Timestamptz(6) @map("created_at")
+  updated_at           DateTime       @updatedAt      @db.Timestamptz(6) @map("updated_at")
 }

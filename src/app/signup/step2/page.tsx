@@ -1,32 +1,46 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { signIn } from 'next-auth/react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
 import {
-  Container, Row, Col, Card, Form, Button, InputGroup,
-  ProgressBar, ListGroup, Stack, Image,
+  Button,
+  Card,
+  Col,
+  Container,
+  Form,
+  Image,
+  InputGroup,
+  ListGroup,
+  ProgressBar,
+  Row,
+  Stack,
 } from 'react-bootstrap';
 import {
-  Envelope, Lock, CheckCircleFill, Circle, ArrowRight, ArrowLeft,
+  ArrowLeft,
+  ArrowRight,
+  CheckCircleFill,
+  Circle,
+  Envelope,
+  Google,
+  Lock,
 } from 'react-bootstrap-icons';
-import Link from 'next/link';
-import SignupProgress from '../SignupProgress'; // Assuming a shared progress component
+import SignupProgress from '../SignupProgress';
 
-// TODO: Implement proper form validation (e.g., yup/zod with react-hook-form)
-// TODO: Implement actual account creation API call
-// TODO: Implement robust password strength checking
-// TODO: Link to actual Terms of Service and Privacy Policy pages
-
-// Simple password strength check (example)
 const checkPasswordStrength = (password: string) => {
   let strength = 0;
   if (password.length >= 8) strength++;
   if (/[A-Z]/.test(password)) strength++;
   if (/[0-9]/.test(password)) strength++;
   if (/[^A-Za-z0-9]/.test(password)) strength++;
-  return strength; // Max 4
+  return strength;
 };
 
 export default function SignupStep2Page() {
+  const router = useRouter();
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -37,10 +51,14 @@ export default function SignupStep2Page() {
     number: false,
     special: false,
   });
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
 
   useEffect(() => {
-    const strengthValue = checkPasswordStrength(password);
-    setPasswordStrength(strengthValue);
+    const value = checkPasswordStrength(password);
+    setPasswordStrength(value);
     setRequirements({
       length: password.length >= 8,
       uppercase: /[A-Z]/.test(password),
@@ -49,48 +67,64 @@ export default function SignupStep2Page() {
     });
   }, [password]);
 
-  const getStrengthLabel = (strength: number) => {
-    switch (strength) {
-      case 0: return ' '; // No label initially or for empty password
-      case 1: return 'Weak';
-      case 2: return 'Fair';
-      case 3: return 'Good';
-      case 4: return 'Strong';
-      default: return '';
+  const handleGoogleSignUp = async () => {
+    setGoogleError(null);
+    setIsGoogleLoading(true);
+    try {
+      await signIn('google', { callbackUrl: '/signup/step3', redirect: true });
+    } catch (err) {
+      console.error('Google sign-up error:', err);
+      setGoogleError('Google sign-up failed. Please try again.');
+      setIsGoogleLoading(false);
     }
   };
 
-  const getStrengthVariant = (strength: number) => {
-    switch (strength) {
-      case 0: return 'secondary';
-      case 1: return 'danger';
-      case 2: return 'warning';
-      case 3: return 'info';
-      case 4: return 'success';
-      default: return 'secondary';
-    }
-  };
-
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // TODO: Add validation (e.g., email format, password match)
+    setError(null);
+    setGoogleError(null);
+
     if (password !== confirmPassword) {
-      // alert('Passwords do not match!'); // Replace with better error handling
+      setError('Passwords do not match.');
       return;
     }
-    // TODO: Call API to create account
-    console.log('Account creation attempt:', { email });
-    // On success, navigate to next step (e.g., using Next.js router)
-    // router.push('/signup/step3');
+
+    setLoading(true);
+    try {
+      const res = await fetch('/profileapi/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          first_name: firstName,
+          last_name: lastName,
+        }),
+      });
+      const text = await res.text();
+      let data: any;
+      try { data = JSON.parse(text); } catch { throw new Error(text); }
+      if (!res.ok) throw new Error(data.error || 'Signup failed');
+
+      const signInResult = await signIn('credentials', {
+        redirect: false,
+        email,
+        password,
+      });
+      if (signInResult?.error) throw new Error(signInResult.error);
+
+      router.push('/signup/step3');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="bg-light min-vh-100 d-flex flex-column">
       <Container className="py-4 py-md-5 flex-grow-1 d-flex flex-column">
-        {/* Progress Indicator */}
         <SignupProgress currentStep={2} totalSteps={5} />
-
-        {/* Account Creation Form Box */}
         <Row className="justify-content-center">
           <Col md={8} lg={6} xl={5}>
             <Card className="shadow-sm border-light rounded-4">
@@ -101,16 +135,55 @@ export default function SignupStep2Page() {
                     alt="Manoa Compass Logo"
                     style={{ width: '40px', height: 'auto' }}
                   />
-                  <Card.Title as="h2" className="h4 mb-0 fw-bold">Create Your Account</Card.Title>
+                  <Card.Title as="h2" className="h4 mb-0 fw-bold">
+                    Create Your Account
+                  </Card.Title>
                 </Stack>
+
+                {/* Google Sign-Up Button */}
+                <Button
+                  variant="outline-primary"
+                  onClick={handleGoogleSignUp}
+                  className="w-100 mb-3"
+                  disabled={loading || isGoogleLoading}
+                >
+                  {isGoogleLoading ? (
+                    'Processing...'
+                  ) : (
+                    <><Google className="me-2" /> Sign up with Google</>
+                  )}
+                </Button>
+                {googleError && <div className="text-danger small mb-3">{googleError}</div>}
 
                 <Form onSubmit={handleSubmit}>
                   <Stack gap={3}>
+                    {error && <div className="text-danger small mb-2">{error}</div>}
+                    {/* First and Last Name */}
+                    <Form.Group controlId="signupFirstName">
+                      <Form.Label>First Name <span className="text-danger">*</span></Form.Label>
+                      <Form.Control
+                        type="text"
+                        placeholder="First Name"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        required
+                        disabled={loading || isGoogleLoading}
+                      />
+                    </Form.Group>
+                    <Form.Group controlId="signupLastName">
+                      <Form.Label>Last Name <span className="text-danger">*</span></Form.Label>
+                      <Form.Control
+                        type="text"
+                        placeholder="Last Name"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        required
+                        disabled={loading || isGoogleLoading}
+                      />
+                    </Form.Group>
+                    {/* ... rest of fields unchanged ... */}
                     <Form.Group controlId="signupEmail">
-                      <Form.Label>
-                        Email Address
-                        <span className="text-danger">*</span>
-                      </Form.Label>
+                      <Form.Label>Email Address <span className="text-danger">*</span></Form.Label>
                       <InputGroup>
                         <InputGroup.Text><Envelope /></InputGroup.Text>
                         <Form.Control
@@ -119,15 +192,12 @@ export default function SignupStep2Page() {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
+                          disabled={loading || isGoogleLoading}
                         />
                       </InputGroup>
                     </Form.Group>
-
                     <Form.Group controlId="signupPassword">
-                      <Form.Label>
-                        Password
-                        <span className="text-danger">*</span>
-                      </Form.Label>
+                      <Form.Label>Password <span className="text-danger">*</span></Form.Label>
                       <InputGroup>
                         <InputGroup.Text><Lock /></InputGroup.Text>
                         <Form.Control
@@ -136,26 +206,18 @@ export default function SignupStep2Page() {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           required
+                          disabled={loading || isGoogleLoading}
                         />
                       </InputGroup>
                       <ProgressBar
-                        variant={getStrengthVariant(passwordStrength)}
+                        variant={[ 'danger', 'warning', 'info', 'success' ][passwordStrength - 1] || 'secondary'}
                         now={(passwordStrength / 4) * 100}
-                        style={{ height: '6px' }}
                         className="mt-2"
                       />
-                      <Form.Text className={`text-${getStrengthVariant(passwordStrength)} small`}>
-                        Password strength:
-                        {' '}
-                        {getStrengthLabel(passwordStrength)}
-                      </Form.Text>
+                      <Form.Text className={`text-${[ 'danger', 'warning', 'info', 'success' ][passwordStrength - 1] || 'secondary'} small`}>Password strength: {[ 'Weak', 'Fair', 'Good', 'Strong' ][passwordStrength - 1] || ''}</Form.Text>
                     </Form.Group>
-
                     <Form.Group controlId="confirmPassword">
-                      <Form.Label>
-                        Confirm Password
-                        <span className="text-danger">*</span>
-                      </Form.Label>
+                      <Form.Label>Confirm Password <span className="text-danger">*</span></Form.Label>
                       <InputGroup>
                         <InputGroup.Text><Lock /></InputGroup.Text>
                         <Form.Control
@@ -165,69 +227,35 @@ export default function SignupStep2Page() {
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           required
                           isInvalid={confirmPassword.length > 0 && password !== confirmPassword}
+                          disabled={loading || isGoogleLoading}
                         />
-                        <Form.Control.Feedback type="invalid">
-                          Passwords do not match.
-                        </Form.Control.Feedback>
+                        <Form.Control.Feedback type="invalid">Passwords do not match.</Form.Control.Feedback>
                       </InputGroup>
                     </Form.Group>
-
-                    {/* Password Requirements */}
                     <Card bg="light" body className="border">
                       <p className="small fw-medium text-dark mb-2">Password Requirements:</p>
                       <ListGroup variant="flush" className="small">
-                        {/* eslint-disable-next-line max-len */}
-                        <ListGroup.Item className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${requirements.length ? 'text-success' : 'text-muted'}`}>
-                          {requirements.length ? <CheckCircleFill /> : <Circle size={12} />}
-                          {' '}
-                          At least 8 characters
-                        </ListGroup.Item>
-                        {/* eslint-disable-next-line max-len */}
-                        <ListGroup.Item className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${requirements.uppercase ? 'text-success' : 'text-muted'}`}>
-                          {requirements.uppercase ? <CheckCircleFill /> : <Circle size={12} />}
-                          {' '}
-                          One uppercase letter
-                        </ListGroup.Item>
-                        {/* eslint-disable-next-line max-len */}
-                        <ListGroup.Item className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${requirements.number ? 'text-success' : 'text-muted'}`}>
-                          {requirements.number ? <CheckCircleFill /> : <Circle size={12} />}
-                          {' '}
-                          One number
-                        </ListGroup.Item>
-                        {/* eslint-disable-next-line max-len */}
-                        <ListGroup.Item className={`d-flex align-items-center gap-2 px-0 py-1 border-0 bg-transparent ${requirements.special ? 'text-success' : 'text-muted'}`}>
-                          {requirements.special ? <CheckCircleFill /> : <Circle size={12} />}
-                          {' '}
-                          One special character
-                        </ListGroup.Item>
+                        {[
+                          { ok: requirements.length, text: 'At least 8 characters' },
+                          { ok: requirements.uppercase, text: 'One uppercase letter' },
+                          { ok: requirements.number, text: 'One number' },
+                          { ok: requirements.special, text: 'One special character' },
+                        ].map(({ ok, text }) => (
+                          <ListGroup.Item key={text} className={`d-flex gap-2 px-0 py-1 bg-transparent ${ok ? 'text-success' : 'text-muted'}`}>
+                            {ok ? <CheckCircleFill /> : <Circle size={12} />} {text}
+                          </ListGroup.Item>
+                        ))}
                       </ListGroup>
                     </Card>
-
                     <p className="text-muted small">
-                      By creating an account, you agree to our
-                      {' '}
-                      {/* TODO: Link to actual terms */}
-                      <Link href="/terms" className="text-decoration-none">Terms of Service</Link>
-                      {' '}
-                      and
-                      {' '}
-                      {/* TODO: Link to actual policy */}
-                      <Link href="/privacy" className="text-decoration-none">Privacy Policy</Link>
-                      .
+                      By creating an account, you agree to our <Link href="/terms" className="text-decoration-none">Terms of Service</Link> and <Link href="/privacy" className="text-decoration-none">Privacy Policy</Link>.
                     </p>
-
-                    {/* TODO: Link to next step on successful submission */}
-                    <Button type="submit" variant="success" size="lg" className="w-100">
-                      Create Account
-                      {' '}
-                      <ArrowRight className="ms-1" />
+                    <Button type="submit" variant="success" size="lg" className="w-100" disabled={loading || isGoogleLoading}>
+                      Create Account <ArrowRight className="ms-1" />
                     </Button>
-
                     <div className="text-center mt-2">
                       <Link href="/signup/step1" className="text-muted small text-decoration-none">
-                        <ArrowLeft className="me-1" size={12} />
-                        {' '}
-                        Back to Welcome
+                        <ArrowLeft className="me-1" size={12} /> Back to Welcome
                       </Link>
                     </div>
                   </Stack>

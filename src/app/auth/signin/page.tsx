@@ -6,34 +6,51 @@ import {
   Stack, Image,
 } from 'react-bootstrap';
 import {
-  Envelope, Lock, ArrowRight, ArrowLeft,
+  Envelope, Lock, ArrowRight, ArrowLeft, Google,
 } from 'react-bootstrap-icons';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
-// import { useSearchParams } from 'next/navigation';
 
 /** The sign in page. */
 const SignIn = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
-  // If there's an error query param, display it (e.g., from NextAuth)
-  // const searchParams = useSearchParams();
-  // const error = searchParams.get('error');
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setIsLoading(true);
+    setError(null);
     const result = await signIn('credentials', {
-      redirect: false,
-      login: email,
+      callbackUrl: '/list',
+      email,
       password,
+      redirect: false,
     });
 
-    if (result?.ok && !result?.error) {
-      console.log('Sign in successful, redirecting...');
+    setIsLoading(false);
+
+    if (result?.error) {
+      console.error('Sign in failed: ', result.error);
+      const errorMessage = result.error === 'CredentialsSignin'
+        ? 'Invalid email or password.'
+        : 'Sign in failed. Please try again.';
+      setError(errorMessage);
+    } else if (result?.ok) {
       window.location.href = '/list';
-    } else {
-      console.error('Sign in failed: ', result?.error);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await signIn('google', { callbackUrl: '/list', redirect: true });
+    } catch (err) {
+      console.error('Google sign in failed:', err);
+      setError('Google sign in failed. Please try again.');
+      setIsLoading(false);
     }
   };
 
@@ -55,8 +72,34 @@ const SignIn = () => {
                   </Card.Title>
                 </Stack>
 
+                <div className="text-center mb-4">
+                  <Button
+                    variant="outline-primary"
+                    onClick={handleGoogleSignIn}
+                    className="w-100"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      'Signing in...'
+                    ) : (
+                      <>
+                        <Google className="me-2" />
+                        Sign in with Google
+                      </>
+                    )}
+                  </Button>
+                  <div className="mt-3">
+                    <span className="text-muted">or</span>
+                  </div>
+                </div>
+
                 <Form onSubmit={handleSubmit}>
                   <Stack gap={3}>
+                    {error && (
+                      <div className="alert alert-danger small py-2" role="alert">
+                        {error}
+                      </div>
+                    )}
                     <Form.Group controlId="loginEmail">
                       <Form.Label>
                         Email Address
@@ -70,6 +113,7 @@ const SignIn = () => {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
+                          disabled={isLoading}
                         />
                       </InputGroup>
                     </Form.Group>
@@ -87,6 +131,7 @@ const SignIn = () => {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           required
+                          disabled={isLoading}
                         />
                       </InputGroup>
                     </Form.Group>
@@ -96,16 +141,27 @@ const SignIn = () => {
                         type="checkbox"
                         id="rememberMe"
                         label="Remember me"
+                        disabled={isLoading}
                       />
                       <Link href="/auth/forgot-password" className="text-decoration-none">
                         Forgot password?
                       </Link>
                     </div>
 
-                    <Button type="submit" variant="success" size="lg" className="w-100">
-                      Sign In
-                      {' '}
-                      <ArrowRight className="ms-1" />
+                    <Button
+                      type="submit"
+                      variant="success"
+                      size="lg"
+                      className="w-100"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? 'Signing in...' : (
+                        <>
+                          Sign In
+                          {' '}
+                          <ArrowRight className="ms-1" />
+                        </>
+                      )}
                     </Button>
 
                     <div className="text-center mt-2">
@@ -117,19 +173,6 @@ const SignIn = () => {
                         {' '}
                         Create an account
                       </Link>
-                    </div>
-
-                    <div className="text-center mt-3">
-                      <p className="mb-2">Or</p>
-                      <Button
-                        variant="outline-primary"
-                        onClick={() => signIn('google', {
-                          callbackUrl: '/list',
-                        })}
-                        className="w-100"
-                      >
-                        Sign in with Google
-                      </Button>
                     </div>
                   </Stack>
                 </Form>
