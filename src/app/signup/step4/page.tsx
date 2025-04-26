@@ -55,7 +55,7 @@ export default function SignupStep4Page() {
     setLoading(true);
 
     try {
-      const res = await fetch('/profileapi/profile', {
+      const res = await fetch('/api/profileapi/profile', {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
