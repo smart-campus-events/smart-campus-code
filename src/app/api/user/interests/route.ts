@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     if (!Array.isArray(categoryIds)) {
       return NextResponse.json(
         { message: 'Invalid input: categoryIds must be an array' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -62,14 +62,14 @@ export async function POST(request: Request) {
     // 7. Return success response.
     return NextResponse.json(
       { message: 'Interests saved successfully (placeholder)' },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     // 6. Handle errors.
     console.error('Failed to save user interests:', error);
     return NextResponse.json(
       { message: 'Failed to save interests' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

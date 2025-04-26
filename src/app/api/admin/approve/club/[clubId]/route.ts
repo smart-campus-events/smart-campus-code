@@ -5,7 +5,7 @@ import { getServerSession } from 'next-auth/next';
 import { NextResponse } from 'next/server';
 
 // Utility to check if user is admin
-async function isAdminUser() {
+async function isAdminUser(): Promise<boolean> {
   const session = (await getServerSession(authOptions)) as Session;
   return session?.user?.isAdmin === true;
 }
@@ -14,25 +14,20 @@ async function isAdminUser() {
 // Approves a pending club submission.
 export async function POST(
   request: Request,
-  { params }: { params: { clubId: string } }
+  { params: { clubId } }: { params: { clubId: string } },
 ) {
-  // ensure we have a typed session
-  const session = (await getServerSession(authOptions)) as Session;
-
-  // must be logged in and an admin
-  if (!session?.user?.email || session.user.isAdmin !== true) {
+  if (!(await isAdminUser())) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  const { clubId } = params;
   // TODO: Implement logic to update club status to APPROVED
   // TODO: Trigger LLM classification if needed
-  console.log(`TODO: Approve club with ID: ${clubId}`);
+  console.log(`Approving club with ID: ${clubId}`);
 
   return NextResponse.json(
-    { message: 'Club approved (placeholder)' },
-    { status: 200 }
+    { message: 'Club approved' },
+    { status: 200 },
   );
 }
 
-// Maybe add DELETE for rejecting?
+// (If you later add a DELETE for rejecting, you can do the same check there.)

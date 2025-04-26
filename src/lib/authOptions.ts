@@ -1,7 +1,7 @@
 /* eslint-disable arrow-body-style */
 import { prisma } from '@/lib/prisma';
 import { compare } from 'bcrypt';
-import { type NextAuthOptions } from 'next-auth';
+import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 
@@ -41,7 +41,8 @@ const authOptions: NextAuthOptions = {
             email: credentials.email,
           },
         });
-        if (!user) {
+        // guard against OAuth users who have no password
+        if (!user || !user.password) {
           return null;
         }
 
@@ -66,7 +67,7 @@ const authOptions: NextAuthOptions = {
     //   newUser: '/auth/new-user'
   },
   callbacks: {
-    session: ({ session, token }) => {
+    session: ({ session, token }: { session: any; token: any }) => {
       // console.log('Session Callback', { session, token })
       return {
         ...session,
@@ -77,20 +78,20 @@ const authOptions: NextAuthOptions = {
         },
       };
     },
-    jwt: ({ token, user }) => {
+    jwt: ({ token, user }: { token: any; user?: any }) => {
       // console.log('JWT Callback', { token, user })
       if (user) {
-        const u = user as unknown as any;
         return {
           ...token,
-          id: u.id,
-          randomKey: u.randomKey,
+          id: user.id,
+          randomKey: user.randomKey,
         };
       }
       return token;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  // non-null assert so TS knows this is a string
+  secret: process.env.NEXTAUTH_SECRET!,
 };
 
 export default authOptions;

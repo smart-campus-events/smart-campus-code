@@ -25,14 +25,14 @@ export async function POST(request: Request) {
     if (!currentPassword || !newPassword) {
       return NextResponse.json(
         { message: 'Current password and new password are required' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (newPassword.length < 6) { // Example minimum length validation
       return NextResponse.json(
         { message: 'New password must be at least 6 characters long' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
       // User not found or doesn't have a password set (e.g., OAuth user)
       return NextResponse.json(
         { message: 'User not found or password not set' },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
       // Return 403 Forbidden for incorrect password
       return NextResponse.json(
         { message: 'Incorrect current password' },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       { message: 'Password changed successfully' },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error('Failed to change password:', error);
@@ -78,12 +78,12 @@ export async function POST(request: Request) {
     if (error instanceof SyntaxError) {
       return NextResponse.json(
         { message: 'Invalid request body' },
-        { status: 400 }
+        { status: 400 },
       );
     }
     return NextResponse.json(
       { message: 'Failed to change password' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
