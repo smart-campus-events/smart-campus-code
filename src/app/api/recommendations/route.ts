@@ -1,9 +1,13 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
 import nextAuthOptionsConfig from '@/lib/authOptions';
 import { prisma } from '@/lib/prisma';
+import type { Session } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
+import { NextResponse } from 'next/server';
 // Import Prisma utility types
 import { Prisma } from '@prisma/client';
+
+// Extend Session type inline to include user.id
+type SessionWithId = Session & { user: Session['user'] & { id: string } };
 
 // Define types based on Prisma query arguments
 const clubArgs = {
@@ -38,7 +42,7 @@ export async function GET(/* request: Request */) {
   // 5. Implement fallback logic if user has no interests or few matches (e.g., popular/new items).
   // 6. Return structured response { recommendedClubs: [...], recommendedEvents: [...] }.
 
-  const session = await getServerSession(nextAuthOptionsConfig);
+  const session = (await getServerSession(nextAuthOptionsConfig)) as SessionWithId;
   if (!session?.user?.id) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
