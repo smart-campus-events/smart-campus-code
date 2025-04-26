@@ -130,7 +130,8 @@ export default function ProfilePage() {
                   's Profile
                 </h1>
                 <p className="text-muted mb-0">
-                  Member since{' '}
+                  Member since
+                  {' '}
                   {new Date(profile.created_at).toLocaleDateString(undefined, {
                     year: 'numeric',
                     month: 'long',
@@ -144,14 +145,18 @@ export default function ProfilePage() {
                 size="sm"
                 onClick={() => router.push('/profile/edit')}
               >
-                <PencilSquare className="me-1" /> Edit Profile
+                <PencilSquare className="me-1" />
+                {' '}
+                Edit Profile
               </Button>
               <Button
                 variant="outline-danger"
                 size="sm"
                 onClick={() => router.push('/api/auth/signout')}
               >
-                <BoxArrowRight className="me-1" /> Logout
+                <BoxArrowRight className="me-1" />
+                {' '}
+                Logout
               </Button>
             </div>
           </Col>
@@ -228,9 +233,7 @@ export default function ProfilePage() {
                       <Col sm={6} className="mb-3">
                         <p className="text-muted mb-1">Comfort Level</p>
                         <div className="d-flex text-warning">
-                          {[...Array(5)].map((_, i) =>
-                            i < comfortLevel ? <StarFill key={i} /> : <Star key={i} />
-                          )}
+                          {[...Array(5)].map((_, i) => (i < comfortLevel ? <StarFill key={i} /> : <Star key={i} />))}
                         </div>
                       </Col>
                     )}
