@@ -1,201 +1,180 @@
 'use client';
 
-import React from 'react';
-import {
-  Container,
-  Row,
-  Col,
-  Card,
-  Badge,
-  // Stack, // Using Stack for vertical layout if needed, but Row/Col is primary here
-} from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCalendarAlt, faUsers } from '@fortawesome/free-solid-svg-icons'; // Example icons
+// Required for useState and useEffect
 
-// Define an interface for our event/club data
-interface SuggestionItem {
-  id: number;
-  title: string;
-  description: string; // Can include date/time or short blurb
-  imageUrl: string;
-  url: string; // Link to the event/club website
-  tags: { label: string; bg: string; text: string }[]; // Category tags
-  type: 'event' | 'club';
+import React, { useState, useEffect } from 'react';
+import { Container, Row, Col, Button, Spinner, Alert } from 'react-bootstrap';
+import { Event as PrismaEvent } from '@prisma/client'; // Or import your specific type
+import EventCard from '@/components/EventCard'; // Adjust path if needed
+
+// Define the structure of the expected API response
+interface ApiResponse {
+  topRecommendations: PrismaEvent[];
+  branchOutSuggestions: PrismaEvent[];
 }
 
-// Placeholder Data (replace with actual data source later)
-const interestBasedSuggestions: SuggestionItem[] = [
-  {
-    id: 1,
-    title: 'UH Esports Valorant Tournament',
-    description: 'Compete or watch the finals! Sat, April 26th, 5 PM',
-    imageUrl: 'https://placehold.co/600x400/3b82f6/white?text=Gaming+Event', // Placeholder image
-    url: 'https://hawaii.edu/esports', // Placeholder URL
-    tags: [
-      { label: 'Gaming', bg: 'primary-subtle', text: 'primary-emphasis' },
-      { label: 'Competition', bg: 'danger-subtle', text: 'danger-emphasis' },
-    ],
-    type: 'event',
-  },
-  {
-    id: 2,
-    title: 'ACM Mānoa Python Workshop',
-    description: 'Learn web scraping basics. Free for students.',
-    imageUrl: 'https://placehold.co/600x400/10b981/white?text=Coding+Workshop', // Placeholder image
-    url: 'https://acmmanoa.org', // Placeholder URL
-    tags: [
-      { label: 'Tech', bg: 'info-subtle', text: 'info-emphasis' },
-      { label: 'Workshop', bg: 'warning-subtle', text: 'warning-emphasis' },
-    ],
-    type: 'club', // Or event if it's a specific one-time thing
-  },
-  {
-    id: 3,
-    title: 'IEEE Robotics Club Meeting',
-    description: 'Join us to work on the latest VEX U challenge.',
-    imageUrl: 'https://placehold.co/600x400/8b5cf6/white?text=Robotics+Club', // Placeholder image
-    url: 'https://ieee.studentorg.hawaii.edu/', // Placeholder URL
-    tags: [
-      { label: 'Engineering', bg: 'secondary-subtle', text: 'secondary-emphasis' },
-      { label: 'Tech', bg: 'info-subtle', text: 'info-emphasis' },
-    ],
-    type: 'club',
-  },
-];
+const EVENTS_PER_PAGE = 3;
 
-const branchOutSuggestions: SuggestionItem[] = [
-  {
-    id: 4,
-    title: 'Mānoa Campus Arboretum Tour',
-    description: 'Discover unique plants on campus. Every Friday, 10 AM.',
-    imageUrl: 'https://placehold.co/600x400/22c55e/white?text=Nature+Tour', // Placeholder image
-    url: 'https://manoa.hawaii.edu/lyonarboretum/', // Placeholder URL (using Lyon as example)
-    tags: [
-      { label: 'Nature', bg: 'success-subtle', text: 'success-emphasis' },
-      { label: 'Campus', bg: 'light', text: 'dark' }, // Use light for neutral tags
-    ],
-    type: 'event',
-  },
-  {
-    id: 5,
-    title: 'East-West Center Gallery Exhibit',
-    description: 'Featuring contemporary Asia Pacific artists.',
-    imageUrl: 'https://placehold.co/600x400/f97316/white?text=Art+Exhibit', // Placeholder image
-    url: 'https://www.eastwestcenter.org/education/ewc-gallery', // Placeholder URL
-    tags: [
-      { label: 'Art', bg: 'warning-subtle', text: 'warning-emphasis' },
-      { label: 'Culture', bg: 'info-subtle', text: 'info-emphasis' },
-    ],
-    type: 'event',
-  },
-  {
-    id: 6,
-    title: 'Stargazing Night - Hawaiian Astronomical Society',
-    description: 'Public viewing event at Kahala Community Park.',
-    imageUrl: 'https://placehold.co/600x400/1f2937/white?text=Stargazing', // Placeholder image
-    url: 'https://www.hawastsoc.org/events', // Placeholder URL
-    tags: [
-      { label: 'Science', bg: 'primary-subtle', text: 'primary-emphasis' },
-      { label: 'Community', bg: 'secondary-subtle', text: 'secondary-emphasis' },
-    ],
-    type: 'event',
-  },
-];
+const SuggestedEventsPage: React.FC = () => {
+  const [topEvents, setTopEvents] = useState<PrismaEvent[]>([]);
+  const [branchOutEvents, setBranchOutEvents] = useState<PrismaEvent[]>([]);
+  const [currentTopIndex, setCurrentTopIndex] = useState(0);
+  const [currentBranchOutIndex, setCurrentBranchOutIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-const SuggestedEventsPage: React.FC = () => (
-  <div className="gradient-background">
-    <Container className="py-5">
-      {/* --- Interest-Based Suggestions --- */}
+  useEffect(() => {
+    const fetchRecommendations = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // Replace with your actual API endpoint that calls the AI
+        const response = await fetch('/api/recommendations/ai-suggested');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch recommendations: ${response.statusText}`);
+        }
+        const data: ApiResponse = await response.json();
+        // Ensure the data structure matches ApiResponse
+        setTopEvents(data.topRecommendations || []);
+        setBranchOutEvents(data.branchOutSuggestions || []);
+      } catch (err) {
+        console.error(err);
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+        setTopEvents([]); // Clear events on error
+        setBranchOutEvents([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecommendations();
+  }, []);
+
+  // --- Pagination Logic ---
+  const handleNext = (
+    setter: React.Dispatch<React.SetStateAction<number>>,
+    currentIndex: number,
+    totalEvents: number,
+  ) => {
+    const nextIndex = currentIndex + EVENTS_PER_PAGE;
+    if (nextIndex < totalEvents) {
+      setter(nextIndex);
+    }
+  };
+
+  const handlePrev = (
+    setter: React.Dispatch<React.SetStateAction<number>>,
+    currentIndex: number,
+  ) => {
+    const prevIndex = currentIndex - EVENTS_PER_PAGE;
+    if (prevIndex >= 0) {
+      setter(prevIndex);
+    }
+  };
+
+  // Helper to render a section
+  const renderEventSection = (
+    title: string,
+    events: PrismaEvent[],
+    currentIndex: number,
+    setIndex: React.Dispatch<React.SetStateAction<number>>,
+  ) => {
+    const displayedEvents = events.slice(
+      currentIndex,
+      currentIndex + EVENTS_PER_PAGE,
+    );
+    const totalEvents = events.length;
+    const canGoPrev = currentIndex > 0;
+    const canGoNext = currentIndex + EVENTS_PER_PAGE < totalEvents;
+
+    return (
       <section className="mb-5">
-        <h2 className="mb-4">Based on Your Interests</h2>
-        <Row xs={1} md={2} lg={3} className="g-4">
-          {' '}
-          {/* Adjust columns based on screen size, g-4 for gutters */}
-          {interestBasedSuggestions.map((item) => (
-            <Col key={item.id}>
-              <Card
-                as="a" // Make the entire card a link
-                href={item.url}
-                target="_blank" // Open in new tab
-                rel="noopener noreferrer"
-                className="h-100 shadow-sm text-decoration-none text-dark card-hover"
-              >
-                <Card.Img
-                  variant="top"
-                  src={item.imageUrl}
-                  alt={`${item.title} image`}
-                  style={{ height: '200px', objectFit: 'cover' }}
-                />
-                <Card.Body className="d-flex flex-column">
-                  {' '}
-                  {/* Flex column for alignment */}
-                  <Card.Title as="h5" className="mb-2">{item.title}</Card.Title>
-                  <Card.Text className="text-muted small mb-3">
-                    {/* Example: Add icon based on type */}
-                    <FontAwesomeIcon icon={item.type === 'event' ? faCalendarAlt : faUsers} className="me-2" />
-                    {item.description}
-                  </Card.Text>
-                  <div className="mt-auto">
-                    {' '}
-                    {/* Push tags to the bottom */}
-                    {item.tags.map((tag) => (
-                      <Badge key={`${item.id}-${tag.label}`} pill bg={tag.bg} text={tag.text} className="me-1 mb-1">
-                        {tag.label}
-                      </Badge>
-                    ))}
-                  </div>
-                  {/* Optional: Add an explicit link icon/text if card-as-link isn't obvious enough */}
-                  {/* <div className="mt-2 text-primary small">
-                      <FontAwesomeIcon icon={faExternalLinkAlt} className="me-1" />
-                      Visit Website
-                    </div> */}
-                </Card.Body>
-              </Card>
-            </Col>
-          ))}
-        </Row>
-      </section>
+        <h2>{title}</h2>
+        {events.length === 0 && !loading && (
+        <p>No suggestions found in this category right now.</p>
+        )}
+        {events.length > 0 && (
+        <Row className="align-items-center g-3">
+          <Col xs="auto" className="d-flex align-items-center">
+            <Button
+              variant="outline-secondary"
+              onClick={() => handlePrev(setIndex, currentIndex)}
+              disabled={!canGoPrev}
+              aria-label={`Previous ${title} events`}
+            >
+              <i className="fa-solid fa-chevron-left" />
+            </Button>
+          </Col>
 
-      {/* --- Branch Out Suggestions --- */}
-      <section>
-        <h2 className="mb-4">Want to Branch Out?</h2>
-        <Row xs={1} md={2} lg={3} className="g-4">
-          {branchOutSuggestions.map((item) => (
-            <Col key={item.id}>
-              <Card
-                as="a"
-                href={item.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="h-100 shadow-sm text-decoration-none text-dark card-hover"
-              >
-                <Card.Img
-                  variant="top"
-                  src={item.imageUrl}
-                  alt={`${item.title} image`}
-                  style={{ height: '200px', objectFit: 'cover' }}
-                />
-                <Card.Body className="d-flex flex-column">
-                  <Card.Title as="h5" className="mb-2">{item.title}</Card.Title>
-                  <Card.Text className="text-muted small mb-3">
-                    <FontAwesomeIcon icon={item.type === 'event' ? faCalendarAlt : faUsers} className="me-2" />
-                    {item.description}
-                  </Card.Text>
-                  <div className="mt-auto">
-                    {item.tags.map((tag) => (
-                      <Badge key={tag.label} pill bg={tag.bg} text={tag.text} className="me-1 mb-1">
-                        {tag.label}
-                      </Badge>
-                    ))}
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
-          ))}
+          <Col>
+            <Row xs={1} md={2} lg={3} className="g-4">
+              {displayedEvents.map((event) => (
+                <Col key={event.id}>
+                  <EventCard event={event} />
+                </Col>
+              ))}
+              {/* Add placeholder cards if fewer than 3 are displayed */}
+              {Array.from({ length: EVENTS_PER_PAGE - displayedEvents.length }).map(() => (
+                <Col key={`placeholder-${title}-${crypto.randomUUID()}`} />
+              ))}
+            </Row>
+          </Col>
+
+          <Col xs="auto" className="d-flex align-items-center">
+            <Button
+              variant="outline-secondary"
+              onClick={() => handleNext(setIndex, currentIndex, totalEvents)}
+              disabled={!canGoNext}
+              aria-label={`Next ${title} events`}
+            >
+              <i className="fa-solid fa-chevron-right" />
+            </Button>
+          </Col>
         </Row>
+        )}
       </section>
+    );
+  };
+
+  return (
+    <Container fluid="lg" className="py-4">
+      <h1>Suggested Events For You</h1>
+      <p className="lead mb-4">Discover events tailored to your interests.</p>
+
+      {loading && (
+        <div className="text-center">
+          <Spinner animation="border" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </Spinner>
+          <p>Loading recommendations...</p>
+        </div>
+      )}
+
+      {error && (
+      <Alert variant="danger">
+        Error loading recommendations:
+        {error}
+      </Alert>
+      )}
+
+      {!loading && !error && (
+        <>
+          {renderEventSection(
+            'Top Recommendations',
+            topEvents,
+            currentTopIndex,
+            setCurrentTopIndex,
+          )}
+          {renderEventSection(
+            'Want to Branch Out?',
+            branchOutEvents,
+            currentBranchOutIndex,
+            setCurrentBranchOutIndex,
+          )}
+        </>
+      )}
     </Container>
-  </div>
-);
+  );
+};
 
 export default SuggestedEventsPage;
