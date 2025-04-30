@@ -1,180 +1,142 @@
+// src/app/suggestions/page.tsx
+
 'use client';
 
-// Required for useState and useEffect
-
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Button, Spinner, Alert } from 'react-bootstrap';
-import { Event as PrismaEvent } from '@prisma/client'; // Or import your specific type
-import EventCard from '@/components/EventCard'; // Adjust path if needed
+import { Alert, Spinner, Container, Row, Col } from 'react-bootstrap'; // Assuming use of react-bootstrap
+// Import your EventCard component (adjust path as needed)
+import EventCard from '@/components/EventCard';
+// Import the NEW ClubCard component (adjust path as needed)
+import ClubCard from '@/components/ClubCard';
+// Import types (adjust paths as needed)
+import type { EventWithDetails, ClubWithDetails } from '@/types/prismaExtendedTypes';
 
-// Define the structure of the expected API response
 interface ApiResponse {
-  topRecommendations: PrismaEvent[];
-  branchOutSuggestions: PrismaEvent[];
+  topRecommendations: EventWithDetails[];
+  branchOutSuggestions: EventWithDetails[];
+  topClubRecommendations: ClubWithDetails[];
+  branchOutClubSuggestions: ClubWithDetails[];
 }
 
-const EVENTS_PER_PAGE = 3;
-
-const SuggestedEventsPage: React.FC = () => {
-  const [topEvents, setTopEvents] = useState<PrismaEvent[]>([]);
-  const [branchOutEvents, setBranchOutEvents] = useState<PrismaEvent[]>([]);
-  const [currentTopIndex, setCurrentTopIndex] = useState(0);
-  const [currentBranchOutIndex, setCurrentBranchOutIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
+export default function SuggestionsPage() {
+  const [data, setData] = useState<ApiResponse | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchRecommendations = async () => {
+    const fetchSuggestions = async () => {
       setLoading(true);
       setError(null);
       try {
-        // Replace with your actual API endpoint that calls the AI
-        const response = await fetch('/api/recommendations/ai-suggested');
+        const response = await fetch('/api/recommendations/ai-suggested'); // Use the correct endpoint
         if (!response.ok) {
-          throw new Error(`Failed to fetch recommendations: ${response.statusText}`);
+          throw new Error(`Failed to fetch suggestions: ${response.statusText}`);
         }
-        const data: ApiResponse = await response.json();
-        // Ensure the data structure matches ApiResponse
-        setTopEvents(data.topRecommendations || []);
-        setBranchOutEvents(data.branchOutSuggestions || []);
-      } catch (err) {
-        console.error(err);
-        setError(err instanceof Error ? err.message : 'An unknown error occurred');
-        setTopEvents([]); // Clear events on error
-        setBranchOutEvents([]);
+        const result: ApiResponse = await response.json();
+        setData(result);
+      } catch (err: any) {
+        setError(err.message || 'An unknown error occurred');
+        console.error('Fetch error:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchRecommendations();
+    fetchSuggestions();
   }, []);
 
-  // --- Pagination Logic ---
-  const handleNext = (
-    setter: React.Dispatch<React.SetStateAction<number>>,
-    currentIndex: number,
-    totalEvents: number,
-  ) => {
-    const nextIndex = currentIndex + EVENTS_PER_PAGE;
-    if (nextIndex < totalEvents) {
-      setter(nextIndex);
-    }
-  };
-
-  const handlePrev = (
-    setter: React.Dispatch<React.SetStateAction<number>>,
-    currentIndex: number,
-  ) => {
-    const prevIndex = currentIndex - EVENTS_PER_PAGE;
-    if (prevIndex >= 0) {
-      setter(prevIndex);
-    }
-  };
-
-  // Helper to render a section
-  const renderEventSection = (
-    title: string,
-    events: PrismaEvent[],
-    currentIndex: number,
-    setIndex: React.Dispatch<React.SetStateAction<number>>,
-  ) => {
-    const displayedEvents = events.slice(
-      currentIndex,
-      currentIndex + EVENTS_PER_PAGE,
-    );
-    const totalEvents = events.length;
-    const canGoPrev = currentIndex > 0;
-    const canGoNext = currentIndex + EVENTS_PER_PAGE < totalEvents;
-
-    return (
-      <section className="mb-5">
-        <h2>{title}</h2>
-        {events.length === 0 && !loading && (
-        <p>No suggestions found in this category right now.</p>
-        )}
-        {events.length > 0 && (
-        <Row className="align-items-center g-3">
-          <Col xs="auto" className="d-flex align-items-center">
-            <Button
-              variant="outline-secondary"
-              onClick={() => handlePrev(setIndex, currentIndex)}
-              disabled={!canGoPrev}
-              aria-label={`Previous ${title} events`}
-            >
-              <i className="fa-solid fa-chevron-left" />
-            </Button>
-          </Col>
-
-          <Col>
-            <Row xs={1} md={2} lg={3} className="g-4">
-              {displayedEvents.map((event) => (
-                <Col key={event.id}>
-                  <EventCard event={event} />
-                </Col>
-              ))}
-              {/* Add placeholder cards if fewer than 3 are displayed */}
-              {Array.from({ length: EVENTS_PER_PAGE - displayedEvents.length }).map(() => (
-                <Col key={`placeholder-${title}-${crypto.randomUUID()}`} />
-              ))}
-            </Row>
-          </Col>
-
-          <Col xs="auto" className="d-flex align-items-center">
-            <Button
-              variant="outline-secondary"
-              onClick={() => handleNext(setIndex, currentIndex, totalEvents)}
-              disabled={!canGoNext}
-              aria-label={`Next ${title} events`}
-            >
-              <i className="fa-solid fa-chevron-right" />
-            </Button>
-          </Col>
+  const renderEventSection = (title: string, events: EventWithDetails[]) => (
+    <div className="mb-5">
+      <h2>{title}</h2>
+      {events.length > 0 ? (
+        <Row xs={1} md={2} lg={3} className="g-4">
+          {events.map((event) => (
+            <Col key={event.id}>
+              <EventCard event={event} />
+            </Col>
+          ))}
         </Row>
-        )}
-      </section>
-    );
-  };
+      ) : (
+        <p>No event suggestions in this category right now.</p>
+      )}
+    </div>
+  );
+
+  // New function to render club sections
+  const renderClubSection = (title: string, clubs: ClubWithDetails[]) => (
+    <div className="mb-5">
+      <h2>{title}</h2>
+      {clubs.length > 0 ? (
+        <Row xs={1} md={2} lg={3} className="g-4">
+          {clubs.map((club) => (
+            <Col key={club.id}>
+              {/* Use the new ClubCard component */}
+              <ClubCard club={club} />
+            </Col>
+          ))}
+        </Row>
+      ) : (
+        <p>No club suggestions in this category right now.</p>
+      )}
+    </div>
+  );
 
   return (
-    <Container fluid="lg" className="py-4">
-      <h1>Suggested Events For You</h1>
-      <p className="lead mb-4">Discover events tailored to your interests.</p>
+    <Container className="py-4">
+      <h1>AI Suggestions</h1>
+      <p>Discover events and clubs tailored just for you!</p>
 
       {loading && (
         <div className="text-center">
           <Spinner animation="border" role="status">
             <span className="visually-hidden">Loading...</span>
           </Spinner>
-          <p>Loading recommendations...</p>
+          <p>Loading suggestions...</p>
         </div>
       )}
 
-      {error && (
-      <Alert variant="danger">
-        Error loading recommendations:
-        {error}
-      </Alert>
-      )}
+      {error && <Alert variant="danger">{error}</Alert>}
 
-      {!loading && !error && (
+      {!loading && !error && data && (
         <>
-          {renderEventSection(
-            'Top Recommendations',
-            topEvents,
-            currentTopIndex,
-            setCurrentTopIndex,
-          )}
-          {renderEventSection(
-            'Want to Branch Out?',
-            branchOutEvents,
-            currentBranchOutIndex,
-            setCurrentBranchOutIndex,
+          {/* Render Event Sections */}
+          {renderEventSection('Top Event Recommendations', data.topRecommendations)}
+          {renderEventSection('Branch Out Events', data.branchOutSuggestions)}
+
+          {/* Render Club Sections */}
+          {renderClubSection('Top Club Recommendations', data.topClubRecommendations)}
+          {renderClubSection('Branch Out Clubs', data.branchOutClubSuggestions)}
+
+          {(data.topRecommendations.length === 0 && data.branchOutSuggestions.length === 0
+                      && data.topClubRecommendations.length === 0 && data.branchOutClubSuggestions.length === 0) && (
+                        <Alert variant="info">
+                          No suggestions available at the moment.
+                          Explore events and clubs manually!
+                        </Alert>
           )}
         </>
       )}
     </Container>
   );
+}
+
+// --- Helper Type Definition (Place in a types file e.g., src/types/prismaExtendedTypes.ts) ---
+/*
+import type {
+  Event as PrismaEvent,
+  Club as PrismaClub,
+  Category,
+  EventCategory,
+  ClubCategory
+} from '@prisma/client';
+
+export type EventWithDetails = PrismaEvent & {
+  categories: (EventCategory & { category: Category })[];
+  organizerClub: { name: string } | null;
 };
 
-export default SuggestedEventsPage;
+export type ClubWithDetails = PrismaClub & {
+  categories: (ClubCategory & { category: Category })[];
+  // Add other relations if needed, e.g., submittedBy, favoritedBy count
+};
+*/
