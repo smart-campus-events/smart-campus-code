@@ -167,13 +167,13 @@ function AdminPage() {
                   {eventMessage && <Alert variant={eventMessage.type} className="mt-3">{eventMessage.text}</Alert>}
                   <Button variant="primary" onClick={handleRunEventScraper} disabled={eventLoading}>
                     {eventLoading ? (
-                        <>
-                            <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
-                            Scheduling...
-</>
-                      ) : (
-                        'Schedule Event Scrape'
-                      )}
+                      <>
+                        <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
+                        Scheduling...
+                      </>
+                    ) : (
+                      'Schedule Event Scrape'
+                    )}
                   </Button>
                 </Card.Body>
               </Card>
@@ -186,13 +186,13 @@ function AdminPage() {
                   {clubMessage && <Alert variant={clubMessage.type} className="mt-3">{clubMessage.text}</Alert>}
                   <Button variant="primary" onClick={handleRunClubScraper} disabled={clubLoading}>
                     {clubLoading ? (
-                        <>
-                            <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
-                            Scheduling...
-</>
-                      ) : (
-                        'Schedule Club Scrape'
-                      )}
+                      <>
+                        <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
+                        Scheduling...
+                      </>
+                    ) : (
+                      'Schedule Club Scrape'
+                    )}
                   </Button>
                 </Card.Body>
               </Card>
@@ -241,23 +241,27 @@ function AdminPage() {
                   <tbody>
                     {jobStatuses.map((job) => (
                       <tr key={job.id}>
-                            <td className="text-nowrap">{job.type.replace('_', ' ')}</td>
-                            <td>
-                              <Badge bg={getJobStatusBadgeVariant(job.status)}>
-                                    {job.status}
-                                  </Badge>
-                            </td>
-                            <td className="text-nowrap">{job.createdAt.toLocaleString()}</td>
-                            <td className="text-nowrap">{job.startedAt ? job.startedAt.toLocaleString() : '-'}</td>
-                            <td className="text-nowrap">{job.endedAt ? job.endedAt.toLocaleString() : '-'}</td>
-                            <td style={{ fontSize: '0.8em', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                              {job.status === 'FAILED' && job.result?.error
-                                    ? `Error: ${job.result.error}`
-                                    : job.status === 'COMPLETED' && job.result?.message
-                                      ? job.result.message
-                                      : '-'}
-                            </td>
-                          </tr>
+                        <td className="text-nowrap">{job.type.replace('_', ' ')}</td>
+                        <td>
+                          <Badge bg={getJobStatusBadgeVariant(job.status)}>
+                            {job.status}
+                          </Badge>
+                        </td>
+                        <td className="text-nowrap">{job.createdAt.toLocaleString()}</td>
+                        <td className="text-nowrap">{job.startedAt ? job.startedAt.toLocaleString() : '-'}</td>
+                        <td className="text-nowrap">{job.endedAt ? job.endedAt.toLocaleString() : '-'}</td>
+                        <td style={{ fontSize: '0.8em', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                          {(() => {
+                            if (job.status === 'FAILED' && job.result?.error) {
+                              return `Error: ${job.result.error}`;
+                            }
+                            if (job.status === 'COMPLETED' && job.result?.message) {
+                              return job.result.message;
+                            }
+                            return '-';
+                          })()}
+                        </td>
+                      </tr>
                     ))}
                   </tbody>
                 </Table>
