@@ -92,32 +92,49 @@ const authOptions: NextAuthOptions = {
   },
   callbacks: {
     session: ({ session, token }: { session: Session; token: JWT }): Session => {
-      const enhancedToken = token as EnhancedToken;
+      console.log('--- Session Callback ---'); // DEBUG
+      console.log('Token:', JSON.stringify(token, null, 2)); // DEBUG
+      const enhancedToken = token as EnhancedToken; // Keep your EnhancedToken type or similar
       if (session.user && enhancedToken.id) {
-        const sessionUser: SessionUser = {
-          ...session.user,
-          id: enhancedToken.id,
-          isAdmin: enhancedToken.isAdmin,
-        };
-        return {
-          ...session,
-          user: sessionUser,
-        };
+        // Explicitly type session.user to allow adding properties
+        const sessionUser = session.user as SessionUser;
+        sessionUser.id = enhancedToken.id;
+        sessionUser.isAdmin = enhancedToken.isAdmin; // Transfer from token
+
+        // console.log("User being added to session:", JSON.stringify(sessionUser, null, 2)); // DEBUG
+        console.log('Final Session Object:', JSON.stringify(session, null, 2)); // DEBUG
+        return session; // Return the modified session
       }
+      console.log('Session unmodified.'); // DEBUG
       return session;
     },
-    jwt: ({ token, user }: { token: JWT; user?: NextAuthUser & { isAdmin?: boolean } }): JWT | Promise<JWT> => {
-      const enhancedToken = token as EnhancedToken;
-
+    jwt: ({
+      token,
+      user,
+    }: {
+      token: JWT;
+      user?: (NextAuthUser & { isAdmin?: boolean });
+    }): JWT | Promise<JWT> => {
+      console.log('--- JWT Callback ---'); // DEBUG
+      // Log only on initial sign in when user object is present
       if (user) {
+        console.log('User object present (sign-in):', JSON.stringify(user, null, 2)); // DEBUG
+        const enhancedToken = token as EnhancedToken;
         enhancedToken.id = user.id;
-        enhancedToken.isAdmin = user.isAdmin;
+        enhancedToken.isAdmin = user.isAdmin; // Assign isAdmin from user obj
+        console.log('Token after adding user data:', JSON.stringify(enhancedToken, null, 2)); // DEBUG
+        return enhancedToken;
       }
-
-      return enhancedToken;
+      // console.log("Token (no user obj):", JSON.stringify(token, null, 2)); // DEBUG: Can be noisy
+      return token; // Return previous token if no user object (session validation)
     },
   },
   secret: process.env.NEXTAUTH_SECRET!,
 };
 
 export default authOptions;
+
+interface EnhancedToken extends JWT {
+  id?: string; // Make id optional initially
+  isAdmin?: boolean;
+}

@@ -235,6 +235,31 @@ model Event {
   @@index([organizerClubId])
 }
 
+model Job {
+  id        String   @id @default(cuid())
+  type      JobType // Type of job (e.g., EVENT_SCRAPE, CLUB_SCRAPE)
+  status    JobStatus @default(PENDING) // PENDING, RUNNING, COMPLETED, FAILED
+  payload   Json?     // Optional: Store any specific data needed for the job
+  result    Json?     // Optional: Store success output or error messages
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  startedAt DateTime? // When processing began
+  endedAt   DateTime? // When processing finished
+}
+
+enum JobType {
+  EVENT_SCRAPE
+  CLUB_SCRAPE
+  // Add other job types here if needed
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
 // --- RSVP Model (Re-added) ---
 model RSVP {
   id        String   @id @default(cuid())
