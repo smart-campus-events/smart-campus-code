@@ -13,7 +13,7 @@ async function isAdminUser() {
 // GET /api/admin/jobs/status
 // Fetches the status of recent jobs for the admin dashboard.
 // eslint-disable-next-line import/prefer-default-export
-export async function GET(request: Request) {
+export async function GET() {
   if (!(await isAdminUser())) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }

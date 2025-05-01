@@ -1,13 +1,15 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-// Use client-side session fetching if needed for initial check, but rely on API protection
-// import { getSession } from 'next-auth/react';
-// import { useRouter } from 'next/navigation';
-import { Container, Card, Button, Spinner, Alert, Table, Badge, Row, Col } from 'react-bootstrap';
+import { Container, Card, Button, Spinner, Alert, Table, Badge, Row, Col, Tabs,
+  Tab } from 'react-bootstrap'; // Add Tabs, Tab
 import type { Job, JobStatus, JobType } from '@prisma/client';
+import ManageContentStatus from '@/components/admin/ManageContentStatus';
 
-// Define a type for the job data we fetch for the status table
+// Need to import Row and Col from react-bootstrap
+import { ButtonGroup, Pagination } from 'react-bootstrap'; // Import the new component
+
+// Define JobStatusDisplay type (keep this)
 type JobStatusDisplay = {
   id: string;
   type: JobType;
@@ -15,35 +17,25 @@ type JobStatusDisplay = {
   createdAt: Date;
   startedAt?: Date | null;
   endedAt?: Date | null;
-  result?: any; // Keep it flexible to display error messages
+  result?: any;
 };
 
 function AdminPage() {
+  // Keep all existing state for Jobs (eventLoading, clubLoading, messages, jobStatuses, etc.)
   const [eventLoading, setEventLoading] = useState(false);
   const [clubLoading, setClubLoading] = useState(false);
-  const [eventMessage, setEventMessage] = useState<{
-    type: 'success' | 'danger' | 'warning';
-    text: string;
-  } | null>(null);
+  const [eventMessage, setEventMessage] = useState<{ type:
+  'success' | 'danger' | 'warning'; text: string } | null>(null);
   const [clubMessage, setClubMessage] = useState<{ type: 'success' | 'danger' | 'warning'; text: string } | null>(null);
   const [jobStatuses, setJobStatuses] = useState<JobStatusDisplay[]>([]);
   const [statusLoading, setStatusLoading] = useState(true);
   const [statusError, setStatusError] = useState<string | null>(null);
 
-  // Optional: Client-side redirection if not admin (strengthen with server-side check)
-  // const router = useRouter();
-  // useEffect(() => {
-  //   const checkAdmin = async () => {
-  //     const session = await getSession();
-  //     if (!session?.user?.isAdmin) {
-  //       router.push('/not-authorized'); // Or your login/home page
-  //     }
-  //   };
-  //   checkAdmin();
-  // }, [router]);
+  // Keep existing fetchJobStatuses, handleRunEventScraper, handleRunClubScraper functions
 
   const fetchJobStatuses = useCallback(async () => {
     setStatusError(null);
+    // setStatusLoading(true); // Maybe only set loading on initial load?
     try {
       const response = await fetch('/api/admin/jobs/status');
       if (!response.ok) {
@@ -63,7 +55,7 @@ function AdminPage() {
       console.error('Status fetch error:', error);
       setStatusError(error.message);
     } finally {
-      setStatusLoading(false);
+      setStatusLoading(false); // Ensure loading is false after fetch attempt
     }
   }, []);
 
@@ -124,7 +116,7 @@ function AdminPage() {
     }
   };
 
-  // Helper to get badge variant based on status
+  // Helper to get badge variant based on status (keep this)
   const getStatusBadgeVariant = (status: JobStatus) => {
     switch (status) {
       case 'PENDING': return 'secondary';
@@ -138,133 +130,168 @@ function AdminPage() {
   return (
     <Container className="my-4">
       <h1>Admin Dashboard</h1>
-      <p>Use this page to manage application data and processes.</p>
 
-      {/* Job Scheduling Section */}
-      <Row>
-        <Col md={6} className="mb-3">
-          <Card>
+      {/* Use Tabs for different sections */}
+      <Tabs defaultActiveKey="jobs" id="admin-dashboard-tabs" className="mb-3 mt-4">
+
+        {/* Tab 1: Job Scheduling & Status */}
+        <Tab eventKey="jobs" title="Background Jobs">
+          <p className="text-muted">Schedule scraping jobs and monitor their status.</p>
+          {/* Job Scheduling Section */}
+          <Row>
+            <Col md={6} className="mb-3">
+              <Card>
+                <Card.Body>
+                  <Card.Title>Event Scraper Job</Card.Title>
+                  <Card.Text>
+                    Schedule the background job to update event data.
+                  </Card.Text>
+                  {eventMessage && (
+                  <Alert variant={eventMessage.type} className="mt-3">
+                    {eventMessage.text}
+                  </Alert>
+                  )}
+                  <Button
+                    variant="primary"
+                    onClick={handleRunEventScraper}
+                    disabled={eventLoading}
+                  >
+                    {eventLoading ? (
+                      <>
+                        <Spinner
+                          as="span"
+                          animation="border"
+                          size="sm"
+                          role="status"
+                          aria-hidden="true"
+                          className="me-2"
+                        />
+                        Scheduling...
+                      </>
+                    ) : (
+                      'Schedule Event Scrape'
+                    )}
+                  </Button>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={6} className="mb-3">
+              <Card>
+                <Card.Body>
+                  <Card.Title>Club Scraper Job</Card.Title>
+                  <Card.Text>
+                    Schedule the background job to update club data.
+                  </Card.Text>
+                  {clubMessage && (
+                  <Alert variant={clubMessage.type} className="mt-3">
+                    {clubMessage.text}
+                  </Alert>
+                  )}
+                  <Button
+                    variant="primary"
+                    onClick={handleRunClubScraper}
+                    disabled={clubLoading}
+                  >
+                    {clubLoading ? (
+                      <>
+                        <Spinner
+                          as="span"
+                          animation="border"
+                          size="sm"
+                          role="status"
+                          aria-hidden="true"
+                          className="me-2"
+                        />
+                        Scheduling...
+                      </>
+                    ) : (
+                      'Schedule Club Scrape'
+                    )}
+                  </Button>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+
+          {/* Job Status Section */}
+          <Card className="mt-4">
+            <Card.Header>
+              <h2 className="h5 mb-0">Recent Job Statuses</h2>
+            </Card.Header>
             <Card.Body>
-              <Card.Title>Event Data Management</Card.Title>
-              <Card.Text>
-                Schedule the background job to scrape and update event data.
-              </Card.Text>
-              {eventMessage && (
-              <Alert variant={eventMessage.type} className="mt-3">
-                {eventMessage.text}
-              </Alert>
+              {statusLoading && <Spinner animation="border" size="sm" />}
+              {statusError && (
+                <Alert variant="danger">
+                  Error loading job statuses:
+                  {statusError}
+                </Alert>
               )}
-              <Button
-                variant="primary"
-                onClick={handleRunEventScraper}
-                disabled={eventLoading}
-              >
-                {eventLoading ? (
-                  <>
-                    <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
-                    Scheduling...
-                  </>
-                ) : (
-                  'Schedule Event Scraper Job'
-                )}
+              {!statusLoading && !statusError && jobStatuses.length === 0 && <p>No recent jobs found.</p>}
+              {!statusLoading && !statusError && jobStatuses.length > 0 && (
+                <Table striped bordered hover responsive size="sm">
+                  <thead>
+                    <tr>
+                      <th>Type</th>
+                      <th>Status</th>
+                      <th>Scheduled At</th>
+                      <th>Started At</th>
+                      <th>Ended At</th>
+                      <th>Details</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {jobStatuses.map((job) => (
+                      <tr key={job.id}>
+                        <td>{job.type.replace('_', ' ')}</td>
+                        <td>
+                          <Badge bg={getStatusBadgeVariant(job.status)}>
+                            {job.status}
+                          </Badge>
+                        </td>
+                        <td>{job.createdAt.toLocaleString()}</td>
+                        <td>{job.startedAt ? job.startedAt.toLocaleString() : '-'}</td>
+                        <td>{job.endedAt ? job.endedAt.toLocaleString() : '-'}</td>
+                        <td style={{ fontSize: '0.8em', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                          {(() => {
+                            if (job.status === 'FAILED' && job.result?.error) {
+                              return `Error: ${job.result.error}`;
+                            }
+                            if (job.status === 'COMPLETED' && job.result?.message) {
+                              return job.result.message;
+                            }
+                            return '-';
+                          })()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              )}
+              <Button variant="outline-secondary" size="sm" onClick={fetchJobStatuses} disabled={statusLoading}>
+                <i className={`bi bi-arrow-clockwise ${statusLoading ? 'animate-spin' : ''}`} />
+                {' '}
+                Refresh Status
               </Button>
             </Card.Body>
           </Card>
-        </Col>
-        <Col md={6} className="mb-3">
-          <Card>
-            <Card.Body>
-              <Card.Title>Club Data Management</Card.Title>
-              <Card.Text>
-                Schedule the background job to scrape and update club (RIO) data.
-              </Card.Text>
-              {clubMessage && (
-              <Alert variant={clubMessage.type} className="mt-3">
-                {clubMessage.text}
-              </Alert>
-              )}
-              <Button
-                variant="primary"
-                onClick={handleRunClubScraper}
-                disabled={clubLoading}
-              >
-                {clubLoading ? (
-                  <>
-                    <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
-                    Scheduling...
-                  </>
-                ) : (
-                  'Schedule Club Scraper Job'
-                )}
-              </Button>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
+        </Tab>
 
-      {/* Job Status Section */}
-      <Card className="mt-4">
-        <Card.Header>
-          <h2 className="h5 mb-0">Recent Job Statuses</h2>
-        </Card.Header>
-        <Card.Body>
-          {statusLoading && <Spinner animation="border" size="sm" />}
-          {statusError && (
-          <Alert variant="danger">
-            Error loading job statuses:
-            {statusError}
-          </Alert>
-          )}
-          {!statusLoading && !statusError && jobStatuses.length === 0 && <p>No recent jobs found.</p>}
-          {!statusLoading && !statusError && jobStatuses.length > 0 && (
-            <Table striped bordered hover responsive size="sm">
-              <thead>
-                <tr>
-                  <th>Type</th>
-                  <th>Status</th>
-                  <th>Scheduled At</th>
-                  <th>Started At</th>
-                  <th>Ended At</th>
-                  <th>Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {jobStatuses.map((job) => (
-                  <tr key={job.id}>
-                    <td>{job.type.replace('_', ' ')}</td>
-                    <td>
-                      <Badge bg={getStatusBadgeVariant(job.status)}>
-                        {job.status}
-                      </Badge>
-                    </td>
-                    <td>{job.createdAt.toLocaleString()}</td>
-                    <td>{job.startedAt ? job.startedAt.toLocaleString() : '-'}</td>
-                    <td>{job.endedAt ? job.endedAt.toLocaleString() : '-'}</td>
-                    <td style={{ fontSize: '0.8em', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                      {(() => {
-                        if (job.status === 'FAILED' && job.result?.error) {
-                          return `Error: ${job.result.error}`;
-                        }
-                        if (job.status === 'COMPLETED' && job.result?.message) {
-                          return job.result.message;
-                        }
-                        return '-';
-                      })()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          )}
-          <Button variant="outline-secondary" size="sm" onClick={fetchJobStatuses} disabled={statusLoading}>
-            <i className={`bi bi-arrow-clockwise ${statusLoading ? 'animate-spin' : ''}`} />
-            {' '}
-            Refresh Status
-          </Button>
-        </Card.Body>
-      </Card>
+        {/* Tab 2: Manage Content Status */}
+        <Tab eventKey="manage" title="Manage Content">
+          <ManageContentStatus />
+        </Tab>
+
+        {/* Add other tabs later for User Management, Event Editor */}
+        {/*
+         <Tab eventKey="users" title="Manage Users">
+            <p>User management interface will go here.</p>
+         </Tab>
+          */}
+
+      </Tabs>
+
     </Container>
   );
-}
+} // Ensure these are imported if used within ManageContentStatus
 
 export default AdminPage;
