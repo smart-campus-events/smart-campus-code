@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { ContentStatus } from '@prisma/client'; // Import the enum
 import type { Session } from 'next-auth';
 import { getServerSession } from 'next-auth/next';
 import { prisma } from '@/lib/prisma';
@@ -11,14 +10,58 @@ async function isAdminUser(): Promise<boolean> {
   return session?.user?.isAdmin === true;
 }
 
-// Validate if the provided status is a valid ContentStatus enum value
-function isValidContentStatus(status: any): status is ContentStatus {
-  return Object.values(ContentStatus).includes(status);
+// GET /api/admin/events/[eventId]
+// Fetches details for a single event.
+export async function GET(
+  request: Request, // Added request parameter (standard practice)
+  { params: { eventId } }: { params: { eventId: string } },
+) {
+  if (!(await isAdminUser())) {
+    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  }
+
+  if (!eventId) {
+    return NextResponse.json({ message: 'Event ID is required' }, { status: 400 });
+  }
+
+  try {
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      include: {
+        // Include related data needed for the edit form
+        categories: { // Get the IDs of connected categories
+          select: {
+            categoryId: true,
+          },
+        },
+        organizerClub: { // Get the ID and name of the connected club
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!event) {
+      return NextResponse.json({ message: 'Event not found' }, { status: 404 });
+    }
+
+    // Simplify categories data before sending
+    const simplifiedEvent = {
+      ...event,
+      categoryIds: event.categories.map(ec => ec.categoryId), // Create flat array of IDs
+      // categories field is no longer needed in the response
+    };
+    delete (simplifiedEvent as any).categories;
+
+    return NextResponse.json(simplifiedEvent, { status: 200 });
+  } catch (error: any) {
+    console.error(`Failed to fetch event ${eventId}:`, error);
+    return NextResponse.json({ message: 'Failed to fetch event details', error: error.message }, { status: 500 });
+  }
 }
 
-// PATCH /api/admin/events/[eventId]/status
-// Updates the status of a specific event.
-// eslint-disable-next-line import/prefer-default-export
 export async function PATCH(
   request: Request,
   { params: { eventId } }: { params: { eventId: string } },
@@ -121,5 +164,36 @@ export async function PATCH(
       return NextResponse.json({ message: 'Event not found' }, { status: 404 });
     }
     return NextResponse.json({ message: 'Failed to update event', error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: Request, // Added request parameter
+  { params: { eventId } }: { params: { eventId: string } },
+) {
+  if (!(await isAdminUser())) {
+    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  }
+
+  if (!eventId) {
+    return NextResponse.json({ message: 'Event ID is required' }, { status: 400 });
+  }
+
+  try {
+    // Attempt to delete the event
+    await prisma.event.delete({
+      where: { id: eventId },
+    });
+
+    console.log(`Admin deleted event ${eventId}`);
+    // Return 204 No Content for successful deletion
+    return new Response(null, { status: 204 });
+  } catch (error: any) {
+    console.error(`Failed to delete event ${eventId}:`, error);
+    // Handle Prisma 'Record to delete does not exist' error
+    if (error.code === 'P2025') {
+      return NextResponse.json({ message: 'Event not found' }, { status: 404 });
+    }
+    return NextResponse.json({ message: 'Failed to delete event', error: error.message }, { status: 500 });
   }
 }

@@ -76,3 +76,82 @@ export async function GET(request: Request) {
     return NextResponse.json({ message: 'Failed to fetch events', error: error.message }, { status: 500 });
   }
 }
+
+export async function POST(request: Request) {
+  if (!(await isAdminUser())) {
+    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const body = await request.json();
+
+    // --- Basic Validation ---
+    if (!body.title || typeof body.title !== 'string' || body.title.trim() === '') {
+      return NextResponse.json({ message: 'Event title is required.' }, { status: 400 });
+    }
+    if (!body.startDateTime || isNaN(Date.parse(body.startDateTime))) {
+      return NextResponse.json({ message: 'Valid start date/time is required.' }, { status: 400 });
+    }
+    if (body.endDateTime && isNaN(Date.parse(body.endDateTime))) {
+      return NextResponse.json({ message: 'Invalid end date/time provided.' }, { status: 400 });
+    }
+    if (body.endDateTime && new Date(body.startDateTime) > new Date(body.endDateTime)) {
+      return NextResponse.json({ message: 'End date/time cannot be before start date/time.' }, { status: 400 });
+    }
+    if (!body.attendanceType || !isValidAttendanceType(body.attendanceType)) {
+      return NextResponse.json({ message: 'Valid attendance type is required.' }, { status: 400 });
+    }
+    if (!body.status || !isValidContentStatus(body.status)) {
+      return NextResponse.json({ message: 'Valid status is required.' }, { status: 400 });
+    }
+    // Add more validation as needed (URLs, emails, etc.)
+    // -----------------------
+
+    const {
+      categories: categoryIds, // Expecting an array of category IDs
+      organizerClubId,
+      ...eventData // Rest of the event fields
+    } = body;
+
+    const createData: any = {
+      ...eventData,
+      startDateTime: new Date(eventData.startDateTime), // Ensure it's a Date object
+      endDateTime: eventData.endDateTime ? new Date(eventData.endDateTime) : null,
+      // Prisma handles optional fields being undefined/null
+    };
+
+    // Handle Category Connections (Many-to-Many)
+    if (Array.isArray(categoryIds) && categoryIds.length > 0) {
+      createData.categories = {
+        create: categoryIds.map((id: string) => ({
+          category: { connect: { id } },
+        })),
+      };
+    }
+
+    // Handle Organizer Club Connection (One-to-Many)
+    if (organizerClubId && typeof organizerClubId === 'string') {
+      createData.organizerClub = {
+        connect: { id: organizerClubId },
+      };
+    }
+
+    const newEvent = await prisma.event.create({
+      data: createData,
+      include: { // Include relations in the response if needed
+        categories: { include: { category: true } },
+        organizerClub: true,
+      },
+    });
+
+    console.log(`Admin created event ${newEvent.id}`);
+    return NextResponse.json(newEvent, { status: 201 }); // 201 Created
+  } catch (error: any) {
+    console.error('Failed to create event:', error);
+    if (error instanceof SyntaxError) {
+      return NextResponse.json({ message: 'Invalid JSON body' }, { status: 400 });
+    }
+    // Add check for Prisma unique constraint errors if needed
+    return NextResponse.json({ message: 'Failed to create event', error: error.message }, { status: 500 });
+  }
+}
