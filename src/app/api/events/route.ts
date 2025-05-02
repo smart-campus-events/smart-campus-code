@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
     // Define orderBy based on sort parameter
     let orderBy: Prisma.EventOrderByWithRelationInput = {};
-    
+
     switch (sort) {
       case 'Date: Soonest':
         orderBy = { startDateTime: 'asc' };
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
 
     // Handle date validation
     const startDate = new Date(startDateTime);
-    let endDate = endDateTime ? new Date(endDateTime) : null;
+    const endDate = endDateTime ? new Date(endDateTime) : null;
 
     if (endDate && startDate > endDate) {
       return NextResponse.json(
@@ -239,4 +239,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-} 
+}

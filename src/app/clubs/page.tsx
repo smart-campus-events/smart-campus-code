@@ -182,7 +182,7 @@ export default function ClubsPage() {
     // No login required for now
     try {
       const isCurrentlyFavorited = favoriteClubIds.includes(clubId);
-      
+
       // Optimistically update the UI
       let updatedFavorites;
       if (isCurrentlyFavorited) {
@@ -193,7 +193,7 @@ export default function ClubsPage() {
 
       // Update state
       setFavoriteClubIds(updatedFavorites);
-      
+
       // Save to localStorage
       if (typeof window !== 'undefined') {
         localStorage.setItem('favoriteClubs', JSON.stringify(updatedFavorites));
@@ -275,11 +275,11 @@ export default function ClubsPage() {
   // --- Rendering Helpers ---
   const renderResultsCount = () => {
     if (!pagination) return null;
-    
+
     const { total, page, limit } = pagination;
     const start = (page - 1) * limit + 1;
     const end = Math.min(page * limit, total);
-    
+
     if (total === 0) {
       return 'No results found';
     }
@@ -304,15 +304,15 @@ export default function ClubsPage() {
           </div>
           <div className="d-flex gap-2 align-items-center">
             <ButtonGroup>
-              <Button 
-                variant={viewMode === 'grid' ? 'primary' : 'outline-primary'} 
+              <Button
+                variant={viewMode === 'grid' ? 'primary' : 'outline-primary'}
                 onClick={() => setViewMode('grid')}
                 aria-label="Grid View"
               >
                 <Grid3x3GapFill size={18} />
               </Button>
-              <Button 
-                variant={viewMode === 'list' ? 'primary' : 'outline-primary'} 
+              <Button
+                variant={viewMode === 'list' ? 'primary' : 'outline-primary'}
                 onClick={() => setViewMode('list')}
                 aria-label="List View"
               >
@@ -335,8 +335,8 @@ export default function ClubsPage() {
                     onChange={handleSearchChange}
                   />
                   {searchTerm && (
-                    <Button 
-                      variant="light" 
+                    <Button
+                      variant="light"
                       onClick={() => { setSearchTerm(''); fetchClubs(1, ''); }}
                     >
                       <X />
@@ -356,7 +356,9 @@ export default function ClubsPage() {
               <Col md={3}>
                 <Dropdown onSelect={handleSortSelect}>
                   <Dropdown.Toggle variant="light" className="w-100 text-start" id="sort-dropdown">
-                    Sort: {sortBy}
+                    Sort:
+                    {' '}
+                    {sortBy}
                   </Dropdown.Toggle>
                   <Dropdown.Menu>
                     <Dropdown.Item eventKey="A-Z" active={sortBy === 'A-Z'}>A-Z</Dropdown.Item>
@@ -430,15 +432,15 @@ export default function ClubsPage() {
                       <Link href={`/clubs/${club.id}`} passHref className="text-decoration-none text-dark stretched-link">
                         <Card.Title as="h6" className="mb-1 fw-semibold">{club.name}</Card.Title>
                       </Link>
-                      <Button 
-                        variant="light" 
-                        size="sm" 
-                        className="p-1 ms-2 flex-shrink-0 position-relative z-1" 
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
+                      <Button
+                        variant="light"
+                        size="sm"
+                        className="p-1 ms-2 flex-shrink-0 position-relative z-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
                           e.preventDefault();
-                          handleBookmark(club.id); 
-                        }} 
+                          handleBookmark(club.id);
+                        }}
                         aria-label={`${favoriteClubIds.includes(club.id) ? 'Remove from favorites' : 'Add to favorites'}: ${club.name}`}
                       >
                         {favoriteClubIds.includes(club.id) ? <BookmarkFill className="text-primary" /> : <Bookmark />}

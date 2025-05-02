@@ -81,7 +81,7 @@ export default function EventsPage() {
     const fetchEvents = async () => {
       setIsLoading(true);
       setError(null);
-      
+
       try {
         const queryParams = new URLSearchParams({
           page: currentPage.toString(),
@@ -89,13 +89,13 @@ export default function EventsPage() {
           ...(searchTerm ? { q: searchTerm } : {}),
           ...(sortBy ? { sort: sortBy } : {}),
         });
-        
+
         const response = await fetch(`/api/events?${queryParams.toString()}`);
-        
+
         if (!response.ok) {
           throw new Error('Failed to fetch events');
         }
-        
+
         const data: ApiResponse = await response.json();
         setEvents(data.events);
         setPagination(data.pagination);
@@ -106,7 +106,7 @@ export default function EventsPage() {
         setIsLoading(false);
       }
     };
-    
+
     fetchEvents();
   }, [currentPage, searchTerm, sortBy]);
 
@@ -166,7 +166,7 @@ export default function EventsPage() {
   const handleSaveEvent = async (eventId: string) => {
     try {
       const isCurrentlyFavorited = favoriteEventIds.includes(eventId);
-      
+
       // Optimistically update the UI
       let updatedFavorites;
       if (isCurrentlyFavorited) {
@@ -177,7 +177,7 @@ export default function EventsPage() {
 
       // Update state
       setFavoriteEventIds(updatedFavorites);
-      
+
       // Save to localStorage
       if (typeof window !== 'undefined') {
         localStorage.setItem('favoriteEvents', JSON.stringify(updatedFavorites));
@@ -202,9 +202,9 @@ export default function EventsPage() {
   if (pagination.totalPages <= 5) {
     for (let number = 1; number <= pagination.totalPages; number++) {
       paginationItems.push(
-        <Pagination.Item 
-          key={number} 
-          active={number === currentPage} 
+        <Pagination.Item
+          key={number}
+          active={number === currentPage}
           onClick={() => handlePageChange(number)}
         >
           {number}
@@ -254,14 +254,14 @@ export default function EventsPage() {
   // Helper function to format event date
   const formatEventDate = (event: Event) => {
     if (!event.startDateTime) return 'Date TBD';
-    
+
     const startDate = new Date(event.startDateTime);
     let dateStr = formatDate(startDate);
-    
+
     if (event.allDay) {
       return `${dateStr} (All day)`;
     }
-    
+
     dateStr += ` at ${formatTime(startDate)}`;
     return dateStr;
   };
@@ -427,15 +427,15 @@ export default function EventsPage() {
                       <Link href={`/events/${event.id}`} className="text-decoration-none text-dark stretched-link">
                         <Card.Title as="h6" className="mb-1 fw-semibold">{event.title}</Card.Title>
                       </Link>
-                      
+
                       <Button
                         variant="light"
                         size="sm"
                         className="p-1 ms-2 flex-shrink-0 position-relative z-1"
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
+                        onClick={(e) => {
+                          e.stopPropagation();
                           e.preventDefault();
-                          handleSaveEvent(event.id); 
+                          handleSaveEvent(event.id);
                         }}
                         aria-label={`${favoriteEventIds.includes(event.id) ? 'Remove from favorites' : 'Add to favorites'}: ${event.title}`}
                       >

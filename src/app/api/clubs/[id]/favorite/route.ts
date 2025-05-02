@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import nextAuthOptionsConfig from '@/lib/authOptions';
+// import { getServerSession } from 'next-auth';
+// import nextAuthOptionsConfig from '@/lib/authOptions';
 import { prisma } from '@/lib/prisma';
-import type { Session } from 'next-auth';
+// import type { Session } from 'next-auth';
 
 // Type for session with user ID
-type SessionWithId = Session & { user: Session['user'] & { id: string } };
+// type SessionWithId = Session & { user: Session['user'] & { id: string } };
 
 // POST /api/clubs/[id]/favorite - Add a club to user's favorites
 export async function POST(
@@ -21,9 +21,9 @@ export async function POST(
   //   return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   // }
   // const userId = session.user.id;
-  
+
   // Temporary mock user ID for development
-  const userId = "temp-user-id";
+  // const userId = 'temp-user-id';
 
   try {
     // Check if the club exists
@@ -70,9 +70,9 @@ export async function DELETE(
   //   return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   // }
   // const userId = session.user.id;
-  
+
   // Temporary mock user ID for development
-  const userId = "temp-user-id";
+  // const userId = 'temp-user-id';
 
   try {
     // Check if the club exists
@@ -103,4 +103,4 @@ export async function DELETE(
       { status: 500 },
     );
   }
-} 
+}

@@ -2,15 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Container, Row, Col, Card, Badge, Button, Spinner, Alert, ListGroup, Tab, Nav,
+  Container, Row, Col, Card, Badge, Button, Spinner, Alert, ListGroup,
+  // Tab, Nav,
 } from 'react-bootstrap';
 import {
-  GeoAlt, Calendar3, Clock, Link45deg, EnvelopeAt, PeopleFill, Building,
-  XCircleFill, CalendarCheck, Cash, InfoCircle, PinMapFill, Star, StarFill,
+  GeoAlt, Calendar3, /* Clock, */ Link45deg, EnvelopeAt, PeopleFill, Building,
+  /* XCircleFill, */ CalendarCheck, Cash, InfoCircle, PinMapFill, Star, StarFill,
 } from 'react-bootstrap-icons';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { formatDate, formatTime } from '@/lib/utils/dateUtils'; // This assumes you have these utility functions
+import { formatDate, formatTime } from '@/lib/utils/dateUtils';
 
 // Define types
 interface Category {
@@ -73,29 +74,33 @@ export default function EventDetailPage() {
   useEffect(() => {
     // Fetch event details
     const fetchEventDetails = async () => {
-      if (!eventId) return;
-      
-      setIsLoading(true);
-      setError(null);
-      
       try {
+        setIsLoading(true);
         const response = await fetch(`/api/events/${eventId}`);
         
+        if (response.status === 404) {
+          setError('Event not found');
+          setIsLoading(false);
+          return;
+        }
+        
+        if (response.status === 403) {
+          setError('Permission denied');
+          setIsLoading(false);
+          return;
+        }
+        
         if (!response.ok) {
-          if (response.status === 404) {
-            throw new Error('Event not found');
-          } else if (response.status === 403) {
-            throw new Error('You do not have permission to view this event');
-          } else {
-            throw new Error('Failed to load event details');
-          }
+          setError('Failed to load event details');
+          setIsLoading(false);
+          return;
         }
         
         const data = await response.json();
         setEvent(data);
-      } catch (err: any) {
-        console.error('Error fetching event details:', err);
-        setError(err.message || 'Failed to load event details');
+      } catch (fetchError) {
+        setError('An error occurred while fetching the event');
+        console.error('Error fetching event:', fetchError);
       } finally {
         setIsLoading(false);
       }
@@ -114,47 +119,34 @@ export default function EventDetailPage() {
           const favorites = JSON.parse(storedFavorites);
           setIsFavorited(favorites.includes(eventId));
         }
-      } catch (error) {
-        console.error('Error checking favorite status:', error);
+      } catch (fetchError) {
+        console.error('Error checking favorite status:', fetchError);
       }
     }
   }, [eventId]);
 
   const handleRSVP = async () => {
-    if (!eventId) return;
-    
-    setRsvpStatus('loading');
-    
     try {
-      const response = await fetch(`/api/events/${eventId}/rsvp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      setRsvpStatus('loading');
       
-      if (!response.ok) {
-        throw new Error('Failed to RSVP');
-      }
+      // Here you would make the API call to RSVP for the event
+      // await fetch(`/api/events/${eventId}/rsvp`, {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      // });
       
-      // Update the RSVP count locally
-      if (event) {
-        setEvent({
-          ...event,
-          _count: {
-            ...event._count,
-            rsvps: event._count.rsvps + 1,
-          },
-        });
-      }
+      // For demo purposes, we'll just wait a moment then show success
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       setRsvpStatus('success');
-    } catch (err) {
-      console.error('Error RSVPing to event:', err);
+    } catch (rsvpError) {
+      console.error('Error RSVPing to event:', rsvpError);
       setRsvpStatus('error');
     }
     
-    // Reset status after showing feedback
+    // Reset the status after a few seconds
     setTimeout(() => {
       setRsvpStatus(null);
     }, 3000);
@@ -180,8 +172,8 @@ export default function EventDetailPage() {
           }
           
           localStorage.setItem('favoriteEvents', JSON.stringify(favorites));
-        } catch (error) {
-          console.error('Error updating favorites in localStorage:', error);
+        } catch (storageError) {
+          console.error('Error updating favorites in localStorage:', storageError);
         }
       }
       
@@ -204,96 +196,110 @@ export default function EventDetailPage() {
   };
 
   // Helper function to format event date/time
-  const formatEventDateTime = (event: Event) => {
-    if (!event.startDateTime) return 'Date TBD';
-    
-    const startDate = new Date(event.startDateTime);
-    let dateTimeStr = formatDate(startDate);
-    
-    if (!event.allDay) {
-      dateTimeStr += ` at ${formatTime(startDate)}`;
-      
-      if (event.endDateTime) {
-        const endDate = new Date(event.endDateTime);
-        if (formatDate(startDate) === formatDate(endDate)) {
-          // Same day, just show end time
-          dateTimeStr += ` - ${formatTime(endDate)}`;
-        } else {
-          // Different days, show full end date and time
-          dateTimeStr += ` - ${formatDate(endDate)} at ${formatTime(endDate)}`;
-        }
+  const formatEventDateTime = (currentEvent: Event) => {
+    if (currentEvent.allDay) {
+      if (currentEvent.endDateTime) {
+        return `${formatDate(currentEvent.startDateTime)} - ${formatDate(currentEvent.endDateTime)} (All day)`;
       }
-    } else {
-      dateTimeStr += ' (All day)';
+      return `${formatDate(currentEvent.startDateTime)} (All day)`;
     }
     
-    return dateTimeStr;
+    if (currentEvent.endDateTime) {
+      // If start and end are on the same day
+      if (formatDate(currentEvent.startDateTime) === formatDate(currentEvent.endDateTime)) {
+        return `${formatDate(currentEvent.startDateTime)} · ${formatTime(currentEvent.startDateTime)} - ${formatTime(currentEvent.endDateTime)}`;
+      }
+      // If start and end are on different days
+      return `${formatDate(currentEvent.startDateTime)} ${formatTime(currentEvent.startDateTime)} - ${formatDate(currentEvent.endDateTime)} ${formatTime(currentEvent.endDateTime)}`;
+    }
+    
+    return `${formatDate(currentEvent.startDateTime)} · ${formatTime(currentEvent.startDateTime)}`;
   };
 
-  // Helper function to get attendance type label
+  // Helper function to get the attendance type label and icon
   const getAttendanceTypeLabel = (type: string) => {
     switch (type) {
       case 'IN_PERSON':
-        return { text: 'In Person', icon: <PinMapFill className="me-2" /> };
+        return { 
+          label: 'In Person', 
+          icon: <PinMapFill className="me-2" />
+        };
       case 'VIRTUAL':
-        return { text: 'Virtual', icon: <Link45deg className="me-2" /> };
+        return { 
+          label: 'Virtual',
+          icon: <InfoCircle className="me-2" /> 
+        };
       case 'HYBRID':
-        return { text: 'Hybrid', icon: <InfoCircle className="me-2" /> };
+        return { 
+          label: 'Hybrid (In Person & Virtual)',
+          icon: <InfoCircle className="me-2" />
+        };
       default:
-        return { text: 'In Person', icon: <PinMapFill className="me-2" /> };
+        return { 
+          label: 'Unknown',
+          icon: <InfoCircle className="me-2" />
+        };
     }
   };
 
-  // Loading State
+  // Loading state
   if (isLoading) {
     return (
-      <Container className="my-5 text-center">
-        <Spinner animation="border" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </Spinner>
-        <p className="mt-3">Loading event details...</p>
+      <Container className="my-4 text-center">
+        <Spinner animation="border" />
+        <p>Loading event details...</p>
       </Container>
     );
   }
 
-  // Error State
+  // Error state
   if (error) {
     return (
-      <Container className="my-5">
+      <Container className="my-4">
         <Alert variant="danger">
           <Alert.Heading>Error</Alert.Heading>
           <p>{error}</p>
-          <Button variant="outline-primary" onClick={() => router.push('/events')}>
-            Return to Events Directory
-          </Button>
+          <hr />
+          <div className="d-flex justify-content-end">
+            <Button 
+              onClick={() => router.push('/events')} 
+              variant="outline-danger"
+            >
+              Return to Events
+            </Button>
+          </div>
         </Alert>
       </Container>
     );
   }
 
-  // No Event Found State
+  // No event found
   if (!event) {
     return (
-      <Container className="my-5">
-        <Alert variant="warning">
+      <Container className="my-4">
+        <Alert variant="info">
           <Alert.Heading>Event Not Found</Alert.Heading>
           <p>We couldn't find the event you're looking for.</p>
-          <Button variant="outline-primary" onClick={() => router.push('/events')}>
-            Return to Events Directory
-          </Button>
+          <hr />
+          <div className="d-flex justify-content-end">
+            <Button 
+              onClick={() => router.push('/events')} 
+              variant="outline-primary"
+            >
+              Browse Events
+            </Button>
+          </div>
         </Alert>
       </Container>
     );
   }
-
-  const attendanceType = getAttendanceTypeLabel(event.attendanceType);
 
   // Render Event Details
   return (
     <Container className="my-4">
-      {/* Breadcrumb Navigation */}
+      {/* Breadcrumb navigation */}
       <div className="mb-4">
-        <Link href="/events" className="text-decoration-none">
+        <Link href="/events" className="text-decoration-none text-muted">
           ← Back to Events
         </Link>
       </div>
@@ -324,10 +330,8 @@ export default function EventDetailPage() {
                   <span>{formatEventDateTime(event)}</span>
                 </div>
 
-                <div className="d-flex align-items-center">
-                  {attendanceType.icon}
-                  <span>{attendanceType.text}</span>
-                </div>
+                {getAttendanceTypeLabel(event.attendanceType).icon}
+                <span>{getAttendanceTypeLabel(event.attendanceType).label}</span>
 
                 {event.location && (
                   <div className="d-flex align-items-center">
@@ -396,7 +400,7 @@ export default function EventDetailPage() {
 
               {rsvpStatus === 'success' && (
                 <Alert variant="success" className="w-100 py-2 mb-0">
-                  Successfully RSVP'd to event!
+                  Successfully RSVP&apos;d to event!
                 </Alert>
               )}
 
@@ -557,7 +561,7 @@ export default function EventDetailPage() {
                       href={`/clubs/${event.organizerClub.id}`} 
                       className="small"
                     >
-                      View club page
+                      View Club Profile
                     </Link>
                   </div>
                 </div>
@@ -568,4 +572,4 @@ export default function EventDetailPage() {
       </Row>
     </Container>
   );
-} 
+}

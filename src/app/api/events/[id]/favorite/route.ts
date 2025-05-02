@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import nextAuthOptionsConfig from '@/lib/authOptions';
+// import { getServerSession } from 'next-auth';
+// import nextAuthOptionsConfig from '@/lib/authOptions';
 import { prisma } from '@/lib/prisma';
-import type { Session } from 'next-auth';
+// import type { Session } from 'next-auth';
 
 // Type for session with user ID
-type SessionWithId = Session & { user: Session['user'] & { id: string } };
+// type SessionWithId = Session & { user: Session['user'] & { id: string } };
 
 // POST /api/events/[id]/favorite - Add an event to user's favorites
 export async function POST(
@@ -21,9 +21,9 @@ export async function POST(
   //   return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   // }
   // const userId = session.user.id;
-  
+
   // Temporary mock user ID for development
-  const userId = "temp-user-id";
+  // const userId = 'temp-user-id';
 
   try {
     // Check if the event exists
@@ -36,7 +36,7 @@ export async function POST(
     }
 
     // For now, we'll just return success without making actual database changes
-    // In a real implementation with authentication, we would connect the user to the event
+    // since we're using a mock user
     // await prisma.user.update({
     //   where: { id: userId },
     //   data: {
@@ -70,9 +70,9 @@ export async function DELETE(
   //   return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   // }
   // const userId = session.user.id;
-  
+
   // Temporary mock user ID for development
-  const userId = "temp-user-id";
+  // const userId = 'temp-user-id';
 
   try {
     // Check if the event exists
@@ -85,7 +85,7 @@ export async function DELETE(
     }
 
     // For now, we'll just return success without making actual database changes
-    // In a real implementation with authentication, we would disconnect the user from the event
+    // since we're using a mock user
     // await prisma.user.update({
     //   where: { id: userId },
     //   data: {
@@ -103,4 +103,4 @@ export async function DELETE(
       { status: 500 },
     );
   }
-} 
+}

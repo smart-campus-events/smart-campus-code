@@ -43,9 +43,9 @@ export async function GET(
     if (event.status !== ContentStatus.APPROVED) {
       const session = await getServerSession();
       const userEmail = session?.user?.email;
-      const user = userEmail ? await prisma.user.findUnique({ 
-        where: { email: userEmail }, 
-        select: { id: true, isAdmin: true } 
+      const user = userEmail ? await prisma.user.findUnique({
+        where: { email: userEmail },
+        select: { id: true, isAdmin: true },
       }) : null;
 
       if (!user || (!user.isAdmin && user.id !== event.submittedByUserId)) {
@@ -80,11 +80,11 @@ export async function PUT(
     // Check if event exists
     const existingEvent = await prisma.event.findUnique({
       where: { id: eventId },
-      include: { 
+      include: {
         categories: true,
       },
     });
-    
+
     if (!existingEvent) {
       return NextResponse.json({ error: 'Event not found' }, { status: 404 });
     }
@@ -94,7 +94,7 @@ export async function PUT(
       where: { email: session.user.email },
       select: { id: true, isAdmin: true },
     });
-    
+
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -137,8 +137,8 @@ export async function PUT(
     }
 
     // Date validation
-    let startDate = undefined;
-    let endDate = undefined;
+    let startDate;
+    let endDate;
 
     if (startDateTime) {
       startDate = new Date(startDateTime);
@@ -231,7 +231,7 @@ export async function DELETE(
     const existingEvent = await prisma.event.findUnique({
       where: { id: eventId },
     });
-    
+
     if (!existingEvent) {
       return NextResponse.json({ error: 'Event not found' }, { status: 404 });
     }
@@ -241,7 +241,7 @@ export async function DELETE(
       where: { email: session.user.email },
       select: { id: true, isAdmin: true },
     });
-    
+
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -264,4 +264,4 @@ export async function DELETE(
       { status: 500 },
     );
   }
-} 
+}
