@@ -1,6 +1,6 @@
 // src/components/ClubCard.tsx
 import React, { useState } from 'react';
-import { Card, Badge, Button, Stack } from 'react-bootstrap'; // Import Button and Stack
+import { Card, Badge, Button, Stack } from 'react-bootstrap'; // Import Bootstrap components
 import Link from 'next/link';
 import type { ClubWithDetails } from '@/types/prismaExtendedTypes'; // Adjust path
 
