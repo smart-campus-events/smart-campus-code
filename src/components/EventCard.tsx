@@ -1,16 +1,19 @@
 // src/components/EventCard.tsx
-import React, { useState } from 'react'; // Import useState
-import { Card, Button, Badge, Stack } from 'react-bootstrap'; // Import Badge and Stack
-// Make sure your Prisma types are correctly imported/defined
-import type { Event as PrismaEvent, Club, EventCategory, Category } from '@prisma/client';
+import React, { useState } from 'react';
+import { Card, Button, Badge, Stack } from 'react-bootstrap';
 
-// Define a more specific type for the event prop, including relations
-type EventWithDetails = PrismaEvent & {
-  categories?: (EventCategory & { category: Category })[];
-  organizerClub?: Club | null;
-};
+// --- Import the SHARED type definition from your central types file ---
+// This ensures consistency across your application.
+import type { EventWithDetails } from '@/types/prismaExtendedTypes';
+// Assuming EventWithDetails defines categories as:
+// categories: (EventCategory & { category: Category })[];
+// and organizerClub as:
+// organizerClub: { name: string } | null;
 
-// Define a list of Bootstrap background colors for variety (copied from ClubCard)
+// --- You might not need these individual imports anymore if EventWithDetails covers everything ---
+// import type { Event as PrismaEvent, Club, EventCategory, Category } from '@prisma/client';
+
+// Define a list of Bootstrap background colors for category badges
 const badgeColors: string[] = [
   'primary',
   'secondary',
@@ -21,34 +24,39 @@ const badgeColors: string[] = [
   'dark',
 ];
 
-// Helper function to get a color based on index (copied from ClubCard)
+// Helper function to cycle through badge colors
 const getColorByIndex = (index: number): string => badgeColors[index % badgeColors.length];
 
+// Define the props interface using the imported shared type
 interface EventCardProps {
   event: EventWithDetails;
 }
 
 const EventCard: React.FC<EventCardProps> = ({ event }) => {
+  // Destructure properties from the event object.
+  // Type safety comes from the EventWithDetails interface.
   const {
     title,
     description,
     startDateTime,
     location,
-    categories = [], // Default to empty array if undefined
-    organizerClub,
-    eventUrl, // Use eventUrl from the schema
-    eventPageUrl, // Or use this if eventUrl is often missing
+    categories = [], // Default to empty array handles case if categories is optional or empty
+    organizerClub, // Correctly typed as { name: string } | null from imported type
+    eventUrl,
+    eventPageUrl,
   } = event;
 
-  // --- Category Pagination Logic (adapted from ClubCard) ---
+  // --- State and handlers for Category Pagination ---
   const categoriesPerPage = 3;
-  const totalPages = Math.ceil(categories.length / categoriesPerPage);
+  // Safely calculate total pages, handling potentially undefined/empty categories
+  const totalPages = Math.ceil((categories || []).length / categoriesPerPage);
   const [currentPage, setCurrentPage] = useState(0);
 
-  // Calculate the start and end index for the current page
+  // Calculate the slice of categories to display for the current page
   const startIndex = currentPage * categoriesPerPage;
   const endIndex = startIndex + categoriesPerPage;
-  const currentCategories = categories.slice(startIndex, endIndex);
+  // Safely slice categories
+  const currentCategories = (categories || []).slice(startIndex, endIndex);
 
   const handleNext = () => {
     setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1));
@@ -59,6 +67,7 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
   };
   // --- End Category Pagination Logic ---
 
+  // Format date and time for display
   const formattedDate = new Date(startDateTime).toLocaleDateString(undefined, {
     weekday: 'short',
     month: 'short',
@@ -69,46 +78,54 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
     minute: '2-digit',
   });
 
-  // Determine the link URL - prioritize eventUrl, fallback to eventPageUrl or disable
+  // Determine the link for the main button (prefer eventUrl)
   const cardLink = eventUrl || eventPageUrl;
 
   return (
     <Card className="h-100 shadow-sm card-hover">
-      {/* Optional: Add an image if you have one */}
+      {/* Optional Image Placeholder */}
       {/* <Card.Img variant="top" src={event.imageUrl || '/placeholder-event.jpg'} /> */}
       <Card.Body className="d-flex flex-column">
-        <Card.Title>{title}</Card.Title>
+        <Card.Title>{title || 'Untitled Event'}</Card.Title>
         <Card.Subtitle className="mb-2 text-muted">
           {formattedDate}
           {' '}
           at
           {formattedTime}
         </Card.Subtitle>
+
+        {/* Display truncated description */}
         <Card.Text className="flex-grow-1">
           {description
             ? description.substring(0, 100) + (description.length > 100 ? '...' : '')
             : 'No description available.'}
         </Card.Text>
+
+        {/* Display Location */}
         <div className="mb-2">
           <small className="text-muted">
-            <i className="fa-solid fa-location-dot me-1" />
+            <i className="fa-solid fa-location-dot me-1" aria-hidden="true" />
             {' '}
             {location || 'Location TBD'}
           </small>
         </div>
+
+        {/* Display Organizer Club Name if available */}
+        {/* This check works correctly with the imported type */}
         {organizerClub && (
           <div className="mb-2">
             <small className="text-muted">
-              <i className="fa-solid fa-users me-1" />
+              <i className="fa-solid fa-users me-1" aria-hidden="true" />
               {' '}
               Hosted by:
+              {' '}
               {organizerClub.name}
             </small>
           </div>
         )}
 
-        {/* --- Category Pills Carousel (adapted from ClubCard) --- */}
-        {categories.length > 0 && (
+        {/* --- Category Pills with Pagination --- */}
+        {(categories || []).length > 0 ? (
           <Stack direction="horizontal" gap={2} className="mb-3 align-items-center">
             {/* Previous Button */}
             {totalPages > 1 && (
@@ -117,24 +134,22 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
                 size="sm"
                 onClick={handlePrev}
                 disabled={currentPage === 0}
-                className="p-0 border-0" // Minimal styling
-                style={{ width: '20px', height: '20px', lineHeight: '1' }} // Adjust size
+                className="p-0 border-0"
+                style={{ width: '20px', height: '20px', lineHeight: '1' }}
                 aria-label="Previous categories"
               >
-                <i className="fas fa-chevron-left small" />
-                {' '}
-                {/* Font Awesome */}
+                <i className="fas fa-chevron-left small" aria-hidden="true" />
               </Button>
             )}
 
-            {/* Badges */}
+            {/* Badges Container */}
             <div className="flex-grow-1 overflow-hidden">
-              {' '}
-              {/* Container for badges */}
-              {currentCategories.map((ec: EventCategory & { category: Category }, index: number) => (
+              {/* Map through the categories for the current page */}
+              {/* Ensure 'ec' type matches the structure in EventWithDetails */}
+              {currentCategories.map((ec, index) => (
                 <Badge
-                  key={ec.category.id} // Use category ID as key
-                  bg={getColorByIndex(startIndex + index)} // Use color based on absolute index
+                  key={ec.category.id} // Use the unique category ID
+                  bg={getColorByIndex(startIndex + index)} // Get color based on overall index
                   className="me-1 mb-1"
                 >
                   {ec.category.name}
@@ -149,39 +164,34 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
                 size="sm"
                 onClick={handleNext}
                 disabled={currentPage === totalPages - 1}
-                className="p-0 border-0" // Minimal styling
-                style={{ width: '20px', height: '20px', lineHeight: '1' }} // Adjust size
+                className="p-0 border-0"
+                style={{ width: '20px', height: '20px', lineHeight: '1' }}
                 aria-label="Next categories"
               >
-                <i className="fas fa-chevron-right small" />
-                {' '}
-                {/* Font Awesome */}
+                <i className="fas fa-chevron-right small" aria-hidden="true" />
               </Button>
             )}
           </Stack>
-        )}
-        {/* Fallback if no categories */}
-        {categories.length === 0 && (
+        ) : (
+          // Fallback if no categories are present
           <div className="mb-3">
             <Badge bg="secondary" className="me-1 mb-1">
-              {' '}
-              {/* Use standard Badge */}
               General
             </Badge>
           </div>
         )}
-        {/* --- End Category Pills Carousel --- */}
+        {/* --- End Category Pills --- */}
 
-        {/* Link to the external event URL */}
+        {/* Button to link to external event source */}
         <Button
-          variant="primary" // Changed back to primary as per original EventCard
-          href={cardLink || '#'} // Provide a fallback href or handle differently
-          target="_blank" // Open external links in a new tab
-          rel="noopener noreferrer" // Security best practice for external links
-          disabled={!cardLink} // Disable button if no URL is available
-          className="mt-auto" // Keep button at the bottom
+          variant="primary"
+          href={cardLink || '#'} // Fallback href to prevent errors, button is disabled below if no link
+          target="_blank"
+          rel="noopener noreferrer"
+          disabled={!cardLink} // Disable if no valid link exists
+          className="mt-auto" // Push button to the bottom
         >
-          { cardLink ? 'View Event Source' : 'Details Unavailable' }
+          {cardLink ? 'View Event Source' : 'Details Unavailable'}
         </Button>
       </Card.Body>
     </Card>
