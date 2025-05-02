@@ -119,24 +119,3 @@ export default function SuggestionsPage() {
     </Container>
   );
 }
-
-// --- Helper Type Definition (Place in a types file e.g., src/types/prismaExtendedTypes.ts) ---
-/*
-import type {
-  Event as PrismaEvent,
-  Club as PrismaClub,
-  Category,
-  EventCategory,
-  ClubCategory
-} from '@prisma/client';
-
-export type EventWithDetails = PrismaEvent & {
-  categories: (EventCategory & { category: Category })[];
-  organizerClub: { name: string } | null;
-};
-
-export type ClubWithDetails = PrismaClub & {
-  categories: (ClubCategory & { category: Category })[];
-  // Add other relations if needed, e.g., submittedBy, favoritedBy count
-};
-*/
