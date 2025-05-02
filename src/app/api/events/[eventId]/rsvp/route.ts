@@ -1,7 +1,11 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
 import nextAuthOptionsConfig from '@/lib/authOptions';
 import { prisma } from '@/lib/prisma';
+import type { Session } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
+import { NextResponse } from 'next/server';
+
+// Extend Session type inline to include user.id
+type SessionWithId = Session & { user: Session['user'] & { id: string } };
 
 interface RsvpParams {
   params: {
@@ -21,7 +25,7 @@ export async function POST(request: Request, { params }: RsvpParams) {
   // 6. Handle potential errors (already RSVP'd, event not found, etc.).
   // 7. Return success response.
 
-  const session = await getServerSession(nextAuthOptionsConfig);
+  const session = (await getServerSession(nextAuthOptionsConfig)) as SessionWithId;
   if (!session?.user?.id) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
@@ -72,7 +76,7 @@ export async function DELETE(request: Request, { params }: RsvpParams) {
   // 4. Handle cases where the RSVP doesn't exist.
   // 5. Return success response (often 204 No Content).
 
-  const session = await getServerSession(nextAuthOptionsConfig);
+  const session = (await getServerSession(nextAuthOptionsConfig)) as SessionWithId;
   if (!session?.user?.id) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }

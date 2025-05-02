@@ -10,7 +10,6 @@ import {
   Card,
   Col,
   Container,
-  Form,
   Image,
   Row,
   Spinner,
@@ -35,7 +34,6 @@ interface ProfileData {
   housing_status?: string;
   comfort_level?: number;
   graduation_year?: number;
-  email_notifications?: boolean;
   about_me?: string;
   created_at: string;
 }
@@ -46,10 +44,29 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // dummy data for Saved Events / My RIOs
+  const savedEvents = [
+    { month: 'MAR', day: '15', name: 'Tech Meetup', details: '6:00 PM – Campus Center' },
+    { month: 'MAR', day: '20', name: 'Beach Cleanup', details: '9:00 AM – Ala Moana' },
+  ];
+
+  const myRios = [
+    {
+      imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg',
+      name: 'ACM Manoa',
+      description: 'Computer Science Club',
+    },
+    {
+      imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-3.jpg',
+      name: 'Hiking Club',
+      description: 'Outdoor Activities',
+    },
+  ];
+
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/profileapi/profile', { credentials: 'include' });
+        const res = await fetch('/api/profileapi/profile', { credentials: 'include' });
         if (res.status === 401) {
           router.push('/login');
           return;
@@ -79,6 +96,7 @@ export default function ProfilePage() {
     return (
       <div className="p-4 text-center text-danger">
         Failed to load profile:
+        <br />
         {error}
       </div>
     );
@@ -88,24 +106,8 @@ export default function ProfilePage() {
     return <div className="p-4 text-center">No profile data.</div>;
   }
 
-  // dummy data for savedEvents / myRios
-  const savedEvents = [
-    { month: 'MAR', day: '15', name: 'Tech Meetup', details: '6:00 PM – Campus Center' },
-    { month: 'MAR', day: '20', name: 'Beach Cleanup', details: '9:00 AM – Ala Moana' },
-  ];
-
-  const myRios = [
-    {
-      imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg',
-      name: 'ACM Manoa',
-      description: 'Computer Science Club',
-    },
-    {
-      imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-3.jpg',
-      name: 'Hiking Club',
-      description: 'Outdoor Activities',
-    },
-  ];
+  // coalesce comfort_level for TS
+  const comfortLevel = profile.comfort_level ?? 0;
 
   return (
     <div className="bg-light min-vh-100">
@@ -168,11 +170,9 @@ export default function ProfilePage() {
               <Card className="shadow-sm">
                 <Card.Body>
                   <Card.Title className="h5 mb-4">Basic Information</Card.Title>
-                  <div className="d-flex justify-content-between align-items-start mb-3">
-                    <div>
-                      <p className="text-muted mb-1">Email</p>
-                      <p className="fw-medium mb-0">{profile.email}</p>
-                    </div>
+                  <div className="mb-3">
+                    <p className="text-muted mb-1">Email</p>
+                    <p className="fw-medium mb-0">{profile.email}</p>
                   </div>
                   {profile.major && (
                     <div className="mb-3">
@@ -185,12 +185,7 @@ export default function ProfilePage() {
                       <p className="text-muted mb-1">Interests</p>
                       <div className="d-flex flex-wrap gap-2 mt-2">
                         {profile.interests.map((i) => (
-                          <Badge
-                            key={i.id}
-                            pill
-                            bg="success-subtle"
-                            text="success-emphasis"
-                          >
+                          <Badge key={i.id} pill bg="success-subtle" text="success-emphasis">
                             {i.name}
                           </Badge>
                         ))}
@@ -217,6 +212,12 @@ export default function ProfilePage() {
                         <p className="fw-medium mb-0">{profile.origin}</p>
                       </Col>
                     )}
+                    {profile.graduation_year && (
+                      <Col sm={6} className="mb-3">
+                        <p className="text-muted mb-1">Graduation Year</p>
+                        <p className="fw-medium mb-0">{profile.graduation_year}</p>
+                      </Col>
+                    )}
                     {profile.housing_status && (
                       <Col sm={6} className="mb-3">
                         <p className="text-muted mb-1">Housing Status</p>
@@ -228,17 +229,14 @@ export default function ProfilePage() {
                         </p>
                       </Col>
                     )}
-                    {typeof profile.comfort_level === 'number' && (() => {
-                      const level = profile.comfort_level as number;
-                      return (
-                        <Col sm={6} className="mb-3">
-                          <p className="text-muted mb-1">Comfort Level</p>
-                          <div className="d-flex text-warning">
-                            {[...Array(5)].map((_, i) => (i < level ? <StarFill key={i} /> : <Star key={i} />))}
-                          </div>
-                        </Col>
-                      );
-                    })()}
+                    {profile.comfort_level != null && (
+                      <Col sm={6} className="mb-3">
+                        <p className="text-muted mb-1">Comfort Level</p>
+                        <div className="d-flex text-warning">
+                          {[...Array(5)].map((_, i) => (i < comfortLevel ? <StarFill key={i} /> : <Star key={i} />))}
+                        </div>
+                      </Col>
+                    )}
                   </Row>
                   {profile.about_me && (
                     <Row className="mt-3">
@@ -304,23 +302,6 @@ export default function ProfilePage() {
                       View All RIOs
                     </Button>
                   </div>
-                </Card.Body>
-              </Card>
-
-              {/* Settings */}
-              <Card className="shadow-sm">
-                <Card.Body>
-                  <Card.Title className="h5 mb-4">Settings</Card.Title>
-                  <Form>
-                    <Form.Group className="mb-3 d-flex justify-content-between align-items-center">
-                      <Form.Label className="mb-0">Email Notifications</Form.Label>
-                      <Form.Check
-                        type="switch"
-                        id="email-notifications-switch"
-                        defaultChecked={!!profile.email_notifications}
-                      />
-                    </Form.Group>
-                  </Form>
                 </Card.Body>
               </Card>
             </div>

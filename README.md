@@ -1,3 +1,3 @@
-[![ci-nextjs-application-template](https://github.com/manoa-compass/manoa-compass-code/actions/workflows/ci.yml/badge.svg)](https://github.com/ics-software-engineering/nextjs-application-template/actions/workflows/ci.yml)
+[![ci-nextjs-application-template](https://github.com/manoa-compass/manoa-compass-code/actions/workflows/ci-manoa-compass-code/badge.svg)](https://github.com/ics-software-engineering/nextjs-application-template/actions/workflows/ci.yml)
 
 For details, please see http://ics-software-engineering.github.io/nextjs-application-template/.

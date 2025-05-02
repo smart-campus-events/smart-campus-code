@@ -1,11 +1,12 @@
-import { NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { getServerSession } from 'next-auth/next';
+import { NextResponse } from 'next/server';
 // Rename import to avoid conflict with default export name
 import nextAuthOptionsConfig from '@/lib/authOptions';
 
 // Utility to check if user is admin
 async function isAdminUser() {
-  const session = await getServerSession(nextAuthOptionsConfig);
+  const session = await getServerSession(nextAuthOptionsConfig) as Session;
   return session?.user?.isAdmin === true;
 }
 

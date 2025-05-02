@@ -36,7 +36,7 @@ export default function SignupStep5Page() {
   useEffect(() => {
     async function loadProfile() {
       try {
-        const res = await fetch('/profileapi/profile', {
+        const res = await fetch('/api/profileapi/profile', {
           credentials: 'include',
         });
         if (!res.ok) throw new Error('Failed to load profile');

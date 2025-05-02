@@ -1,9 +1,20 @@
 /* eslint-disable arrow-body-style */
 import { prisma } from '@/lib/prisma';
 import { compare } from 'bcrypt';
-import { type NextAuthOptions } from 'next-auth';
+import type { NextAuthOptions, User as NextAuthUser, Session } from 'next-auth';
+import type { JWT } from 'next-auth/jwt';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
+
+interface SessionUser extends NextAuthUser {
+  id: string;
+  isAdmin?: boolean;
+}
+
+interface EnhancedToken extends JWT {
+  id: string;
+  isAdmin?: boolean;
+}
 
 const authOptions: NextAuthOptions = {
   session: {
@@ -21,6 +32,18 @@ const authOptions: NextAuthOptions = {
           scope: 'openid email profile',
         },
       },
+      async profile(profile) {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: profile.email },
+        });
+        return {
+          id: profile.sub,
+          name: profile.name,
+          email: profile.email,
+          image: profile.picture,
+          isAdmin: dbUser?.isAdmin ?? false,
+        };
+      },
     }),
     CredentialsProvider({
       name: 'Email and Password',
@@ -32,7 +55,7 @@ const authOptions: NextAuthOptions = {
         },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials): Promise<NextAuthUser | null> {
         if (!credentials?.email || !credentials.password) {
           return null;
         }
@@ -41,7 +64,7 @@ const authOptions: NextAuthOptions = {
             email: credentials.email,
           },
         });
-        if (!user) {
+        if (!user || !user.password) {
           return null;
         }
 
@@ -51,10 +74,12 @@ const authOptions: NextAuthOptions = {
         }
 
         return {
-          id: `${user.id}`,
+          id: user.id,
           email: user.email,
-          randomKey: user.role,
-        };
+          name: user.name,
+          image: user.avatarUrl,
+          isAdmin: user.isAdmin,
+        } as NextAuthUser;
       },
     }),
   ],
@@ -66,31 +91,33 @@ const authOptions: NextAuthOptions = {
     //   newUser: '/auth/new-user'
   },
   callbacks: {
-    session: ({ session, token }) => {
-      // console.log('Session Callback', { session, token })
-      return {
-        ...session,
-        user: {
+    session: ({ session, token }: { session: Session; token: JWT }): Session => {
+      const enhancedToken = token as EnhancedToken;
+      if (session.user && enhancedToken.id) {
+        const sessionUser: SessionUser = {
           ...session.user,
-          id: token.id,
-          randomKey: token.randomKey,
-        },
-      };
-    },
-    jwt: ({ token, user }) => {
-      // console.log('JWT Callback', { token, user })
-      if (user) {
-        const u = user as unknown as any;
+          id: enhancedToken.id,
+          isAdmin: enhancedToken.isAdmin,
+        };
         return {
-          ...token,
-          id: u.id,
-          randomKey: u.randomKey,
+          ...session,
+          user: sessionUser,
         };
       }
-      return token;
+      return session;
+    },
+    jwt: ({ token, user }: { token: JWT; user?: NextAuthUser & { isAdmin?: boolean } }): JWT | Promise<JWT> => {
+      const enhancedToken = token as EnhancedToken;
+
+      if (user) {
+        enhancedToken.id = user.id;
+        enhancedToken.isAdmin = user.isAdmin;
+      }
+
+      return enhancedToken;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET!,
 };
 
 export default authOptions;
