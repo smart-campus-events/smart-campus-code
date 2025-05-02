@@ -1,164 +1,265 @@
 'use client';
 
-import React, { useState } from 'react';
+/* eslint-disable max-len */
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Container, Row, Col, Card, Form, Button, Badge, InputGroup,
-  Dropdown, Pagination, Breadcrumb, ButtonGroup,
+  Dropdown, Pagination, Breadcrumb, ButtonGroup, Spinner, Alert,
 } from 'react-bootstrap';
 import {
   Search, Funnel, X, Bookmark, Clock, Grid3x3GapFill, ListUl,
   ChevronLeft, ChevronRight,
 } from 'react-bootstrap-icons';
 import Link from 'next/link';
+import debounce from 'lodash/debounce';
 
-// TODO: Replace hardcoded data with actual data fetching, filtering, sorting, pagination
-// TODO: Implement filter modal/offcanvas functionality
-// TODO: Implement search, sort, filter removal, view toggle, bookmark, pagination logic
-// TODO: Use proper linking for club cards
+// Define the Club type based on expected API response (adjust as needed)
+// This should ideally align with Prisma types, possibly using Prisma.ClubGetPayload
+interface Category {
+  id: string;
+  name: string;
+}
 
-const sampleClubs = [
-  // eslint-disable-next-line max-len
-  { id: 1, name: 'Hawaiʻi Programming Club', tags: ['Technology', 'Academic'], description: 'A community of students passionate about coding and software development...', meetingInfo: 'Meets Weekly Thursdays', slug: 'hawaii-programming-club' }, // Added slug for linking
-  // eslint-disable-next-line max-len
-  { id: 2, name: 'Mānoa Dance Crew', tags: ['Arts', 'Performance'], description: 'Express yourself through dance! All styles and skill levels welcome...', meetingInfo: 'Meets Tuesdays & Fridays', slug: 'manoa-dance-crew' },
-  // eslint-disable-next-line max-len
-  { id: 3, name: 'Environmental Warriors', tags: ['Environment', 'Community'], description: 'Join us in protecting Hawaii\'s natural environment through action...', meetingInfo: 'Monthly Events', slug: 'environmental-warriors' },
-  // eslint-disable-next-line max-len
-  { id: 4, name: 'Debate Club', tags: ['Academic', 'Speech'], description: 'Hone your critical thinking and public speaking skills.', meetingInfo: 'Meets Mondays', slug: 'debate-club' },
-  // eslint-disable-next-line max-len
-  { id: 5, name: 'Photography Club', tags: ['Arts', 'Hobby'], description: 'Capture moments and learn new techniques.', meetingInfo: 'Bi-weekly Workshops', slug: 'photography-club' },
-  // eslint-disable-next-line max-len
-  { id: 6, name: 'Gaming Guild', tags: ['Social', 'Entertainment'], description: 'Connect with fellow gamers on campus.', meetingInfo: 'Weekly Meetups', slug: 'gaming-guild' },
-  {
-    id: 7,
-    name: 'Anime Club',
-    category: 'Hobbies & Interests',
-    memberCount: 110,
-    tags: ['Anime', 'Manga', 'Japanese Culture', 'Social'],
-    imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/e6c4d9a8f7-c508362619687f52d7f2.png',
-    imageAlt: 'group of students watching anime together in a classroom setting, colorful posters on the wall',
-    description: 'Screenings, discussions, and events related to Japanese animation and comics.',
-    slug: 'anime-club',
-  },
-  {
-    id: 8,
-    name: 'Business Professionals Club',
-    category: 'Academic & Professional',
-    memberCount: 155,
-    tags: ['Business', 'Networking', 'Career Development', 'Professional'],
-    imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/a9d3b1c7e0-a4f9a8e7d6e5b4c3a2b1.png',
-    imageAlt: 'students in business attire networking at a professional event, shaking hands',
-    description: 'Connect with peers and professionals, gain insights into various industries.',
-    slug: 'business-professionals-club',
-  },
-  {
-    id: 9,
-    name: 'Yoga & Wellness Club',
-    category: 'Health & Wellness',
-    memberCount: 75,
-    tags: ['Yoga', 'Meditation', 'Mindfulness', 'Health', 'Fitness'],
-    imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/f1b8e7a6d5-c3b2a1f9e8d7c6b5a4f3.png',
-    imageAlt: 'students participating in an outdoor yoga session on a sunny day',
-    description: 'Promoting physical and mental well-being through yoga and mindfulness practices.',
-    slug: 'yoga-wellness-club',
-  },
-];
+interface ClubCategory {
+  category: Category;
+}
 
-const initialActiveFilters = ['Academic', 'Cultural']; // Example
-const totalClubs = 124; // Example total count
-const clubsPerPage = 6; // Example items per page
+interface Club {
+  id: string;
+  name: string;
+  purpose: string;
+  meetingTime: string | null;
+  meetingLocation: string | null;
+  logoUrl: string | null;
+  categories: ClubCategory[]; // Updated to match include
+  _count: {
+    favoritedBy: number;
+    hostedEvents: number;
+  };
+  // Add slug if available/needed, or generate dynamically
+  // slug: string;
+}
+
+interface PaginationInfo {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+const CLUBS_PER_PAGE = 9; // Adjust as needed
 
 export default function ClubsPage() {
+  const [clubs, setClubs] = useState<Club[]>([]);
+  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeFilters, setActiveFilters] = useState(initialActiveFilters);
-  const [sortBy, setSortBy] = useState('A-Z');
+  const [activeFilters, setActiveFilters] = useState<string[]>([]); // Store category IDs or names
+  const [sortBy, setSortBy] = useState('A-Z'); // Add more sort options later
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Placeholder logic - replace with actual data fetching and filtering
-  const filteredClubs = sampleClubs;
-  const totalPages = Math.ceil(totalClubs / clubsPerPage);
+  // --- Data Fetching ---
+  // Step 1: Create a stable fetch function that doesn't recreate with sortBy changes
+  const fetchClubsData = useCallback(async (page = 1, search = '', sort = 'A-Z') => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: CLUBS_PER_PAGE.toString(),
+        q: search,
+        // Add sort param directly
+        ...(sort && { sort }),
+      });
 
+      const response = await fetch(`/api/clubs?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setClubs(data.clubs);
+      setPagination(data.pagination);
+    } catch (err: any) {
+      console.error('Failed to fetch clubs:', err);
+      setError(err.message || 'Failed to load clubs. Please try refreshing.');
+      setClubs([]);
+      setPagination(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []); // No dependencies - this function never changes
+
+  // Step 2: Create a function that uses the current sortBy value
+  const fetchClubs = useCallback((page: number, search: string) => {
+    fetchClubsData(page, search, sortBy);
+  }, [fetchClubsData, sortBy]);
+
+  // Step 3: Create a debounced search handler using useMemo (created only once)
+  const debouncedSearch = useMemo(
+    () => debounce((searchText: string, fetchFn: (page: number, search: string) => void) => {
+      setCurrentPage(1);
+      fetchFn(1, searchText);
+    }, 500),
+    [],
+  );
+
+  // Step 4: Cleanup the debounced function on component unmount
+  useEffect(() => () => {
+    debouncedSearch.cancel();
+  }, [debouncedSearch]);
+
+  // Initial fetch when component mounts or page/sortBy changes
+  useEffect(() => {
+    fetchClubs(currentPage, searchTerm);
+  }, [currentPage, fetchClubs, searchTerm]); // Added searchTerm to dependency array
+
+  // --- Event Handlers ---
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(event.target.value);
-    // TODO: Implement search logic (likely debounced)
+    const newSearchTerm = event.target.value;
+    setSearchTerm(newSearchTerm);
+    debouncedSearch(newSearchTerm, fetchClubs);
   };
 
   const handleFilterClick = () => {
-    // TODO: Open filter modal/offcanvas
-    console.log('Filter button clicked');
+    // TODO: Implement filter modal/offcanvas
+    console.log('Filter button clicked - Not implemented');
+    // When filters change, reset page and call fetchClubs
+    // setCurrentPage(1);
+    // fetchClubs(1, searchTerm, newFilters);
   };
 
   const handleSortSelect = (eventKey: string | null) => {
-    if (eventKey) {
+    if (eventKey && eventKey !== sortBy) {
       setSortBy(eventKey);
-      // TODO: Implement sorting logic
+      setCurrentPage(1); // Reset page on sort change
+      // fetchClubs will be called by the useEffect due to sortBy dependency
     }
   };
 
   const handleRemoveFilter = (filterToRemove: string) => {
     setActiveFilters(activeFilters.filter(f => f !== filterToRemove));
     // TODO: Refetch/filter data based on new filters
+    setCurrentPage(1);
+    // fetchClubs(1, searchTerm, updatedFilters);
+    console.log('Remove filter - Not fully implemented');
   };
 
   const handlePageChange = (pageNumber: number) => {
-    setCurrentPage(pageNumber);
-    // TODO: Fetch data for the new page
+    if (pageNumber !== currentPage) {
+      setCurrentPage(pageNumber);
+      // Fetching is handled by the useEffect dependency on currentPage
+    }
   };
 
-  const handleBookmark = (clubId: number) => {
-    // TODO: Implement bookmarking logic
-    console.log(`Bookmark clicked for club ${clubId}`);
+  const handleBookmark = (clubId: string) => {
+    // TODO: Implement bookmarking logic (API call)
+    console.log(`Bookmark clicked for club ${clubId} - Not implemented`);
   };
 
-  // TODO: Implement actual pagination item generation
-  const paginationItems = [];
-  if (totalPages <= 5) {
-    for (let number = 1; number <= totalPages; number++) {
-      paginationItems.push(
-        <Pagination.Item key={number} active={number === currentPage} onClick={() => handlePageChange(number)}>
-          {number}
-        </Pagination.Item>,
-      );
-    }
-  } else {
-    // eslint-disable-next-line max-len
-    paginationItems.push(<Pagination.Item key={1} active={currentPage === 1} onClick={() => handlePageChange(1)}>{1}</Pagination.Item>);
-    if (currentPage > 3) paginationItems.push(<Pagination.Ellipsis key="ell-start" disabled />);
-    let startPage = Math.max(2, currentPage - 1);
-    let endPage = Math.min(totalPages - 1, currentPage + 1);
-    if (currentPage <= 3) endPage = 3;
-    if (currentPage >= totalPages - 2) startPage = totalPages - 2;
+  // --- Pagination Rendering ---
+  const renderPaginationItems = () => {
+    if (!pagination || pagination.totalPages <= 1) return null;
 
-    for (let number = startPage; number <= endPage; number++) {
-      // eslint-disable-next-line max-len
-      paginationItems.push(<Pagination.Item key={number} active={number === currentPage} onClick={() => handlePageChange(number)}>{number}</Pagination.Item>);
+    const items = [];
+    const { totalPages } = pagination;
+    const maxPagesToShow = 5; // Adjust number of page links shown
+
+    if (totalPages <= maxPagesToShow + 2) { // Show all pages if not too many
+      for (let number = 1; number <= totalPages; number++) {
+        items.push(
+          <Pagination.Item key={number} active={number === currentPage} onClick={() => handlePageChange(number)}>
+            {number}
+          </Pagination.Item>,
+        );
+      }
+    } else {
+      // Logic for showing ellipsis
+      items.push(<Pagination.Item key={1} active={currentPage === 1} onClick={() => handlePageChange(1)}>{1}</Pagination.Item>);
+
+      const startEllipsisNeeded = currentPage > maxPagesToShow - 1;
+      const endEllipsisNeeded = currentPage < totalPages - (maxPagesToShow - 2);
+
+      if (startEllipsisNeeded) {
+        items.push(<Pagination.Ellipsis key="ell-start" disabled />);
+      }
+
+      let startPage = Math.max(2, currentPage - Math.floor((maxPagesToShow - 2) / 2));
+      let endPage = Math.min(totalPages - 1, currentPage + Math.ceil((maxPagesToShow - 2) / 2));
+
+      // Adjust start/end if near beginning or end
+      if (currentPage < maxPagesToShow - 1) {
+        endPage = maxPagesToShow - 1;
+      }
+      if (currentPage > totalPages - (maxPagesToShow - 2)) {
+        startPage = totalPages - (maxPagesToShow - 2);
+      }
+
+      for (let number = startPage; number <= endPage; number++) {
+        items.push(
+          <Pagination.Item key={number} active={number === currentPage} onClick={() => handlePageChange(number)}>
+            {number}
+          </Pagination.Item>,
+        );
+      }
+
+      if (endEllipsisNeeded) {
+        items.push(<Pagination.Ellipsis key="ell-end" disabled />);
+      }
+
+      items.push(<Pagination.Item key={totalPages} active={totalPages === currentPage} onClick={() => handlePageChange(totalPages)}>{totalPages}</Pagination.Item>);
     }
-    if (currentPage < totalPages - 2) paginationItems.push(<Pagination.Ellipsis key="ell-end" disabled />);
-    // eslint-disable-next-line max-len
-    paginationItems.push(<Pagination.Item key={totalPages} active={totalPages === currentPage} onClick={() => handlePageChange(totalPages)}>{totalPages}</Pagination.Item>);
-  }
+    return items;
+  };
+
+  // --- Helper for rendering results count ---
+  const renderResultsCount = () => {
+    if (isLoading) {
+      return 'Loading clubs...';
+    }
+    if (!pagination || pagination.total === 0) {
+      return 'No clubs found';
+    }
+    const startItem = ((pagination.page - 1) * pagination.limit) + 1;
+    const endItem = Math.min(pagination.page * pagination.limit, pagination.total);
+    return (
+      <>
+        Showing
+        <span className="fw-medium">
+          {' '}
+          {startItem}
+        </span>
+        -
+        <span className="fw-medium">
+          {' '}
+          {endItem}
+        </span>
+        {' '}
+        of
+        <span className="fw-medium">
+          {' '}
+          {pagination.total}
+        </span>
+        {' '}
+        clubs
+      </>
+    );
+  };
 
   return (
     <div className="bg-light min-vh-100">
-      {/* Assuming Header/Navigation is handled by the main layout */}
-      {/* Add a placeholder Header if needed or rely on global layout */}
-      {/* <header className="bg-white shadow-sm py-3">...</header> */}
-
       <Container className="py-4 py-md-5">
-        {/* Breadcrumb - Assuming Dashboard exists */}
         <Breadcrumb className="mb-4">
           <Breadcrumb.Item linkAs={Link} href="/dashboard">Dashboard</Breadcrumb.Item>
           <Breadcrumb.Item active>Clubs (RIOs)</Breadcrumb.Item>
         </Breadcrumb>
 
-        {/* Page Header */}
         <div className="mb-4 mb-md-5">
           <h1 className="h2 fw-bold mb-2">Find Your ʻOhana: Explore Clubs & Organizations</h1>
           <p className="text-muted">Discover and join clubs that match your interests at UH Mānoa.</p>
         </div>
 
-        {/* Search and Filters Card */}
         <Card className="shadow-sm mb-4 mb-md-5">
           <Card.Body className="p-4">
             <Row className="g-3 mb-3">
@@ -170,17 +271,16 @@ export default function ClubsPage() {
                     placeholder="Search clubs by name or keyword..."
                     value={searchTerm}
                     onChange={handleSearchChange}
+                    aria-label="Search clubs"
                   />
                 </InputGroup>
               </Col>
               <Col lg={5} xl={4} className="d-flex gap-2">
                 <Button variant="outline-secondary" onClick={handleFilterClick} className="flex-shrink-0">
                   <Funnel className="me-1" />
-                  {' '}
                   Filters
                 </Button>
                 <Dropdown onSelect={handleSortSelect} className="flex-grow-1">
-                  {/* eslint-disable-next-line max-len */}
                   <Dropdown.Toggle variant="outline-secondary" id="dropdown-sort" className="w-100 d-flex justify-content-between align-items-center">
                     Sort:
                     {' '}
@@ -189,14 +289,13 @@ export default function ClubsPage() {
                   <Dropdown.Menu className="w-100">
                     <Dropdown.Item eventKey="A-Z">Sort: A-Z</Dropdown.Item>
                     <Dropdown.Item eventKey="Z-A">Sort: Z-A</Dropdown.Item>
-                    <Dropdown.Item eventKey="Relevance">Sort: Relevance</Dropdown.Item>
-                    {/* Add other sort options if needed */}
+                    {/* <Dropdown.Item eventKey="Relevance">Sort: Relevance</Dropdown.Item> */}
+                    {/* Add other sort options like popularity, recent */}
                   </Dropdown.Menu>
                 </Dropdown>
               </Col>
             </Row>
 
-            {/* Active Filters Display */}
             {activeFilters.length > 0 && (
               <div className="d-flex flex-wrap gap-2">
                 <span className="text-muted small me-2 align-self-center">Active:</span>
@@ -209,6 +308,8 @@ export default function ClubsPage() {
                     className="d-inline-flex align-items-center gap-1 py-1 px-2"
                   >
                     {filter}
+                    {' '}
+                    {/* Display filter name, might need mapping from ID */}
                     <Button
                       variant="link"
                       size="sm"
@@ -225,133 +326,146 @@ export default function ClubsPage() {
           </Card.Body>
         </Card>
 
-        {/* Results Count & View Toggle */}
         <div className="d-flex justify-content-between align-items-center mb-4">
           <p className="text-muted mb-0">
-            Showing
-            <span className="fw-medium">{filteredClubs.length}</span>
-            {' '}
-            of
-            <span className="fw-medium">{totalClubs}</span>
-            {' '}
-            clubs
+            {renderResultsCount()}
           </p>
           <ButtonGroup size="sm">
-            {/* eslint-disable-next-line max-len */}
             <Button variant={viewMode === 'grid' ? 'secondary' : 'outline-secondary'} onClick={() => setViewMode('grid')} aria-label="Grid view">
               <Grid3x3GapFill />
             </Button>
-            {/* eslint-disable-next-line max-len */}
             <Button variant={viewMode === 'list' ? 'secondary' : 'outline-secondary'} onClick={() => setViewMode('list')} aria-label="List view">
               <ListUl />
             </Button>
           </ButtonGroup>
         </div>
 
+        {/* Loading and Error States */}
+        {isLoading && (
+          <div className="text-center py-5">
+            <Spinner animation="border" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </Spinner>
+          </div>
+        )}
+        {error && (
+          <Alert variant="danger">{error}</Alert>
+        )}
+
         {/* Clubs Grid/List */}
-        <Row className={`g-4 ${viewMode === 'list' ? 'row-cols-1' : 'row-cols-1 row-cols-md-2 row-cols-lg-3'}`}>
-          {filteredClubs.map(club => (
-            <Col key={club.id}>
-              {/* TODO: Link entire card to club details page */}
-              <Card className="h-100 shadow-sm hover-lift">
-                <Card.Body className="d-flex flex-column">
-                  <div className="d-flex justify-content-between align-items-start mb-2">
-                    <Link href={`/club/${club.slug}`} passHref legacyBehavior>
-                      {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-                      <a className="text-decoration-none text-dark stretched-link">
+        {!isLoading && !error && clubs.length === 0 && (
+        <Col xs={12}>
+          {' '}
+          <Alert variant="info">No clubs match the current criteria.</Alert>
+          {' '}
+        </Col>
+        )}
+        {!isLoading && !error && clubs.length > 0 && (
+          <Row className={`g-4 ${viewMode === 'list' ? 'row-cols-1' : 'row-cols-1 row-cols-md-2 row-cols-lg-3'}`}>
+            {clubs.map(club => (
+              <Col key={club.id}>
+                <Card className="h-100 shadow-sm hover-lift">
+                  <Card.Body className="d-flex flex-column">
+                    <div className="d-flex justify-content-between align-items-start mb-2">
+                      {/* Removed legacyBehavior, wrapping Card.Title directly */}
+                      <Link href={`/clubs/${club.id}`} passHref className="text-decoration-none text-dark stretched-link">
                         <Card.Title as="h6" className="mb-1 fw-semibold">{club.name}</Card.Title>
-                      </a>
-                    </Link>
-                    {/* eslint-disable-next-line max-len */}
-                    <Button variant="light" size="sm" className="p-1 ms-2 flex-shrink-0" onClick={(e) => { e.stopPropagation(); handleBookmark(club.id); }} aria-label={`Bookmark ${club.name}`}>
-                      <Bookmark />
-                    </Button>
-                  </div>
-
-                  {viewMode === 'grid' && (
-                    <>
-                      {/* eslint-disable-next-line max-len */}
-                      <Card.Text className="small text-muted flex-grow-1 mb-3">
-                        {club.description.substring(0, 100)}
-                        {club.description.length > 100 ? '...' : ''}
-                      </Card.Text>
-                      <div className="mt-auto">
-                        <div className="d-flex align-items-center text-muted small mb-2">
-                          <Clock size={12} className="me-1" />
-                          <span>{club.meetingInfo}</span>
-                        </div>
-                        <div className="d-flex flex-wrap gap-1">
-                          {club.tags.slice(0, 3).map(tag => (
-                            <Badge key={tag} pill bg="light" text="dark" className="fw-normal">
-                              {tag}
-                            </Badge>
-                          ))}
-                          {club.tags.length > 3 && (
-                            <Badge pill bg="light" text="dark" className="fw-normal">
-                              +
-                              {' '}
-                              {club.tags.length - 3}
-                              {' '}
-                              more
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {viewMode === 'list' && (
-                    <div className="d-flex justify-content-between align-items-center">
-                      {/* eslint-disable-next-line max-len */}
-                      <p className="small text-muted mb-0 me-3">
-                        {club.description.substring(0, 150)}
-                        {club.description.length > 150 ? '...' : ''}
-                      </p>
-                      <div className="text-end flex-shrink-0">
-                        <div className="d-flex align-items-center text-muted small mb-2 justify-content-end">
-                          <Clock size={12} className="me-1" />
-                          <span>{club.meetingInfo}</span>
-                        </div>
-                        <div className="d-flex flex-wrap gap-1 justify-content-end">
-                          {club.tags.map(tag => (
-                            <Badge key={tag} pill bg="light" text="dark" className="fw-normal">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
+                      </Link>
+                      <Button variant="light" size="sm" className="p-1 ms-2 flex-shrink-0" onClick={(e) => { e.stopPropagation(); handleBookmark(club.id); }} aria-label={`Bookmark ${club.name}`}>
+                        <Bookmark />
+                      </Button>
                     </div>
-                  )}
-                </Card.Body>
-              </Card>
-            </Col>
-          ))}
-        </Row>
+
+                    {viewMode === 'grid' && (
+                      <>
+                        <Card.Text className="small text-muted flex-grow-1 mb-3">
+                          {club.purpose.substring(0, 100)}
+                          {club.purpose.length > 100 ? '...' : ''}
+                        </Card.Text>
+                        <div className="mt-auto">
+                          {(club.meetingTime || club.meetingLocation) && (
+                          <div className="d-flex align-items-center text-muted small mb-2">
+                            <Clock size={12} className="me-1" />
+                            {/* Display meeting info concisely */}
+                            <span>
+                              {club.meetingTime || 'Meeting time TBD'}
+                              {club.meetingLocation ? ` @ ${club.meetingLocation}` : ''}
+                            </span>
+                          </div>
+                          )}
+                          <div className="d-flex flex-wrap gap-1">
+                            {club.categories.slice(0, 3).map(cc => (
+                              <Badge key={cc.category.id} pill bg="light" text="dark" className="fw-normal">
+                                {cc.category.name}
+                              </Badge>
+                            ))}
+                            {club.categories.length > 3 && (
+                              <Badge pill bg="light" text="dark" className="fw-normal">
+                                +
+                                {' '}
+                                {club.categories.length - 3}
+                                {' '}
+                                more
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {viewMode === 'list' && (
+                      <div className="d-flex justify-content-between align-items-center">
+                        <p className="small text-muted mb-0 me-3">
+                          {club.purpose.substring(0, 150)}
+                          {club.purpose.length > 150 ? '...' : ''}
+                        </p>
+                        <div className="text-end flex-shrink-0">
+                          {(club.meetingTime || club.meetingLocation) && (
+                            <div className="d-flex align-items-center text-muted small mb-2 justify-content-end">
+                              <Clock size={12} className="me-1" />
+                              <span>
+                                {club.meetingTime || 'Meeting time TBD'}
+                                {club.meetingLocation ? ` @ ${club.meetingLocation}` : ''}
+                              </span>
+                            </div>
+                          )}
+                          <div className="d-flex flex-wrap gap-1 justify-content-end">
+                            {club.categories.map(cc => (
+                              <Badge key={cc.category.id} pill bg="light" text="dark" className="fw-normal">
+                                {cc.category.name}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </Card.Body>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        )}
 
         {/* Pagination */}
-        {totalPages > 1 && (
-        <div className="d-flex justify-content-center mt-5">
-          <Pagination size="sm">
-            {/* eslint-disable-next-line max-len */}
-            <Pagination.Prev onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}><ChevronLeft size={14} /></Pagination.Prev>
-            {paginationItems}
-            {/* eslint-disable-next-line max-len */}
-            <Pagination.Next onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}><ChevronRight size={14} /></Pagination.Next>
-          </Pagination>
-        </div>
+        {pagination && pagination.totalPages > 1 && (
+          <div className="d-flex justify-content-center mt-5">
+            <Pagination size="sm">
+              <Pagination.Prev onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}><ChevronLeft size={14} /></Pagination.Prev>
+              {renderPaginationItems()}
+              <Pagination.Next onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === pagination.totalPages}><ChevronRight size={14} /></Pagination.Next>
+            </Pagination>
+          </div>
         )}
       </Container>
     </div>
   );
 }
 
-// Add custom CSS for hover effect if needed:
-/*
-.hover-lift {
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-}
-.hover-lift:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--bs-card-box-shadow), 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-}
-*/
+// Note: You might want to add custom CSS for hover-lift effect if not globally defined.
+// .hover-lift {
+//   transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+// }
+// .hover-lift:hover {
+//   transform: translateY(-3px);
+//   box-shadow: var(--bs-card-box-shadow), 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+// }
