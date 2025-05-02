@@ -7,11 +7,12 @@ import {
   Dropdown, Pagination, Breadcrumb, ButtonGroup, Spinner, Alert,
 } from 'react-bootstrap';
 import {
-  Search, Funnel, X, Bookmark, Clock, Grid3x3GapFill, ListUl,
+  Search, Funnel, X, Bookmark, BookmarkFill, Clock, Grid3x3GapFill, ListUl,
   ChevronLeft, ChevronRight,
 } from 'react-bootstrap-icons';
 import Link from 'next/link';
 import debounce from 'lodash/debounce';
+import { useSession } from 'next-auth/react';
 
 // Define the Club type based on expected API response (adjust as needed)
 // This should ideally align with Prisma types, possibly using Prisma.ClubGetPayload
@@ -50,6 +51,7 @@ interface PaginationInfo {
 const CLUBS_PER_PAGE = 9; // Adjust as needed
 
 export default function ClubsPage() {
+  const { data: session, status } = useSession();
   const [clubs, setClubs] = useState<Club[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,6 +61,8 @@ export default function ClubsPage() {
   const [sortBy, setSortBy] = useState('A-Z'); // Add more sort options later
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [currentPage, setCurrentPage] = useState(1);
+  const [favoriteClubIds, setFavoriteClubIds] = useState<string[]>([]);
+  const [isLoadingFavorites, setIsLoadingFavorites] = useState(false);
 
   // --- Data Fetching ---
   // Step 1: Create a stable fetch function that doesn't recreate with sortBy changes
@@ -91,6 +95,22 @@ export default function ClubsPage() {
     }
   }, []); // No dependencies - this function never changes
 
+  // Fetch user's favorite clubs
+  const fetchFavoriteClubs = useCallback(async () => {
+    // For development without authentication, use localStorage
+    try {
+      // Get favorites from localStorage if available
+      if (typeof window !== 'undefined') {
+        const storedFavorites = localStorage.getItem('favoriteClubs');
+        if (storedFavorites) {
+          setFavoriteClubIds(JSON.parse(storedFavorites));
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch favorite clubs from localStorage:', err);
+    }
+  }, []);
+
   // Step 2: Create a function that uses the current sortBy value
   const fetchClubs = useCallback((page: number, search: string) => {
     fetchClubsData(page, search, sortBy);
@@ -114,6 +134,11 @@ export default function ClubsPage() {
   useEffect(() => {
     fetchClubs(currentPage, searchTerm);
   }, [currentPage, fetchClubs, searchTerm]); // Added searchTerm to dependency array
+
+  // Fetch user's favorite clubs when component mounts
+  useEffect(() => {
+    fetchFavoriteClubs();
+  }, [fetchFavoriteClubs]);
 
   // --- Event Handlers ---
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -153,9 +178,39 @@ export default function ClubsPage() {
     }
   };
 
-  const handleBookmark = (clubId: string) => {
-    // TODO: Implement bookmarking logic (API call)
-    console.log(`Bookmark clicked for club ${clubId} - Not implemented`);
+  const handleBookmark = async (clubId: string) => {
+    // No login required for now
+    try {
+      const isCurrentlyFavorited = favoriteClubIds.includes(clubId);
+      
+      // Optimistically update the UI
+      let updatedFavorites;
+      if (isCurrentlyFavorited) {
+        updatedFavorites = favoriteClubIds.filter(id => id !== clubId);
+      } else {
+        updatedFavorites = [...favoriteClubIds, clubId];
+      }
+
+      // Update state
+      setFavoriteClubIds(updatedFavorites);
+      
+      // Save to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('favoriteClubs', JSON.stringify(updatedFavorites));
+      }
+
+      // Make the API call (currently just a stub that returns success)
+      const method = isCurrentlyFavorited ? 'DELETE' : 'POST';
+      await fetch(`/api/clubs/${clubId}/favorite`, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (err: any) {
+      console.error('Error bookmarking club:', err);
+      alert(`Error: ${err.message}`);
+    }
   };
 
   // --- Pagination Rendering ---
@@ -208,144 +263,148 @@ export default function ClubsPage() {
         items.push(<Pagination.Ellipsis key="ell-end" disabled />);
       }
 
-      items.push(<Pagination.Item key={totalPages} active={totalPages === currentPage} onClick={() => handlePageChange(totalPages)}>{totalPages}</Pagination.Item>);
+      items.push(
+        <Pagination.Item key={totalPages} active={currentPage === totalPages} onClick={() => handlePageChange(totalPages)}>
+          {totalPages}
+        </Pagination.Item>,
+      );
     }
     return items;
   };
 
-  // --- Helper for rendering results count ---
+  // --- Rendering Helpers ---
   const renderResultsCount = () => {
-    if (isLoading) {
-      return 'Loading clubs...';
+    if (!pagination) return null;
+    
+    const { total, page, limit } = pagination;
+    const start = (page - 1) * limit + 1;
+    const end = Math.min(page * limit, total);
+    
+    if (total === 0) {
+      return 'No results found';
     }
-    if (!pagination || pagination.total === 0) {
-      return 'No clubs found';
+    if (end === 1) {
+      return '1 result';
     }
-    const startItem = ((pagination.page - 1) * pagination.limit) + 1;
-    const endItem = Math.min(pagination.page * pagination.limit, pagination.total);
-    return (
-      <>
-        Showing
-        <span className="fw-medium">
-          {' '}
-          {startItem}
-        </span>
-        -
-        <span className="fw-medium">
-          {' '}
-          {endItem}
-        </span>
-        {' '}
-        of
-        <span className="fw-medium">
-          {' '}
-          {pagination.total}
-        </span>
-        {' '}
-        clubs
-      </>
-    );
+    return `Showing ${start}–${end} of ${total} clubs`;
   };
 
+  // --- Main Render ---
   return (
-    <div className="bg-light min-vh-100">
-      <Container className="py-4 py-md-5">
-        <Breadcrumb className="mb-4">
-          <Breadcrumb.Item linkAs={Link} href="/dashboard">Dashboard</Breadcrumb.Item>
-          <Breadcrumb.Item active>Clubs (RIOs)</Breadcrumb.Item>
-        </Breadcrumb>
-
-        <div className="mb-4 mb-md-5">
-          <h1 className="h2 fw-bold mb-2">Find Your ʻOhana: Explore Clubs & Organizations</h1>
-          <p className="text-muted">Discover and join clubs that match your interests at UH Mānoa.</p>
+    <div className="bg-light py-5 min-vh-100">
+      <Container>
+        {/* Page Header */}
+        <div className="d-flex flex-wrap justify-content-between align-items-center mb-4">
+          <div>
+            <h1 className="h3 mb-1">Browse Clubs</h1>
+            <Breadcrumb className="mb-0">
+              <Breadcrumb.Item href="/">Home</Breadcrumb.Item>
+              <Breadcrumb.Item active>Clubs</Breadcrumb.Item>
+            </Breadcrumb>
+          </div>
+          <div className="d-flex gap-2 align-items-center">
+            <ButtonGroup>
+              <Button 
+                variant={viewMode === 'grid' ? 'primary' : 'outline-primary'} 
+                onClick={() => setViewMode('grid')}
+                aria-label="Grid View"
+              >
+                <Grid3x3GapFill size={18} />
+              </Button>
+              <Button 
+                variant={viewMode === 'list' ? 'primary' : 'outline-primary'} 
+                onClick={() => setViewMode('list')}
+                aria-label="List View"
+              >
+                <ListUl size={18} />
+              </Button>
+            </ButtonGroup>
+          </div>
         </div>
 
-        <Card className="shadow-sm mb-4 mb-md-5">
-          <Card.Body className="p-4">
-            <Row className="g-3 mb-3">
-              <Col lg={7} xl={8}>
+        {/* Search & Filter Bar */}
+        <Card className="shadow-sm mb-4">
+          <Card.Body>
+            <Row className="g-3 align-items-center">
+              <Col md={5}>
                 <InputGroup>
                   <InputGroup.Text><Search /></InputGroup.Text>
                   <Form.Control
-                    type="search"
-                    placeholder="Search clubs by name or keyword..."
+                    placeholder="Search clubs..."
                     value={searchTerm}
                     onChange={handleSearchChange}
-                    aria-label="Search clubs"
                   />
+                  {searchTerm && (
+                    <Button 
+                      variant="light" 
+                      onClick={() => { setSearchTerm(''); fetchClubs(1, ''); }}
+                    >
+                      <X />
+                    </Button>
+                  )}
                 </InputGroup>
               </Col>
-              <Col lg={5} xl={4} className="d-flex gap-2">
-                <Button variant="outline-secondary" onClick={handleFilterClick} className="flex-shrink-0">
-                  <Funnel className="me-1" />
-                  Filters
+              <Col md={4}>
+                <Button variant="light" onClick={handleFilterClick} className="w-100 text-start">
+                  <Funnel className="me-2" />
+                  <span className="me-1">Filter</span>
+                  {activeFilters.length > 0 && (
+                    <Badge pill bg="primary" className="ms-1">{activeFilters.length}</Badge>
+                  )}
                 </Button>
-                <Dropdown onSelect={handleSortSelect} className="flex-grow-1">
-                  <Dropdown.Toggle variant="outline-secondary" id="dropdown-sort" className="w-100 d-flex justify-content-between align-items-center">
-                    Sort:
-                    {' '}
-                    {sortBy}
+              </Col>
+              <Col md={3}>
+                <Dropdown onSelect={handleSortSelect}>
+                  <Dropdown.Toggle variant="light" className="w-100 text-start" id="sort-dropdown">
+                    Sort: {sortBy}
                   </Dropdown.Toggle>
-                  <Dropdown.Menu className="w-100">
-                    <Dropdown.Item eventKey="A-Z">Sort: A-Z</Dropdown.Item>
-                    <Dropdown.Item eventKey="Z-A">Sort: Z-A</Dropdown.Item>
-                    {/* <Dropdown.Item eventKey="Relevance">Sort: Relevance</Dropdown.Item> */}
-                    {/* Add other sort options like popularity, recent */}
+                  <Dropdown.Menu>
+                    <Dropdown.Item eventKey="A-Z" active={sortBy === 'A-Z'}>A-Z</Dropdown.Item>
+                    <Dropdown.Item eventKey="Z-A" active={sortBy === 'Z-A'}>Z-A</Dropdown.Item>
                   </Dropdown.Menu>
                 </Dropdown>
               </Col>
             </Row>
-
-            {activeFilters.length > 0 && (
-              <div className="d-flex flex-wrap gap-2">
-                <span className="text-muted small me-2 align-self-center">Active:</span>
-                {activeFilters.map(filter => (
-                  <Badge
-                    key={filter}
-                    pill
-                    bg="success-subtle"
-                    text="success-emphasis"
-                    className="d-inline-flex align-items-center gap-1 py-1 px-2"
-                  >
-                    {filter}
-                    {' '}
-                    {/* Display filter name, might need mapping from ID */}
-                    <Button
-                      variant="link"
-                      size="sm"
-                      className="p-0 lh-1 text-success-emphasis"
-                      onClick={() => handleRemoveFilter(filter)}
-                      aria-label={`Remove ${filter} filter`}
-                    >
-                      <X size={16} />
-                    </Button>
-                  </Badge>
-                ))}
-              </div>
-            )}
           </Card.Body>
         </Card>
 
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <p className="text-muted mb-0">
-            {renderResultsCount()}
-          </p>
-          <ButtonGroup size="sm">
-            <Button variant={viewMode === 'grid' ? 'secondary' : 'outline-secondary'} onClick={() => setViewMode('grid')} aria-label="Grid view">
-              <Grid3x3GapFill />
-            </Button>
-            <Button variant={viewMode === 'list' ? 'secondary' : 'outline-secondary'} onClick={() => setViewMode('list')} aria-label="List view">
-              <ListUl />
-            </Button>
-          </ButtonGroup>
-        </div>
+        {/* Active Filter Pills (if any) */}
+        {activeFilters.length > 0 && (
+          <div className="mb-4 d-flex flex-wrap gap-2">
+            {activeFilters.map(filter => (
+              <Badge
+                key={filter}
+                pill
+                bg="light"
+                text="dark"
+                className="py-2 px-3 d-flex align-items-center"
+              >
+                {filter}
+                <Button
+                  variant="link"
+                  className="p-0 ms-2 text-danger"
+                  onClick={() => handleRemoveFilter(filter)}
+                  aria-label={`Remove ${filter} filter`}
+                >
+                  <X size={14} />
+                </Button>
+              </Badge>
+            ))}
+          </div>
+        )}
 
-        {/* Loading and Error States */}
+        {/* Results Count */}
+        <p className="text-muted small mb-4">
+          {renderResultsCount()}
+        </p>
+
+        {/* Loading/Error States */}
         {isLoading && (
           <div className="text-center py-5">
             <Spinner animation="border" role="status">
               <span className="visually-hidden">Loading...</span>
             </Spinner>
+            <p className="mt-2 text-muted">Loading clubs...</p>
           </div>
         )}
         {error && (
@@ -371,8 +430,18 @@ export default function ClubsPage() {
                       <Link href={`/clubs/${club.id}`} passHref className="text-decoration-none text-dark stretched-link">
                         <Card.Title as="h6" className="mb-1 fw-semibold">{club.name}</Card.Title>
                       </Link>
-                      <Button variant="light" size="sm" className="p-1 ms-2 flex-shrink-0" onClick={(e) => { e.stopPropagation(); handleBookmark(club.id); }} aria-label={`Bookmark ${club.name}`}>
-                        <Bookmark />
+                      <Button 
+                        variant="light" 
+                        size="sm" 
+                        className="p-1 ms-2 flex-shrink-0 position-relative z-1" 
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          e.preventDefault();
+                          handleBookmark(club.id); 
+                        }} 
+                        aria-label={`${favoriteClubIds.includes(club.id) ? 'Remove from favorites' : 'Add to favorites'}: ${club.name}`}
+                      >
+                        {favoriteClubIds.includes(club.id) ? <BookmarkFill className="text-primary" /> : <Bookmark />}
                       </Button>
                     </div>
 

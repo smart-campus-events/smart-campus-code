@@ -1,89 +1,63 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Container, Row, Col, Card, Form, Button, Badge, InputGroup,
   Dropdown, Pagination, Breadcrumb, ButtonGroup,
+  Alert,
 } from 'react-bootstrap';
 import {
   Search, Funnel, X, CalendarEvent, GeoAlt, // Changed Clock to CalendarEvent, Added GeoAlt
-  Grid3x3GapFill, ListUl, ChevronLeft, ChevronRight, Star, // Added Star as an alternative bookmark icon
+  Grid3x3GapFill, ListUl, ChevronLeft, ChevronRight, Star, StarFill, // Added Star as an alternative bookmark icon
 } from 'react-bootstrap-icons';
 import Link from 'next/link';
 import Image from 'next/image';
+import { formatDate, formatTime } from '@/lib/utils/dateUtils'; // Import date utils
+
+// Define types for our API responses
+interface Category {
+  id: string;
+  name: string;
+}
+
+interface EventCategory {
+  category: Category;
+}
+
+interface Event {
+  id: string;
+  title: string;
+  startDateTime: string;
+  endDateTime: string | null;
+  allDay: boolean | null;
+  description: string | null;
+  costAdmission: string | null;
+  attendanceType: string;
+  location: string | null;
+  locationVirtualUrl: string | null;
+  organizerSponsor: string | null;
+  categories: EventCategory[];
+  _count: {
+    rsvps: number;
+  };
+}
+
+interface ApiResponse {
+  events: Event[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
 
 // TODO: Replace hardcoded data with actual data fetching, filtering, sorting, pagination
 // TODO: Implement filter modal/offcanvas functionality
 // TODO: Implement search, sort, filter removal, view toggle, save event, pagination logic
 // TODO: Use proper linking for event cards
 
-const sampleEvents = [
-  {
-    id: 1,
-    name: 'Spring Fling Music Fest',
-    tags: ['Music', 'Social', 'Outdoor', 'Free'],
-    description: 'Enjoy live bands, food trucks, and games on the main lawn. Kick off the semester!',
-    dateTime: 'Apr 25, 2025 - 4:00 PM - 8:00 PM',
-    location: 'Campus Center Lawn',
-    slug: 'spring-fling-2025',
-    imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/placeholder-event-1.png', // Example placeholder
-    imageAlt: 'Students enjoying an outdoor music festival on a sunny day.',
-  },
-  {
-    id: 2,
-    name: 'Career Fair Prep Workshop',
-    tags: ['Workshop', 'Career', 'Academic', 'Professional'],
-    description: 'Get your resume reviewed and practice your elevator pitch before the big career fair.',
-    dateTime: 'May 2, 2025 - 1:00 PM - 3:00 PM',
-    location: 'QLC Room 412',
-    slug: 'career-fair-prep-workshop',
-    imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/placeholder-event-2.png', // Example placeholder
-    imageAlt: 'Students sitting at tables working on resumes with a presenter.',
-  },
-  {
-    id: 3,
-    name: 'Guest Lecture: AI in Modern Art',
-    tags: ['Lecture', 'Technology', 'Arts', 'Academic'],
-    description: 'Visiting Professor Dr. Evelyn Reed discusses the impact of artificial intelligence '
-      + 'on creative fields.',
-    dateTime: 'May 5, 2025 - 6:00 PM - 7:30 PM',
-    location: 'Art Building Auditorium',
-    slug: 'guest-lecture-ai-art',
-    imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/placeholder-event-3.png', // Example placeholder
-    imageAlt: 'Lecture hall with a speaker presenting slides about AI and art.',
-  },
-  {
-    id: 4,
-    name: 'International Students Potluck',
-    tags: ['Social', 'Cultural', 'Food', 'Community'],
-    description: 'Share a dish from your home country and meet fellow international and local students.',
-    dateTime: 'May 10, 2025 - 5:30 PM onwards',
-    location: 'Hemenway Hall Courtyard',
-    slug: 'international-potluck-spring',
-  },
-  {
-    id: 5,
-    name: 'Beach Cleanup Day',
-    tags: ['Volunteer', 'Environment', 'Community', 'Outdoor'],
-    description: 'Join the Environmental Warriors club to help keep our nearby beaches clean.',
-    dateTime: 'May 12, 2025 - 9:00 AM - 12:00 PM',
-    location: 'Meet at Kapiolani Park Beach Center',
-    slug: 'beach-cleanup-may',
-  },
-  {
-    id: 6,
-    name: 'End-of-Semester Board Game Night',
-    tags: ['Social', 'Games', 'Entertainment', 'Indoor'],
-    description: 'De-stress before finals with board games, card games, and good company.',
-    dateTime: 'May 15, 2025 - 7:00 PM - 10:00 PM',
-    location: 'Campus Center Ballroom',
-    slug: 'board-game-night-finals',
-  },
-];
-
-const initialActiveFilters = ['Social', 'Free']; // Example event filters
-const totalEvents = 58; // Example total count
-const eventsPerPage = 6; // Example items per page
+const initialActiveFilters: string[] = []; // Empty initial filters
 
 export default function EventsPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -91,14 +65,78 @@ export default function EventsPage() {
   const [sortBy, setSortBy] = useState('Date: Soonest'); // Default sort for events
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [currentPage, setCurrentPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [pagination, setPagination] = useState({
+    total: 0,
+    page: 1,
+    limit: 9,
+    totalPages: 0,
+  });
+  const [favoriteEventIds, setFavoriteEventIds] = useState<string[]>([]);
 
-  // Placeholder logic - replace with actual data fetching and filtering
-  const filteredEvents = sampleEvents;
-  const totalPages = Math.ceil(totalEvents / eventsPerPage);
+  // Fetch events from the API
+  useEffect(() => {
+    const fetchEvents = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const queryParams = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: '9', // Show 9 events per page for grid layout
+          ...(searchTerm ? { q: searchTerm } : {}),
+          ...(sortBy ? { sort: sortBy } : {}),
+        });
+        
+        const response = await fetch(`/api/events?${queryParams.toString()}`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch events');
+        }
+        
+        const data: ApiResponse = await response.json();
+        setEvents(data.events);
+        setPagination(data.pagination);
+      } catch (err) {
+        console.error('Error fetching events:', err);
+        setError('Failed to load events. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchEvents();
+  }, [currentPage, searchTerm, sortBy]);
+
+  // Fetch user's favorite events from localStorage
+  const fetchFavoriteEvents = useCallback(() => {
+    try {
+      // Get favorites from localStorage if available
+      if (typeof window !== 'undefined') {
+        const storedFavorites = localStorage.getItem('favoriteEvents');
+        if (storedFavorites) {
+          setFavoriteEventIds(JSON.parse(storedFavorites));
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch favorite events from localStorage:', err);
+    }
+  }, []);
+
+  // Add this useEffect hook to load favorites when component mounts
+  useEffect(() => {
+    fetchFavoriteEvents();
+  }, [fetchFavoriteEvents]);
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
-    // TODO: Implement search logic (likely debounced)
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCurrentPage(1); // Reset to first page when searching
   };
 
   const handleFilterClick = () => {
@@ -109,37 +147,72 @@ export default function EventsPage() {
   const handleSortSelect = (eventKey: string | null) => {
     if (eventKey) {
       setSortBy(eventKey);
-      // TODO: Implement sorting logic
+      setCurrentPage(1); // Reset to first page when sorting changes
     }
   };
 
   const handleRemoveFilter = (filterToRemove: string) => {
     setActiveFilters(activeFilters.filter(f => f !== filterToRemove));
-    // TODO: Refetch/filter data based on new filters
+    // Reset to first page when filters change
+    setCurrentPage(1);
   };
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
-    // TODO: Fetch data for the new page
+    // Scroll to top when changing pages
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleSaveEvent = (eventId: number) => {
-    // TODO: Implement saving/bookmarking logic for events
-    console.log(`Save event clicked for event ${eventId}`);
+  const handleSaveEvent = async (eventId: string) => {
+    try {
+      const isCurrentlyFavorited = favoriteEventIds.includes(eventId);
+      
+      // Optimistically update the UI
+      let updatedFavorites;
+      if (isCurrentlyFavorited) {
+        updatedFavorites = favoriteEventIds.filter(id => id !== eventId);
+      } else {
+        updatedFavorites = [...favoriteEventIds, eventId];
+      }
+
+      // Update state
+      setFavoriteEventIds(updatedFavorites);
+      
+      // Save to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('favoriteEvents', JSON.stringify(updatedFavorites));
+      }
+
+      // Make the API call (currently just a stub that returns success)
+      const method = isCurrentlyFavorited ? 'DELETE' : 'POST';
+      await fetch(`/api/events/${eventId}/favorite`, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (err: any) {
+      console.error('Error starring/favoriting event:', err);
+      alert(`Error: ${err.message}`);
+    }
   };
 
-  // TODO: Implement actual pagination item generation
+  // Generate pagination items
   const paginationItems = [];
-  if (totalPages <= 5) {
-    for (let number = 1; number <= totalPages; number++) {
+  if (pagination.totalPages <= 5) {
+    for (let number = 1; number <= pagination.totalPages; number++) {
       paginationItems.push(
-        <Pagination.Item key={number} active={number === currentPage} onClick={() => handlePageChange(number)}>
+        <Pagination.Item 
+          key={number} 
+          active={number === currentPage} 
+          onClick={() => handlePageChange(number)}
+        >
           {number}
         </Pagination.Item>,
       );
     }
   } else {
-    // Basic ellipsis logic (same as clubs example)
+    // Basic ellipsis logic for more than 5 pages
     paginationItems.push(
       <Pagination.Item
         key={1}
@@ -151,9 +224,9 @@ export default function EventsPage() {
     );
     if (currentPage > 3) paginationItems.push(<Pagination.Ellipsis key="ell-start" disabled />);
     let startPage = Math.max(2, currentPage - 1);
-    let endPage = Math.min(totalPages - 1, currentPage + 1);
+    let endPage = Math.min(pagination.totalPages - 1, currentPage + 1);
     if (currentPage <= 3) endPage = 3;
-    if (currentPage >= totalPages - 2) startPage = totalPages - 2;
+    if (currentPage >= pagination.totalPages - 2) startPage = pagination.totalPages - 2;
 
     for (let number = startPage; number <= endPage; number++) {
       paginationItems.push(
@@ -166,17 +239,32 @@ export default function EventsPage() {
         </Pagination.Item>,
       );
     }
-    if (currentPage < totalPages - 2) paginationItems.push(<Pagination.Ellipsis key="ell-end" disabled />);
+    if (currentPage < pagination.totalPages - 2) paginationItems.push(<Pagination.Ellipsis key="ell-end" disabled />);
     paginationItems.push(
       <Pagination.Item
-        key={totalPages}
-        active={totalPages === currentPage}
-        onClick={() => handlePageChange(totalPages)}
+        key={pagination.totalPages}
+        active={pagination.totalPages === currentPage}
+        onClick={() => handlePageChange(pagination.totalPages)}
       >
-        {totalPages}
+        {pagination.totalPages}
       </Pagination.Item>,
     );
   }
+
+  // Helper function to format event date
+  const formatEventDate = (event: Event) => {
+    if (!event.startDateTime) return 'Date TBD';
+    
+    const startDate = new Date(event.startDateTime);
+    let dateStr = formatDate(startDate);
+    
+    if (event.allDay) {
+      return `${dateStr} (All day)`;
+    }
+    
+    dateStr += ` at ${formatTime(startDate)}`;
+    return dateStr;
+  };
 
   return (
     <div className="bg-light min-vh-100">
@@ -200,15 +288,18 @@ export default function EventsPage() {
           <Card.Body className="p-4">
             <Row className="g-3 mb-3">
               <Col lg={7} xl={8}>
-                <InputGroup>
-                  <InputGroup.Text><Search /></InputGroup.Text>
-                  <Form.Control
-                    type="search"
-                    placeholder="Search events by name, host, or keyword..."
-                    value={searchTerm}
-                    onChange={handleSearchChange}
-                  />
-                </InputGroup>
+                <Form onSubmit={handleSearchSubmit}>
+                  <InputGroup>
+                    <InputGroup.Text><Search /></InputGroup.Text>
+                    <Form.Control
+                      type="search"
+                      placeholder="Search events by name, host, or keyword..."
+                      value={searchTerm}
+                      onChange={handleSearchChange}
+                    />
+                    <Button type="submit" variant="outline-secondary">Search</Button>
+                  </InputGroup>
+                </Form>
               </Col>
               <Col lg={5} xl={4} className="d-flex gap-2">
                 <Button variant="outline-secondary" onClick={handleFilterClick} className="flex-shrink-0">
@@ -230,8 +321,7 @@ export default function EventsPage() {
                     <Dropdown.Item eventKey="Date: Soonest">Sort: Date: Soonest</Dropdown.Item>
                     <Dropdown.Item eventKey="Date: Latest">Sort: Date: Latest</Dropdown.Item>
                     <Dropdown.Item eventKey="A-Z">Sort: A-Z</Dropdown.Item>
-                    <Dropdown.Item eventKey="Relevance">Sort: Relevance</Dropdown.Item>
-                    {/* Add other sort options if needed */}
+                    <Dropdown.Item eventKey="Z-A">Sort: Z-A</Dropdown.Item>
                   </Dropdown.Menu>
                 </Dropdown>
               </Col>
@@ -271,11 +361,11 @@ export default function EventsPage() {
           <p className="text-muted mb-0">
             Showing
             {' '}
-            <span className="fw-medium">{filteredEvents.length}</span>
+            <span className="fw-medium">{events.length}</span>
             {' '}
             of
             {' '}
-            <span className="fw-medium">{totalEvents}</span>
+            <span className="fw-medium">{pagination.total}</span>
             {' '}
             events
           </p>
@@ -297,132 +387,153 @@ export default function EventsPage() {
           </ButtonGroup>
         </div>
 
-        {/* Events Grid/List */}
-        <Row className={`g-4 ${viewMode === 'list' ? 'row-cols-1' : 'row-cols-1 row-cols-md-2 row-cols-lg-3'}`}>
-          {filteredEvents.map(event => (
-            <Col key={event.id}>
-              {/* TODO: Link entire card to event details page */}
-              <Card className="h-100 shadow-sm hover-lift">
-                {/* Optional Image Header for Grid View */}
-                {viewMode === 'grid' && event.imageUrl && (
-                  <Card.Img
-                    variant="top"
-                    src={event.imageUrl}
-                    alt={event.imageAlt
-                     || `Image for ${event.name}`}
-                    style={{ height: '180px', objectFit: 'cover' }}
-                  />
-                )}
-                <Card.Body className="d-flex flex-column">
-                  <div className="d-flex justify-content-between align-items-start mb-2">
-                    <Link href={`/event/${event.slug}`} passHref legacyBehavior>
-                      {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-                      <a className="text-decoration-none text-dark stretched-link">
-                        <Card.Title as="h6" className="mb-1 fw-semibold">{event.name}</Card.Title>
-                      </a>
-                    </Link>
-                    {/* Using Star icon for saving events */}
-                    <Button
-                      variant="light"
-                      size="sm"
-                      className="p-1 ms-2 flex-shrink-0"
-                      onClick={(e) => { e.stopPropagation(); handleSaveEvent(event.id); }}
-                      aria-label={`Save ${event.name}`}
-                    >
-                      <Star />
-                      {/* Or use Bookmark: <Bookmark /> */}
-                    </Button>
-                  </div>
+        {/* Loading State */}
+        {isLoading && (
+          <div className="text-center my-5">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+            <p className="mt-2 text-muted">Loading events...</p>
+          </div>
+        )}
 
-                  {/* Grid View Specific Layout */}
-                  {viewMode === 'grid' && (
-                    <>
-                      <Card.Text className="small text-muted flex-grow-1 mb-3">
-                        {event.description.substring(0, 80)}
-                        {event.description.length > 80 ? '...' : ''}
-                      </Card.Text>
-                      <div className="mt-auto">
-                        <div className="d-flex align-items-center text-muted small mb-2">
-                          <CalendarEvent size={12} className="me-1 flex-shrink-0" />
-                          <span title={event.dateTime}>
-                            {event.dateTime.split('-')[0].trim()}
-                            {' '}
-                            {/* Show only date part for brevity */}
-                          </span>
+        {/* Error State */}
+        {error && !isLoading && (
+          <Alert variant="danger" className="my-4">
+            <Alert.Heading>Error</Alert.Heading>
+            <p>{error}</p>
+            <Button variant="outline-danger" onClick={() => window.location.reload()}>
+              Try Again
+            </Button>
+          </Alert>
+        )}
+
+        {/* Empty State */}
+        {!isLoading && !error && events.length === 0 && (
+          <Alert variant="info" className="my-4">
+            <Alert.Heading>No Events Found</Alert.Heading>
+            <p>There are no events matching your search criteria. Try adjusting your filters or search terms.</p>
+          </Alert>
+        )}
+
+        {/* Events Grid/List */}
+        {!isLoading && !error && events.length > 0 && (
+          <Row className={`g-4 ${viewMode === 'list' ? 'row-cols-1' : 'row-cols-1 row-cols-md-2 row-cols-lg-3'}`}>
+            {events.map(event => (
+              <Col key={event.id}>
+                <Card className="h-100 shadow-sm hover-lift">
+                  <Card.Body className="d-flex flex-column">
+                    <div className="d-flex justify-content-between align-items-start mb-2">
+                      <Link href={`/events/${event.id}`} className="text-decoration-none text-dark stretched-link">
+                        <Card.Title as="h6" className="mb-1 fw-semibold">{event.title}</Card.Title>
+                      </Link>
+                      
+                      <Button
+                        variant="light"
+                        size="sm"
+                        className="p-1 ms-2 flex-shrink-0 position-relative z-1"
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          e.preventDefault();
+                          handleSaveEvent(event.id); 
+                        }}
+                        aria-label={`${favoriteEventIds.includes(event.id) ? 'Remove from favorites' : 'Add to favorites'}: ${event.title}`}
+                      >
+                        {favoriteEventIds.includes(event.id) ? <StarFill className="text-warning" /> : <Star />}
+                      </Button>
+                    </div>
+
+                    {/* Grid View Specific Layout */}
+                    {viewMode === 'grid' && (
+                      <>
+                        <Card.Text className="small text-muted flex-grow-1 mb-3">
+                          {event.description ? (
+                            <>
+                              {event.description.substring(0, 80)}
+                              {event.description.length > 80 ? '...' : ''}
+                            </>
+                          ) : (
+                            <span className="fst-italic">No description provided</span>
+                          )}
+                        </Card.Text>
+                        <div className="mt-auto">
+                          <div className="d-flex align-items-center text-muted small mb-2">
+                            <CalendarEvent size={12} className="me-1 flex-shrink-0" />
+                            <span title={event.startDateTime}>
+                              {formatEventDate(event)}
+                            </span>
+                          </div>
+                          {event.location && (
+                            <div className="d-flex align-items-center text-muted small mb-3">
+                              <GeoAlt size={12} className="me-1 flex-shrink-0" />
+                              <span className="text-truncate" title={event.location}>{event.location}</span>
+                            </div>
+                          )}
+                          <div className="d-flex flex-wrap gap-1">
+                            {event.categories.slice(0, 3).map(cat => (
+                              <Badge key={cat.category.id} pill bg="light" text="dark" className="fw-normal">
+                                {cat.category.name}
+                              </Badge>
+                            ))}
+                            {event.categories.length > 3 && (
+                              <Badge pill bg="light" text="dark" className="fw-normal">
+                                +
+                                {' '}
+                                {event.categories.length - 3}
+                                {' '}
+                                more
+                              </Badge>
+                            )}
+                          </div>
                         </div>
-                        <div className="d-flex align-items-center text-muted small mb-3">
-                          <GeoAlt size={12} className="me-1 flex-shrink-0" />
-                          <span className="text-truncate" title={event.location}>{event.location}</span>
-                        </div>
-                        <div className="d-flex flex-wrap gap-1">
-                          {event.tags.slice(0, 3).map(tag => (
-                            <Badge key={tag} pill bg="light" text="dark" className="fw-normal">
-                              {tag}
-                            </Badge>
-                          ))}
-                          {event.tags.length > 3 && (
-                            <Badge pill bg="light" text="dark" className="fw-normal">
-                              +
-                              {' '}
-                              {event.tags.length - 3}
-                              {' '}
-                              more
-                            </Badge>
+                      </>
+                    )}
+
+                    {/* List View Specific Layout */}
+                    {viewMode === 'list' && (
+                      <div className="d-flex justify-content-between align-items-start mt-2">
+                        <div className="flex-grow-1 me-3">
+                          <p className="small text-muted mb-1">
+                            {event.description ? (
+                              <>
+                                {event.description.substring(0, 120)}
+                                {event.description.length > 120 ? '...' : ''}
+                              </>
+                            ) : (
+                              <span className="fst-italic">No description provided</span>
+                            )}
+                          </p>
+                          <div className="d-flex align-items-center text-muted small mb-1">
+                            <CalendarEvent size={12} className="me-1 flex-shrink-0" />
+                            <span>{formatEventDate(event)}</span>
+                          </div>
+                          {event.location && (
+                            <div className="d-flex align-items-center text-muted small">
+                              <GeoAlt size={12} className="me-1 flex-shrink-0" />
+                              <span>{event.location}</span>
+                            </div>
                           )}
                         </div>
-                      </div>
-                    </>
-                  )}
-
-                  {/* List View Specific Layout */}
-                  {viewMode === 'list' && (
-                    <div className="d-flex justify-content-between align-items-center mt-2">
-                      {/* Optional Thumbnail for List View - Using next/image */}
-                      {event.imageUrl && (
-                        <Image
-                          src={event.imageUrl}
-                          alt={event.imageAlt || ''}
-                          width={100} // Adjust width as needed
-                          height={70} // Adjust height as needed
-                          style={{ objectFit: 'cover', borderRadius: 'var(--bs-border-radius)', marginRight: '1rem' }}
-                        />
-                      )}
-                      <div className="flex-grow-1 me-3">
-                        <p className="small text-muted mb-1">
-                          {event.description.substring(0, 120)}
-                          {event.description.length > 120 ? '...' : ''}
-                        </p>
-                        <div className="d-flex align-items-center text-muted small mb-1">
-                          <CalendarEvent size={12} className="me-1 flex-shrink-0" />
-                          <span>{event.dateTime}</span>
-                        </div>
-                        <div className="d-flex align-items-center text-muted small">
-                          <GeoAlt size={12} className="me-1 flex-shrink-0" />
-                          <span>{event.location}</span>
+                        <div className="text-end flex-shrink-0" style={{ minWidth: '100px' }}>
+                          <div className="d-flex flex-wrap gap-1 justify-content-end">
+                            {event.categories.map(cat => (
+                              <Badge key={cat.category.id} pill bg="light" text="dark" className="fw-normal">
+                                {cat.category.name}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
                       </div>
-                      <div className="text-end flex-shrink-0" style={{ minWidth: '100px' }}>
-                        {' '}
-                        {/* Ensure tags don't get too squished */}
-
-                        <div className="d-flex flex-wrap gap-1 justify-content-end">
-                          {event.tags.map(tag => (
-                            <Badge key={tag} pill bg="light" text="dark" className="fw-normal">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </Card.Body>
-              </Card>
-            </Col>
-          ))}
-        </Row>
+                    )}
+                  </Card.Body>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        )}
 
         {/* Pagination */}
-        {totalPages > 1 && (
+        {!isLoading && !error && pagination.totalPages > 1 && (
         <div className="d-flex justify-content-center mt-5">
           <Pagination size="sm">
             <Pagination.Prev
@@ -434,7 +545,7 @@ export default function EventsPage() {
             {paginationItems}
             <Pagination.Next
               onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
+              disabled={currentPage === pagination.totalPages}
             >
               <ChevronRight size={14} />
             </Pagination.Next>

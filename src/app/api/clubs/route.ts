@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
   const categoryId = searchParams.get('category');
   const page = parseInt(searchParams.get('page') || '1', 10);
   const limit = parseInt(searchParams.get('limit') || '20', 10);
+  const sort = searchParams.get('sort') || 'A-Z';
   const skip = (page - 1) * limit;
 
   try {
@@ -31,6 +32,9 @@ export async function GET(request: NextRequest) {
         },
       } : {}),
     };
+
+    // Determine sort direction based on sort parameter
+    const sortDirection = sort === 'Z-A' ? 'desc' : 'asc';
 
     // Execute the query with pagination using the prisma instance
     const clubs = await prisma.club.findMany({
@@ -56,7 +60,7 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: {
-        name: 'asc',
+        name: sortDirection,
       },
       skip,
       take: limit,
