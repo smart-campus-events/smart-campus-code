@@ -19,6 +19,13 @@ export async function GET() {
   }
 
   try {
+    // --- ADD LOGGING HERE ---
+    console.log('Attempting to access prisma object:', typeof prisma);
+    if (prisma) {
+      console.log('Attempting to access prisma.job:', typeof prisma.job);
+    } else {
+      console.error('CRITICAL: prisma object is undefined here!');
+    }
     const jobs = await prisma.job.findMany({
       orderBy: { createdAt: 'desc' }, // Get the most recent jobs first
       take: 10, // Limit to the last 10 jobs, adjust as needed

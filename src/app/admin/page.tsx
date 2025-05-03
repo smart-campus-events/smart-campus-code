@@ -18,7 +18,7 @@ import {
   Tabs, // Import Tabs component
   Tab, // Import Tab component
 } from 'react-bootstrap';
-import type { Job, JobStatus, JobType } from '@prisma/client'; // Import types from Prisma
+import type { JobStatus, JobType } from '@prisma/client'; // Import types from Prisma
 import ManageContentStatus from '@/components/admin/ManageContentStatus'; // Import the content management component
 import ManageUsers from '@/components/admin/ManageUsers'; // Import the user management component
 import ManageCategories from '@/components/admin/ManageCategories'; // Import the category management component

@@ -12,7 +12,7 @@ interface SessionUser extends NextAuthUser {
 }
 
 interface EnhancedToken extends JWT {
-  id: string;
+  id?: string; // Make id optional initially
   isAdmin?: boolean;
 }
 
@@ -134,7 +134,4 @@ const authOptions: NextAuthOptions = {
 
 export default authOptions;
 
-interface EnhancedToken extends JWT {
-  id?: string; // Make id optional initially
-  isAdmin?: boolean;
-}
+// Removed duplicate declaration of EnhancedToken

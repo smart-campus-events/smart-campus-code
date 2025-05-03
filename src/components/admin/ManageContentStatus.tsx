@@ -4,8 +4,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Tabs, Tab, Table, Button, Badge, Spinner, Alert, Form, Pagination, Modal, ButtonGroup } from 'react-bootstrap';
 import type { ContentStatus } from '@prisma/client';
 import EventEditor from './EventEditor'; // Import the editor component
-import ConfirmationModal from './ConfirmationModal'; // Assuming a simple confirmation modal component exists
-
 // Keep interfaces ManagedEvent, ManagedClub, ItemType
 
 // Define interfaces for the data we expect
@@ -49,7 +47,8 @@ function ManageContentStatus() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // --- Keep existing fetchData, handlePageChange, handleUpdateStatus, getStatusBadgeVariant, truncateText, renderPaginationItems ---
+  // --- Keep existing fetchData, handlePageChange,
+  // handleUpdateStatus, getStatusBadgeVariant, truncateText, renderPaginationItems ---
 
   const fetchData = useCallback(async (page = 1) => {
     setLoading(true);
@@ -234,14 +233,25 @@ function ManageContentStatus() {
   return (
     <>
       {/* Main Content Tabs */}
-      <Tabs activeKey={activeTab} onSelect={(k) => setActiveTab(k as ItemType)} id="manage-content-tabs" className="mb-3">
+      <Tabs
+        activeKey={activeTab}
+        onSelect={(k) => setActiveTab(k as ItemType)}
+        id="manage-content-tabs"
+        className="mb-3"
+      >
         <Tab eventKey="events" title="Manage Events">
           <div className="d-flex justify-content-between align-items-center mb-3">
             <Form.Group style={{ maxWidth: '200px' }}>
               <Form.Label className="visually-hidden">Filter by Status</Form.Label>
               {' '}
               {/* Hide label visually */}
-              <Form.Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as ContentStatus | 'ALL')} aria-label="Filter Events by Status">
+              <Form.Select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(
+                  e.target.value as ContentStatus | 'ALL',
+                )}
+                aria-label="Filter Events by Status"
+              >
                 <option value="ALL">All Statuses</option>
                 <option value="PENDING">Pending</option>
                 <option value="APPROVED">Approved</option>
@@ -297,21 +307,66 @@ function ManageContentStatus() {
                             <i className="bi bi-pencil-fill" />
                           </Button>
                           {item.status !== 'APPROVED' && (
-                          <Button variant="outline-success" onClick={() => handleUpdateStatus(item.id, 'APPROVED')} disabled={actionLoading[item.id]} title="Approve">
-                            {actionLoading[item.id] ? <Spinner as="span" animation="border" size="sm" /> : <i className="bi bi-check-lg" />}
+                          <Button
+                            variant="outline-success"
+                            onClick={() => handleUpdateStatus(
+                              item.id,
+                              'APPROVED',
+                            )}
+                            disabled={actionLoading[item.id]}
+                            title="Approve"
+                          >
+                            {actionLoading[item.id] ? (
+                              <Spinner
+                                as="span"
+                                animation="border"
+                                size="sm"
+                              />
+                            ) : <i className="bi bi-check-lg" />}
                           </Button>
                           )}
                           {item.status !== 'REJECTED' && (
-                          <Button variant="outline-danger" onClick={() => handleUpdateStatus(item.id, 'REJECTED')} disabled={actionLoading[item.id]} title="Reject">
-                            {actionLoading[item.id] ? <Spinner as="span" animation="border" size="sm" /> : <i className="bi bi-x-lg" />}
+                          <Button
+                            variant="outline-danger"
+                            onClick={() => handleUpdateStatus(
+                              item.id,
+                              'REJECTED',
+                            )}
+                            disabled={actionLoading[item.id]}
+                            title="Reject"
+                          >
+                            {actionLoading[item.id] ? (
+                              <Spinner
+                                as="span"
+                                animation="border"
+                                size="sm"
+                              />
+                            ) : <i className="bi bi-x-lg" />}
                           </Button>
                           )}
                           {item.status !== 'PENDING' && (
-                          <Button variant="outline-secondary" onClick={() => handleUpdateStatus(item.id, 'PENDING')} disabled={actionLoading[item.id]} title="Set Pending">
-                            {actionLoading[item.id] ? <Spinner as="span" animation="border" size="sm" /> : <i className="bi bi-arrow-counterclockwise" />}
+                          <Button
+                            variant="outline-secondary"
+                            onClick={() => handleUpdateStatus(item.id, 'PENDING')}
+                            disabled={actionLoading[item.id]}
+                            title="Set Pending"
+                          >
+                            {actionLoading[item.id] ? (
+                              <Spinner
+                                as="span"
+                                animation="border"
+                                size="sm"
+                              />
+                            ) : <i className="bi bi-arrow-counterclockwise" />}
                           </Button>
                           )}
-                          <Button variant="outline-danger" onClick={() => handleShowDeleteConfirm(item.id)} title="Delete">
+                          <Button
+                            variant="outline-danger"
+                            onClick={() => handleShowDeleteConfirm(
+                              item.id,
+                            )}
+                            title="Delete"
+                          >
                             <i className="bi bi-trash-fill" />
                           </Button>
                         </ButtonGroup>
@@ -322,9 +377,19 @@ function ManageContentStatus() {
               </Table>
               {pagination.totalPages > 1 && (
               <Pagination className="justify-content-center">
-                <Pagination.Prev onClick={() => handlePageChange(pagination.page - 1)} disabled={pagination.page === 1} />
+                <Pagination.Prev
+                  onClick={() => handlePageChange(
+                    pagination.page - 1,
+                  )}
+                  disabled={pagination.page === 1}
+                />
                 {renderPaginationItems()}
-                <Pagination.Next onClick={() => handlePageChange(pagination.page + 1)} disabled={pagination.page === pagination.totalPages} />
+                <Pagination.Next
+                  onClick={() => handlePageChange(
+                    pagination.page + 1,
+                  )}
+                  disabled={pagination.page === pagination.totalPages}
+                />
               </Pagination>
               )}
               {items.length === 0 && <Alert variant="info">No events found matching the criteria.</Alert>}
@@ -335,7 +400,13 @@ function ManageContentStatus() {
           {/* Club Management UI - similar structure */}
           <Form.Group className="mb-3" style={{ maxWidth: '200px' }}>
             <Form.Label className="visually-hidden">Filter by Status</Form.Label>
-            <Form.Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as ContentStatus | 'ALL')} aria-label="Filter Clubs by Status">
+            <Form.Select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(
+                e.target.value as ContentStatus | 'ALL',
+              )}
+              aria-label="Filter Clubs by Status"
+            >
               <option value="ALL">All Statuses</option>
               <option value="PENDING">Pending</option>
               <option value="APPROVED">Approved</option>
@@ -381,18 +452,51 @@ function ManageContentStatus() {
                         <ButtonGroup size="sm">
                           {/* Add Edit button for clubs later if needed */}
                           {item.status !== 'APPROVED' && (
-                          <Button variant="outline-success" onClick={() => handleUpdateStatus(item.id, 'APPROVED')} disabled={actionLoading[item.id]} title="Approve">
-                            {actionLoading[item.id] ? <Spinner as="span" animation="border" size="sm" /> : <i className="bi bi-check-lg" />}
+                          <Button
+                            variant="outline-success"
+                            onClick={() => handleUpdateStatus(item.id, 'APPROVED')}
+                            disabled={actionLoading[item.id]}
+                            title="Approve"
+                          >
+                            {actionLoading[item.id] ? (
+                              <Spinner
+                                as="span"
+                                animation="border"
+                                size="sm"
+                              />
+                            ) : <i className="bi bi-check-lg" />}
                           </Button>
                           )}
                           {item.status !== 'REJECTED' && (
-                          <Button variant="outline-danger" onClick={() => handleUpdateStatus(item.id, 'REJECTED')} disabled={actionLoading[item.id]} title="Reject">
-                            {actionLoading[item.id] ? <Spinner as="span" animation="border" size="sm" /> : <i className="bi bi-x-lg" />}
+                          <Button
+                            variant="outline-danger"
+                            onClick={() => handleUpdateStatus(item.id, 'REJECTED')}
+                            disabled={actionLoading[item.id]}
+                            title="Reject"
+                          >
+                            {actionLoading[item.id] ? (
+                              <Spinner
+                                as="span"
+                                animation="border"
+                                size="sm"
+                              />
+                            ) : <i className="bi bi-x-lg" />}
                           </Button>
                           )}
                           {item.status !== 'PENDING' && (
-                          <Button variant="outline-secondary" onClick={() => handleUpdateStatus(item.id, 'PENDING')} disabled={actionLoading[item.id]} title="Set Pending">
-                            {actionLoading[item.id] ? <Spinner as="span" animation="border" size="sm" /> : <i className="bi bi-arrow-counterclockwise" />}
+                          <Button
+                            variant="outline-secondary"
+                            onClick={() => handleUpdateStatus(item.id, 'PENDING')}
+                            disabled={actionLoading[item.id]}
+                            title="Set Pending"
+                          >
+                            {actionLoading[item.id] ? (
+                              <Spinner
+                                as="span"
+                                animation="border"
+                                size="sm"
+                              />
+                            ) : <i className="bi bi-arrow-counterclockwise" />}
                           </Button>
                           )}
                           {/* Add Delete button for clubs later if needed */}
@@ -404,9 +508,19 @@ function ManageContentStatus() {
               </Table>
               {pagination.totalPages > 1 && (
               <Pagination className="justify-content-center">
-                <Pagination.Prev onClick={() => handlePageChange(pagination.page - 1)} disabled={pagination.page === 1} />
+                <Pagination.Prev
+                  onClick={() => handlePageChange(
+                    pagination.page - 1,
+                  )}
+                  disabled={pagination.page === 1}
+                />
                 {renderPaginationItems()}
-                <Pagination.Next onClick={() => handlePageChange(pagination.page + 1)} disabled={pagination.page === pagination.totalPages} />
+                <Pagination.Next
+                  onClick={() => handlePageChange(
+                    pagination.page + 1,
+                  )}
+                  disabled={pagination.page === pagination.totalPages}
+                />
               </Pagination>
               )}
               {items.length === 0 && <Alert variant="info">No clubs found matching the criteria.</Alert>}

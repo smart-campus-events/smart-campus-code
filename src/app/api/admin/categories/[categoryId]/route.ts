@@ -6,17 +6,18 @@ import { Prisma } from '@prisma/client';
 import nextAuthOptionsConfig from '@/lib/authOptions';
 import { prisma } from '@/lib/prisma';
 
-// Utility to check if user is admin
+// Utility to check if user is admin (keep this)
 async function isAdminUser(): Promise<boolean> {
   const session = (await getServerSession(nextAuthOptionsConfig)) as Session;
   return session?.user?.isAdmin === true;
 }
 
-// --- DELETE Handler (Delete Category with Safety Check) ---
-/* eslint-disable no-underscore-dangle */
+// Keep the PATCH handler if you had it, or remove if sticking to add/delete only
+
+// --- DELETE Handler (Deletes Category and its links) ---
 // eslint-disable-next-line import/prefer-default-export
 export async function DELETE(
-  request: Request, // Added request parameter
+  request: Request,
   { params: { categoryId } }: { params: { categoryId: string } },
 ) {
   if (!(await isAdminUser())) {
@@ -28,55 +29,42 @@ export async function DELETE(
   }
 
   try {
-    // *** SAFETY CHECK: Ensure category is not linked before deleting ***
-    const linkedItems = await prisma.category.findUnique({
-      where: { id: categoryId },
-      select: {
-        _count: { // Use _count to efficiently check relations
-          select: {
-            clubs: true,
-            events: true,
-            userInterests: true,
-          },
-        },
-      },
+    // Use a transaction to ensure atomicity: either everything succeeds or nothing changes.
+    await prisma.$transaction(async (tx) => {
+      // 1. Delete links from join tables first
+      //    (These won't throw if no records match the categoryId)
+      await tx.eventCategory.deleteMany({
+        where: { categoryId },
+      });
+      await tx.clubCategory.deleteMany({
+        where: { categoryId },
+      });
+      await tx.userInterest.deleteMany({
+        where: { categoryId },
+      });
+
+      // 2. Now delete the category itself
+      //    This might throw P2025 if the category was already deleted
+      //    between the check and now, but the transaction handles rollback.
+      await tx.category.delete({
+        where: { id: categoryId },
+      });
     });
 
-    if (!linkedItems) {
-      return NextResponse.json({ message: 'Category not found.' }, { status: 404 });
-    }
-
-    const inUse = linkedItems._count.clubs > 0 || linkedItems._count.events > 0 || linkedItems._count.userInterests > 0;
-
-    if (inUse) {
-      console.warn(`Admin attempted to delete category ${categoryId} which is still in use.`);
-      // Construct a more detailed message
-      const details = [];
-      if (linkedItems._count.clubs > 0) details.push(`${linkedItems._count.clubs} clubs`);
-      if (linkedItems._count.events > 0) details.push(`${linkedItems._count.events} events`);
-      if (linkedItems._count.userInterests > 0) details.push(`${linkedItems._count.userInterests} user interests`);
-
-      return NextResponse.json({
-        message: `Cannot delete category: It is linked to ${details.join(', ')}.`,
-      }, { status: 409 }); // 409 Conflict - Cannot delete due to dependencies
-    }
-    // *********************************************************************
-
-    // If not in use, proceed with deletion
-    await prisma.category.delete({
-      where: { id: categoryId },
-    });
-
-    console.log(`Admin deleted category ${categoryId}`);
+    console.log(`Admin deleted category ${categoryId} and its associations.`);
     return new Response(null, { status: 204 }); // 204 No Content
   } catch (error: any) {
     console.error(`Failed to delete category ${categoryId}:`, error);
-    // Handle 'Record to delete not found' error (P2025) - Although checked above, good practice
+    // Handle 'Record to delete does not exist' error (P2025) more gracefully
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-      return NextResponse.json({ message: 'Category not found during delete attempt.' }, { status: 404 });
+      // Check if the error message indicates the Category was not found
+      // (Prisma error messages can sometimes be specific)
+      // If the category delete failed, it implies it didn't exist.
+      return NextResponse.json({ message: 'Category not found.' }, { status: 404 });
     }
+    // Handle other potential errors during the transaction
     return NextResponse.json({ message: 'Failed to delete category', error: error.message }, { status: 500 });
   }
 }
 
-// No PATCH handler needed as editing is excluded
+// Remember to remove the PATCH handler from this file if you only want Add/Delete functionality.
