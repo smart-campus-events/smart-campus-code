@@ -36,7 +36,10 @@ export async function PATCH(
     }
 
     if (!newStatus || !isValidContentStatus(newStatus)) {
-      return NextResponse.json({ message: 'Invalid or missing status provided. Must be one of: PENDING, APPROVED, REJECTED' }, { status: 400 });
+      return NextResponse.json(
+        { message: 'Invalid or missing status provided. Must be one of: PENDING, APPROVED, REJECTED' },
+        { status: 400 },
+      );
     }
 
     // Check if club exists (optional but good practice)

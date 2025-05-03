@@ -16,6 +16,15 @@ function isValidFilterStatus(status: any): status is ContentStatus | 'ALL' {
   return status === 'ALL' || Object.values(ContentStatus).includes(status);
 }
 
+function isValidContentStatus(status: any): status is ContentStatus {
+  return Object.values(ContentStatus).includes(status);
+}
+
+function isValidAttendanceType(attendanceType: any): boolean {
+  const validAttendanceTypes = ['IN_PERSON', 'VIRTUAL', 'HYBRID'];
+  return validAttendanceTypes.includes(attendanceType);
+}
+
 // GET /api/admin/events
 // Fetches a list of events, optionally filtered by status.
 // eslint-disable-next-line import/prefer-default-export
@@ -89,10 +98,10 @@ export async function POST(request: Request) {
     if (!body.title || typeof body.title !== 'string' || body.title.trim() === '') {
       return NextResponse.json({ message: 'Event title is required.' }, { status: 400 });
     }
-    if (!body.startDateTime || isNaN(Date.parse(body.startDateTime))) {
+    if (!body.startDateTime || Number.isNaN(Date.parse(body.startDateTime))) {
       return NextResponse.json({ message: 'Valid start date/time is required.' }, { status: 400 });
     }
-    if (body.endDateTime && isNaN(Date.parse(body.endDateTime))) {
+    if (body.endDateTime && Number.isNaN(Date.parse(body.endDateTime))) {
       return NextResponse.json({ message: 'Invalid end date/time provided.' }, { status: 400 });
     }
     if (body.endDateTime && new Date(body.startDateTime) > new Date(body.endDateTime)) {

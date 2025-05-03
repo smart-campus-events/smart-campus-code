@@ -1,3 +1,5 @@
+// src/app/admin/page.tsx
+
 'use client';
 
 // Required for client-side hooks
@@ -15,13 +17,14 @@ import {
   Col,
   Tabs, // Import Tabs component
   Tab, // Import Tab component
-  // Ensure ButtonGroup and Pagination are imported if used directly here or passed down
-  // They are primarily used within ManageContentStatus in this setup
 } from 'react-bootstrap';
 import type { Job, JobStatus, JobType } from '@prisma/client'; // Import types from Prisma
 import ManageContentStatus from '@/components/admin/ManageContentStatus'; // Import the content management component
+import ManageUsers from '@/components/admin/ManageUsers'; // Import the user management component
+import ManageCategories from '@/components/admin/ManageCategories'; // Import the category management component
 
-// You might need bootstrap icons if you use them (e.g., in ManageContentStatus)
+// Optional: Import bootstrap icons if used in child components or here
+// You might need this if you use icons like <i className="bi bi-arrow-clockwise"></i>
 // import 'bootstrap-icons/font/bootstrap-icons.css';
 
 // Define a type for the job data we fetch for the status table
@@ -39,8 +42,10 @@ function AdminPage() {
   // --- State for Background Job Scheduling & Status ---
   const [eventLoading, setEventLoading] = useState(false); // Loading state for scheduling event job
   const [clubLoading, setClubLoading] = useState(false); // Loading state for scheduling club job
-  const [eventMessage, setEventMessage] = useState<{ type: 'success' | 'danger' | 'warning'; text: string } | null>(null); // Feedback for event scheduling
-  const [clubMessage, setClubMessage] = useState<{ type: 'success' | 'danger' | 'warning'; text: string } | null>(null); // Feedback for club scheduling
+  const [eventMessage, setEventMessage] = useState<{
+    type: 'success' | 'danger' | 'warning'; text: string } | null>(null); // Feedback for event scheduling
+  const [clubMessage, setClubMessage] = useState<{
+    type: 'success' | 'danger' | 'warning'; text: string } | null>(null); // Feedback for club scheduling
   const [jobStatuses, setJobStatuses] = useState<JobStatusDisplay[]>([]); // List of recent jobs
   const [statusLoading, setStatusLoading] = useState(true); // Loading state for the job status table
   const [statusError, setStatusError] = useState<string | null>(null); // Error fetching job statuses
@@ -76,6 +81,7 @@ function AdminPage() {
 
   // --- Effect for Initial Load and Polling Job Statuses ---
   useEffect(() => {
+    setStatusLoading(true); // Set loading true on initial mount
     fetchJobStatuses(); // Fetch on initial load
     const intervalId = setInterval(fetchJobStatuses, 30000); // Poll every 30 seconds
     // Cleanup function to clear interval when component unmounts
@@ -146,15 +152,28 @@ function AdminPage() {
       <h1 className="mb-4">Admin Dashboard</h1>
 
       {/* Tabs for Different Admin Sections */}
+      {/* `fill` makes tabs occupy the full width */}
+      {/* Consider `defaultActiveKey` based on most frequent use */}
       <Tabs defaultActiveKey="manageContent" id="admin-dashboard-tabs" className="mb-3 mt-4" fill>
 
         {/* Tab 1: Manage Events & Clubs */}
-        <Tab eventKey="manageContent" title="Manage Content (Events & Clubs)">
-          {/* The ManageContentStatus component handles its own internal Tabs for Events/Clubs */}
+        <Tab eventKey="manageContent" title="Manage Content">
+          {/* The ManageContentStatus component handles Events/Clubs internally */}
           <ManageContentStatus />
         </Tab>
 
-        {/* Tab 2: Background Job Scheduling & Status */}
+        {/* Tab 2: Manage Categories */}
+        <Tab eventKey="categories" title="Manage Categories">
+          <ManageCategories />
+        </Tab>
+
+        {/* Tab 3: Manage Users */}
+        <Tab eventKey="users" title="Manage Users">
+          {/* The ManageUsers component handles fetching and displaying users */}
+          <ManageUsers />
+        </Tab>
+
+        {/* Tab 4: Background Job Scheduling & Status */}
         <Tab eventKey="jobs" title="Background Jobs">
           <p className="text-muted mt-3">Schedule scraping jobs and monitor their status.</p>
           {/* --- Job Scheduling Section --- */}
@@ -163,12 +182,19 @@ function AdminPage() {
               <Card>
                 <Card.Body>
                   <Card.Title>Event Scraper Job</Card.Title>
-                  <Card.Text>Manually schedule the event scraping job.</Card.Text>
+                  <Card.Text>Manually schedule the event scraping and processing job.</Card.Text>
                   {eventMessage && <Alert variant={eventMessage.type} className="mt-3">{eventMessage.text}</Alert>}
                   <Button variant="primary" onClick={handleRunEventScraper} disabled={eventLoading}>
                     {eventLoading ? (
                       <>
-                        <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
+                        <Spinner
+                          as="span"
+                          animation="border"
+                          size="sm"
+                          role="status"
+                          aria-hidden="true"
+                          className="me-2"
+                        />
                         Scheduling...
                       </>
                     ) : (
@@ -182,12 +208,19 @@ function AdminPage() {
               <Card>
                 <Card.Body>
                   <Card.Title>Club Scraper Job</Card.Title>
-                  <Card.Text>Manually schedule the club scraping job.</Card.Text>
+                  <Card.Text>Manually schedule the club scraping and processing job.</Card.Text>
                   {clubMessage && <Alert variant={clubMessage.type} className="mt-3">{clubMessage.text}</Alert>}
                   <Button variant="primary" onClick={handleRunClubScraper} disabled={clubLoading}>
                     {clubLoading ? (
                       <>
-                        <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
+                        <Spinner
+                          as="span"
+                          animation="border"
+                          size="sm"
+                          role="status"
+                          aria-hidden="true"
+                          className="me-2"
+                        />
                         Scheduling...
                       </>
                     ) : (
@@ -202,18 +235,27 @@ function AdminPage() {
           {/* --- Job Status Section --- */}
           <Card>
             <Card.Header>
-              <h2 className="h5 mb-0">Recent Job Statuses</h2>
+              <Row className="align-items-center">
+                <Col><h2 className="h5 mb-0">Recent Job Statuses</h2></Col>
+                <Col xs="auto">
+                  <Button variant="outline-secondary" size="sm" onClick={fetchJobStatuses} disabled={statusLoading}>
+                    {statusLoading ? (
+                      <Spinner
+                        as="span"
+                        size="sm"
+                        animation="border"
+                        className="me-1"
+                      />
+                    ) : <i className="bi bi-arrow-clockwise" />}
+                    {/* Add bootstrap-icons if using */}
+                    Refresh
+                  </Button>
+                </Col>
+              </Row>
             </Card.Header>
             <Card.Body>
-              <div className="d-flex justify-content-end mb-2">
-                <Button variant="outline-secondary" size="sm" onClick={fetchJobStatuses} disabled={statusLoading}>
-                  {statusLoading ? <Spinner as="span" size="sm" animation="border" className="me-1" /> : <i className="bi bi-arrow-clockwise" />}
-                  {' '}
-                  Refresh
-                </Button>
-              </div>
               {statusLoading && jobStatuses.length === 0 && (
-                <div className="text-center">
+                <div className="text-center py-3">
                   <Spinner animation="border" size="sm" />
                   {' '}
                   Loading statuses...
@@ -225,7 +267,8 @@ function AdminPage() {
                   {statusError}
                 </Alert>
               )}
-              {!statusLoading && !statusError && jobStatuses.length === 0 && <Alert variant="info">No recent jobs found.</Alert>}
+              {!statusLoading && !statusError
+              && jobStatuses.length === 0 && <Alert variant="info">No recent jobs found.</Alert>}
               {!statusLoading && !statusError && jobStatuses.length > 0 && (
                 <Table striped bordered hover responsive size="sm" className="align-middle">
                   <thead>
@@ -250,7 +293,11 @@ function AdminPage() {
                         <td className="text-nowrap">{job.createdAt.toLocaleString()}</td>
                         <td className="text-nowrap">{job.startedAt ? job.startedAt.toLocaleString() : '-'}</td>
                         <td className="text-nowrap">{job.endedAt ? job.endedAt.toLocaleString() : '-'}</td>
-                        <td style={{ fontSize: '0.8em', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                        <td style={{ fontSize: '0.8em',
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-word',
+                          maxWidth: '300px' }}
+                        >
                           {(() => {
                             if (job.status === 'FAILED' && job.result?.error) {
                               return `Error: ${job.result.error}`;
@@ -266,16 +313,6 @@ function AdminPage() {
                   </tbody>
                 </Table>
               )}
-            </Card.Body>
-          </Card>
-        </Tab>
-
-        {/* Tab 3: Placeholder for User Management */}
-        <Tab eventKey="users" title="Manage Users">
-          <Card>
-            <Card.Body>
-              <p className="text-muted">User management interface will be added here in Phase 3.</p>
-              {/* Placeholder content */}
             </Card.Body>
           </Card>
         </Tab>

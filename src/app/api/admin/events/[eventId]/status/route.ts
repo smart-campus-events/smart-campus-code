@@ -16,6 +16,11 @@ function isValidContentStatus(status: any): status is ContentStatus {
   return Object.values(ContentStatus).includes(status);
 }
 
+function isValidAttendanceType(attendanceType: any): boolean {
+  const validAttendanceTypes = ['IN_PERSON', 'VIRTUAL', 'HYBRID'];
+  return validAttendanceTypes.includes(attendanceType);
+}
+
 // PATCH /api/admin/events/[eventId]/status
 // Updates the status of a specific event.
 // eslint-disable-next-line import/prefer-default-export
@@ -38,10 +43,10 @@ export async function PATCH(
     if (body.title !== undefined && (typeof body.title !== 'string' || body.title.trim() === '')) {
       return NextResponse.json({ message: 'Event title cannot be empty if provided.' }, { status: 400 });
     }
-    if (body.startDateTime && isNaN(Date.parse(body.startDateTime))) {
+    if (body.startDateTime && Number.isNaN(Date.parse(body.startDateTime))) {
       return NextResponse.json({ message: 'Invalid start date/time provided.' }, { status: 400 });
     }
-    if (body.endDateTime && isNaN(Date.parse(body.endDateTime))) {
+    if (body.endDateTime && Number.isNaN(Date.parse(body.endDateTime))) {
       return NextResponse.json({ message: 'Invalid end date/time provided.' }, { status: 400 });
     }
     // Ensure start/end dates are logical if both are provided
@@ -70,7 +75,7 @@ export async function PATCH(
       ...(start && { startDateTime: start }),
       ...(end && { endDateTime: end }),
       // If endDateTime is explicitly set to null/undefined in body, handle it
-      ...(body.hasOwnProperty('endDateTime') && !end && { endDateTime: null }),
+      ...(body.hasOwn('endDateTime') && !end && { endDateTime: null }),
     };
 
     // --- Handle Category Updates (Many-to-Many) ---
@@ -89,7 +94,7 @@ export async function PATCH(
     // If categoryIds is an empty array [], all categories will be disconnected.
 
     // --- Handle Organizer Club Updates (One-to-Many) ---
-    if (body.hasOwnProperty('organizerClubId')) { // Check if the key exists in the request
+    if (body.hasOwn('organizerClubId')) { // Check if the key exists in the request
       if (organizerClubId && typeof organizerClubId === 'string') {
         // Connect to the new club
         updateData.organizerClub = { connect: { id: organizerClubId } };
