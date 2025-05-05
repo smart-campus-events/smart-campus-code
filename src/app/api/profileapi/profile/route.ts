@@ -34,6 +34,7 @@ export async function GET() {
         comfortLevel: true,
         about_me: true,
         emailNotifications: true,
+        createdAt: true,
       },
     });
 
@@ -46,7 +47,11 @@ export async function GET() {
       name: ui.category.name,
     }));
 
-    return NextResponse.json({ ...user, interests });
+    return NextResponse.json({
+      ...user,
+      createdAt: user.createdAt.toISOString(),
+      interests,
+    });    
   } catch (err: any) {
     console.error('❌ GET /api/profileapi/profile error:', err);
     return NextResponse.json(
@@ -82,8 +87,8 @@ export async function PATCH(req: Request) {
     interests,
     age_range,
     origin,
-    housing_status,
-    comfort_level,
+    housingStatus,
+    comfortLevel,
     about_me,
   } = body;
 
@@ -94,8 +99,8 @@ export async function PATCH(req: Request) {
   if (major) updateData.major = major;
   if (age_range) updateData.age_range = age_range;
   if (origin) updateData.origin = origin;
-  if (housing_status) updateData.housingStatus = housing_status;
-  if (typeof comfort_level !== 'undefined') updateData.comfortLevel = comfort_level;
+  if (housingStatus) updateData.housingStatus = housingStatus;
+  if (typeof comfortLevel !== 'undefined') updateData.comfortLevel = comfortLevel;
   if (typeof about_me !== 'undefined') updateData.about_me = about_me;
 
   if (Array.isArray(interests)) {

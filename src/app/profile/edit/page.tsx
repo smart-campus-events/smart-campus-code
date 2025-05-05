@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import {
-  Badge,
   Button,
   Card,
   Col,
@@ -23,8 +22,8 @@ interface ProfileData {
   major?: string;
   interests: { id: string; name: string }[];
   origin?: string;
-  housing_status?: string;
-  comfort_level?: number;
+  housingStatus?: string;
+  comfortLevel?: number;
   graduation_year?: number;
   email_notifications: boolean;
   about_me?: string;
@@ -40,16 +39,12 @@ const availableMajors = [
   'Art',
 ];
 
-const availableInterests = [
-  'Hiking',
-  'Volunteering',
-  'Music',
-  'Gaming',
-  'Culture',
-  'Surfing',
-  'Art',
-  'Leadership',
-];
+const availableInterests: Record<string, string[]> = {
+  Academic: ['Psychology', 'Marketing', 'Biology', 'Engineering', 'History', 'Art History'],
+  'Local Activities': ['Hiking', 'Surfing', 'Culture', 'Beach Cleanup', 'Kayaking'],
+  Hobbies: ['Music', 'Gaming', 'Sports', 'Photography', 'Cooking', 'Reading'],
+  Community: ['Volunteering', 'Leadership', 'Mentorship', 'Advocacy'],
+};
 
 const housingStatuses = [
   { label: 'On-Campus Dorm', value: 'on_campus_dorm' },
@@ -79,11 +74,12 @@ export default function EditProfilePage() {
   const [lastName, setLastName] = useState('');
   const [major, setMajor] = useState('');
   const [interests, setInterests] = useState<string[]>([]);
+  const [customInterest, setCustomInterest] = useState('');
   const [origin, setOrigin] = useState('');
   const [housingStatus, setHousingStatus] = useState('');
   const [comfortLevel, setComfortLevel] = useState(0);
   const [graduationYear, setGraduationYear] = useState<number | ''>('');
-  const [aboutMe, setAboutMe] = useState('');
+  const [about_me, setAboutMe] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -105,8 +101,8 @@ export default function EditProfilePage() {
         setMajor(data.major ?? '');
         setInterests(data.interests.map((i) => i.name));
         setOrigin(data.origin ?? '');
-        setHousingStatus(data.housing_status ?? '');
-        setComfortLevel(data.comfort_level ?? 0);
+        setHousingStatus(data.housingStatus ?? '');
+        setComfortLevel(data.comfortLevel ?? 0);
         setGraduationYear(data.graduation_year ?? '');
         setAboutMe(data.about_me ?? '');
       } catch (e: any) {
@@ -118,9 +114,11 @@ export default function EditProfilePage() {
   }, [router]);
 
   const handleToggleInterest = (interest: string) => {
-    setInterests((prev) => (prev.includes(interest)
-      ? prev.filter((i) => i !== interest)
-      : [...prev, interest]));
+    setInterests((prev) =>
+      prev.includes(interest)
+        ? prev.filter((i) => i !== interest)
+        : [...prev, interest]
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -135,7 +133,7 @@ export default function EditProfilePage() {
       housingStatus: prismaHousingStatusMap[housingStatus] ?? null,
       comfortLevel,
       graduationYear,
-      aboutMe,
+      about_me,
       interests,
     };
 
@@ -169,15 +167,7 @@ export default function EditProfilePage() {
   };
 
   if (loading) return <div className="p-4">Loading profile...</div>;
-  if (error) {
-    return (
-      <div className="p-4 text-danger">
-        Error:
-        {' '}
-        {error}
-      </div>
-    );
-  }
+  if (error) return <div className="p-4 text-danger">Error: {error}</div>;
   if (!profile) return <div className="p-4">No profile data.</div>;
 
   return (
@@ -197,22 +187,12 @@ export default function EditProfilePage() {
                   <Row className="g-3 mb-4">
                     <Col md={6}>
                       <FloatingLabel label="First Name">
-                        <Form.Control
-                          type="text"
-                          value={firstName}
-                          onChange={(e) => setFirstName(e.target.value)}
-                          required
-                        />
+                        <Form.Control type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
                       </FloatingLabel>
                     </Col>
                     <Col md={6}>
                       <FloatingLabel label="Last Name">
-                        <Form.Control
-                          type="text"
-                          value={lastName}
-                          onChange={(e) => setLastName(e.target.value)}
-                          required
-                        />
+                        <Form.Control type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
                       </FloatingLabel>
                     </Col>
                     <Col md={12}>
@@ -234,21 +214,92 @@ export default function EditProfilePage() {
 
                   {/* Interests */}
                   <h2 className="h5 fw-semibold pb-2 mb-4 border-bottom">Interests</h2>
-                  <div className="d-flex flex-wrap gap-2 mb-4">
-                    {availableInterests.map((interest) => (
-                      <Badge
-                        key={interest}
-                        pill
-                        bg={interests.includes(interest)
-                          ? 'success' : 'secondary-subtle'}
-                        text={interests.includes(interest) ? 'light' : 'dark'}
-                        className="py-2 px-3 cursor-pointer"
-                        onClick={() => handleToggleInterest(interest)}
-                      >
-                        {interest}
-                      </Badge>
+                  <Row className="g-3 mb-4">
+                    {Object.entries(availableInterests).map(([category, values]) => (
+                      <Col md={6} key={category}>
+                        <Card className="h-100 border shadow-sm">
+                          <Card.Body>
+                            <Card.Title as="h6" className="text-muted small text-uppercase mb-3">
+                              {category}
+                            </Card.Title>
+                            <div className="d-flex flex-wrap gap-2">
+                              {values.map((interest) => (
+                                <Button
+                                  key={interest}
+                                  variant={interests.includes(interest) ? 'primary' : 'outline-secondary'}
+                                  size="sm"
+                                  className="rounded-pill"
+                                  onClick={() => handleToggleInterest(interest)}
+                                >
+                                  {interest}
+                                </Button>
+                              ))}
+                            </div>
+                          </Card.Body>
+                        </Card>
+                      </Col>
                     ))}
-                  </div>
+                  </Row>
+
+                  {/* Custom Interest Input */}
+                  <Form.Group className="mb-4">
+                    <Form.Label className="fw-medium">Add a Custom Interest</Form.Label>
+                    <Row className="g-2">
+                      <Col>
+                        <Form.Control
+                          type="text"
+                          placeholder="Type a new interest..."
+                          value={customInterest}
+                          onChange={(e) => setCustomInterest(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const trimmed = customInterest.trim();
+                              if (trimmed && !interests.includes(trimmed)) {
+                                setInterests([...interests, trimmed]);
+                                setCustomInterest('');
+                              }
+                            }
+                          }}
+                        />
+                      </Col>
+                      <Col xs="auto">
+                        <Button
+                          variant="success"
+                          onClick={() => {
+                            const trimmed = customInterest.trim();
+                            if (trimmed && !interests.includes(trimmed)) {
+                              setInterests([...interests, trimmed]);
+                              setCustomInterest('');
+                            }
+                          }}
+                          disabled={!customInterest.trim()}
+                        >
+                          Add
+                        </Button>
+                      </Col>
+                    </Row>
+                  </Form.Group>
+
+                  {/* Selected Interests List */}
+                  {interests.length > 0 && (
+                    <div className="mb-4">
+                      <Form.Label className="fw-medium">Your Selected Interests</Form.Label>
+                      <div className="d-flex flex-wrap gap-2">
+                        {interests.map((interest) => (
+                          <Button
+                            key={interest}
+                            variant="outline-danger"
+                            size="sm"
+                            className="rounded-pill"
+                            onClick={() => handleToggleInterest(interest)}
+                          >
+                            {interest} ×
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Additional Details */}
                   <h2 className="h5 fw-semibold pb-2 mb-4 border-bottom">Additional Details</h2>
@@ -295,13 +346,11 @@ export default function EditProfilePage() {
                       as="textarea"
                       style={{ height: '150px' }}
                       maxLength={MAX_ABOUT_ME_LENGTH}
-                      value={aboutMe}
+                      value={about_me}
                       onChange={(e) => setAboutMe(e.target.value)}
                     />
                     <div className="text-end text-muted small mt-1">
-                      {aboutMe.length}
-                      /
-                      {MAX_ABOUT_ME_LENGTH}
+                      {about_me.length}/{MAX_ABOUT_ME_LENGTH}
                     </div>
                   </FloatingLabel>
 
