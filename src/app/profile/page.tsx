@@ -125,7 +125,7 @@ export default function ProfilePage() {
                   style={{ width: '80px', height: '80px', border: '4px solid var(--bs-success)' }}
                 />
               ) : (
-                <InitialAvatar name={profile.name || profile.firstName || profile.email} />
+                <InitialAvatar name={profile.name || profile.firstName || profile.email} size={80} />
               )}
               <div className="ms-3">
                 <h1 className="h4 fw-bold mb-0">

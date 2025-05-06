@@ -89,7 +89,7 @@ export default function SignupStep5Page() {
                       style={{ width: '80px', height: '80px', border: '4px solid var(--bs-success)' }}
                     />
                   ) : (
-                    <InitialAvatar name={profile.name || profile.firstName || profile.email} />
+                    <InitialAvatar name={profile.name || profile.firstName || profile.email} size={80} />
                   )}
                   <h3 className="h5 fw-semibold mb-0">{profile.name || profile.firstName || profile.email}</h3>
                   {profile.major && (

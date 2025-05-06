@@ -43,7 +43,7 @@ const availableMajors = [
 
 const availableInterests: Record<string, string[]> = {
   Academic: ['Psychology', 'Marketing', 'Biology', 'Engineering', 'History', 'Art History'],
-  'Local Activities': ['Hiking', 'Surfing', 'Culture', 'Beach Cleanup', 'Kayaking'],
+  LocalActivities: ['Hiking', 'Surfing', 'Culture', 'Beach Cleanup', 'Kayaking'],
   Hobbies: ['Music', 'Gaming', 'Sports', 'Photography', 'Cooking', 'Reading'],
   Community: ['Volunteering', 'Leadership', 'Mentorship', 'Advocacy'],
 };

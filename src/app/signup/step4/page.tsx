@@ -62,8 +62,8 @@ export default function SignupStep4Page() {
         body: JSON.stringify({
           ...(ageRange && { age_range: ageRange }),
           ...(origin && { origin }),
-          ...(housingStatus && { housing_status: housingStatus }),
-          comfort_level: comfortLevel,
+          ...(housingStatus && { housingStatus }),
+          comfortLevel,
           ...(aboutMe && { about_me: aboutMe }),
         }),
       });

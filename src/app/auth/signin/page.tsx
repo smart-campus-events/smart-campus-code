@@ -1,15 +1,26 @@
 'use client';
 
+import { signIn } from 'next-auth/react';
+import Link from 'next/link';
 import React, { useState } from 'react';
 import {
-  Container, Row, Col, Card, Form, Button, InputGroup,
-  Stack, Image,
+  Button,
+  Card,
+  Col,
+  Container,
+  Form,
+  Image,
+  InputGroup,
+  Row,
+  Stack,
 } from 'react-bootstrap';
 import {
-  Envelope, Lock, ArrowRight, ArrowLeft, Google,
+  ArrowLeft,
+  ArrowRight,
+  Envelope,
+  Google,
+  Lock,
 } from 'react-bootstrap-icons';
-import Link from 'next/link';
-import { signIn } from 'next-auth/react';
 
 /** The sign in page. */
 const SignIn = () => {
@@ -22,8 +33,9 @@ const SignIn = () => {
     event.preventDefault();
     setIsLoading(true);
     setError(null);
+    // Redirect to dashboard on success
     const result = await signIn('credentials', {
-      callbackUrl: '/list',
+      callbackUrl: '/dashboard',
       email,
       password,
       redirect: false,
@@ -38,7 +50,7 @@ const SignIn = () => {
         : 'Sign in failed. Please try again.';
       setError(errorMessage);
     } else if (result?.ok) {
-      window.location.href = '/list';
+      window.location.href = '/dashboard';
     }
   };
 
@@ -46,7 +58,8 @@ const SignIn = () => {
     setIsLoading(true);
     setError(null);
     try {
-      await signIn('google', { callbackUrl: '/list', redirect: true });
+      // Redirect to dashboard on Google sign-in
+      await signIn('google', { callbackUrl: '/dashboard', redirect: true });
     } catch (err) {
       console.error('Google sign in failed:', err);
       setError('Google sign in failed. Please try again.');
@@ -58,7 +71,7 @@ const SignIn = () => {
     <div className="bg-light min-vh-100 d-flex flex-column">
       <Container className="py-4 py-md-5 flex-grow-1 d-flex flex-column">
         <Row className="justify-content-center">
-          <Col md={8} lg={6} xl={5}>
+          <Col md={10} lg={8} xl={6}>
             <Card className="shadow-sm border-light rounded-4">
               <Card.Body className="p-4 p-md-5">
                 <Stack direction="horizontal" gap={3} className="mb-4 align-items-center">
@@ -166,7 +179,7 @@ const SignIn = () => {
 
                     <div className="text-center mt-2">
                       <Link
-                        href="/auth/signup"
+                        href="/signup/step1"
                         className="text-muted small text-decoration-none"
                       >
                         <ArrowLeft className="me-1" size={12} />
