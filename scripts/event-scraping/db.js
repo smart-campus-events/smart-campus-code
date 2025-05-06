@@ -1,3 +1,5 @@
+// Suggested modifications for scripts/event-scraping/db.js
+
 // db.js
 // Configures and exports the Prisma Client instance and database operations.
 
@@ -42,8 +44,14 @@ export async function saveEvent(eventData) {
     console.error(`[${eventData.id}] Invalid startDateTime before saving. Setting to null.`);
     dataToSave.startDateTime = null;
   }
-  if (dataToSave.endDateTime && !isDateValid(dataToSave.endDateTime)) {
-    console.warn(`[${eventData.id}] Invalid endDateTime before saving. Setting to null.`);
+  // If endDateTime exists but startDateTime doesn't, or end is invalid, nullify endDateTime
+  if (dataToSave.endDateTime && (!dataToSave.startDateTime || !isDateValid(dataToSave.endDateTime))) {
+    console.warn(`[${eventData.id}] Invalid or orphaned endDateTime before saving. Setting to null.`);
+    dataToSave.endDateTime = null;
+  }
+  // Add check: If endDateTime is before startDateTime, nullify endDateTime
+  if (dataToSave.startDateTime && dataToSave.endDateTime && dataToSave.endDateTime < dataToSave.startDateTime) {
+    console.warn(`[${eventData.id}] End date/time is before start date/time. Setting endDateTime to null.`);
     dataToSave.endDateTime = null;
   }
 
@@ -70,6 +78,43 @@ export async function saveEvent(eventData) {
     // Consider more specific error handling
   }
 }
+
+// --- NEW FUNCTION ---
+/**
+ * Removes events from the database whose end date/time has passed.
+ * It targets events with a non-null endDateTime that is before the current time.
+ * Events without an endDateTime or marked as 'all day' might need separate handling
+ * depending on the desired logic (e.g., remove 'all day' events based on startDateTime).
+ * @returns {Promise<number>} - The number of events deleted.
+ */
+export async function removePastEvents() {
+  const now = new Date();
+  console.log(`Removing past events (endDateTime < ${now.toISOString()})...`);
+  try {
+    const { count } = await prisma.event.deleteMany({
+      where: {
+        // Target events that HAVE an endDateTime defined
+        endDateTime: {
+          not: null, // Ensure endDateTime exists
+          lt: now, // And is less than (before) the current time
+        },
+        // Optional: Consider adding a condition for allDay events if needed
+        // e.g., remove allDay events whose startDateTime is before today?
+        // OR: [
+        //   { endDateTime: { lt: now } }, // Handles events with specific end times
+        //   { allDay: true, startDateTime: { lt: todayStart } } // Example for all-day events
+        // ]
+        // Requires defining `todayStart` appropriately (e.g., beginning of the current day)
+      },
+    });
+    console.log(`Successfully removed ${count} past events.`);
+    return count;
+  } catch (error) {
+    console.error('Error removing past events:', error);
+    return 0; // Return 0 or throw error depending on desired handling
+  }
+}
+// --- END NEW FUNCTION ---
 
 /**
  * Disconnects the Prisma client.

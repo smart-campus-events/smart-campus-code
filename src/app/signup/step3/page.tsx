@@ -1,5 +1,3 @@
-// app/signup/step3/page.tsx
-
 'use client';
 
 import Link from 'next/link';
@@ -40,6 +38,7 @@ export default function SignupStep3Page() {
   const [majorSearch, setMajorSearch] = useState('');
   const [selectedMajor, setSelectedMajor] = useState<string | null>(null);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  const [customInterest, setCustomInterest] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -78,7 +77,7 @@ export default function SignupStep3Page() {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/profileapi/profile', { // ← now points at your App-Router route
+      const res = await fetch('/api/profileapi/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -176,10 +175,7 @@ export default function SignupStep3Page() {
                       <Col key={cat} md={6}>
                         <Card className="h-100 border shadow-sm">
                           <Card.Body>
-                            <Card.Title
-                              as="h6"
-                              className="text-muted small text-uppercase mb-3"
-                            >
+                            <Card.Title as="h6" className="text-muted small text-uppercase mb-3">
                               {getCategoryIcon(cat)}
                               {' '}
                               {cat}
@@ -188,11 +184,7 @@ export default function SignupStep3Page() {
                               {ints.map(int => (
                                 <Button
                                   key={int}
-                                  variant={
-                                    isInterestSelected(int)
-                                      ? 'primary'
-                                      : 'outline-secondary'
-                                  }
+                                  variant={isInterestSelected(int) ? 'primary' : 'outline-secondary'}
                                   size="sm"
                                   className="rounded-pill"
                                   onClick={() => toggleInterest(int)}
@@ -207,6 +199,63 @@ export default function SignupStep3Page() {
                       </Col>
                     ))}
                   </Row>
+
+                  {/* Custom Interest Input */}
+                  <Form.Group className="mt-4">
+                    <Form.Label className="fw-medium">Add a Custom Interest</Form.Label>
+                    <InputGroup>
+                      <Form.Control
+                        type="text"
+                        placeholder="Type a new interest..."
+                        value={customInterest}
+                        onChange={(e) => setCustomInterest(e.target.value)}
+                        disabled={loading}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (customInterest.trim() && !selectedInterests.includes(customInterest.trim())) {
+                              setSelectedInterests(prev => [...prev, customInterest.trim()]);
+                              setCustomInterest('');
+                            }
+                          }
+                        }}
+                      />
+                      <Button
+                        onClick={() => {
+                          if (customInterest.trim() && !selectedInterests.includes(customInterest.trim())) {
+                            setSelectedInterests(prev => [...prev, customInterest.trim()]);
+                            setCustomInterest('');
+                          }
+                        }}
+                        disabled={!customInterest.trim() || loading}
+                      >
+                        Add
+                      </Button>
+                    </InputGroup>
+                  </Form.Group>
+
+                  {/* Selected Interests List */}
+                  {selectedInterests.length > 0 && (
+                    <div className="mt-3">
+                      <Form.Label className="fw-medium">Your Selected Interests</Form.Label>
+                      <Stack direction="horizontal" gap={2} className="flex-wrap">
+                        {selectedInterests.map(interest => (
+                          <Button
+                            key={interest}
+                            variant="outline-danger"
+                            size="sm"
+                            className="rounded-pill"
+                            onClick={() => setSelectedInterests(prev => prev.filter(i => i !== interest))}
+                          >
+                            {interest}
+                            {' '}
+                            ×
+                          </Button>
+                        ))}
+                      </Stack>
+                    </div>
+                  )}
+
                   {selectedInterests.length > 0 && selectedInterests.length < MIN_INTERESTS && (
                     <Form.Text className="text-danger d-block mt-2">
                       Please select at least
@@ -219,11 +268,7 @@ export default function SignupStep3Page() {
                 </Form.Group>
 
                 {/* Navigation buttons */}
-                <Stack
-                  direction="horizontal"
-                  gap={3}
-                  className="justify-content-between pt-3"
-                >
+                <Stack direction="horizontal" gap={3} className="justify-content-between pt-3">
                   <Link href="/signup/step2" passHref>
                     <Button variant="outline-secondary" disabled={loading}>
                       <ArrowLeft className="me-1" />
@@ -231,11 +276,7 @@ export default function SignupStep3Page() {
                       Back
                     </Button>
                   </Link>
-                  <Button
-                    type="submit"
-                    variant="success"
-                    disabled={!canContinue || loading}
-                  >
+                  <Button type="submit" variant="success" disabled={!canContinue || loading}>
                     Continue
                     {' '}
                     <ArrowRight className="ms-1" />

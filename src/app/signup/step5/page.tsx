@@ -2,6 +2,7 @@
 
 'use client';
 
+import InitialAvatar from '@/components/InitialAvatar';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -20,7 +21,7 @@ import SignupProgress from '../SignupProgress';
 
 interface ProfileData {
   name?: string;
-  first_name?: string;
+  firstName?: string;
   email: string;
   major?: string;
   interests: { id: string; name: string }[];
@@ -80,13 +81,17 @@ export default function SignupStep5Page() {
             <Card className="shadow-sm border-light rounded-4 mb-4 mb-md-5">
               <Card.Body className="p-4 p-md-5">
                 <Stack gap={3} className="align-items-center">
-                  <Image
-                    src={profile.avatar_url || '/default-avatar.png'}
-                    alt="Profile Picture"
-                    roundedCircle
-                    style={{ width: '80px', height: '80px', border: '4px solid var(--bs-success)' }}
-                  />
-                  <h3 className="h5 fw-semibold mb-0">{profile.name || profile.first_name || profile.email}</h3>
+                  {profile.avatar_url ? (
+                    <Image
+                      src={profile.avatar_url}
+                      alt="Profile Picture"
+                      roundedCircle
+                      style={{ width: '80px', height: '80px', border: '4px solid var(--bs-success)' }}
+                    />
+                  ) : (
+                    <InitialAvatar name={profile.name || profile.firstName || profile.email} size={80} />
+                  )}
+                  <h3 className="h5 fw-semibold mb-0">{profile.name || profile.firstName || profile.email}</h3>
                   {profile.major && (
                   <p className="text-muted mb-2">
                     {profile.major}

@@ -2,6 +2,7 @@
 
 'use client';
 
+import InitialAvatar from '@/components/InitialAvatar';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
@@ -24,18 +25,18 @@ import {
 interface ProfileData {
   email: string;
   name?: string;
-  first_name?: string;
-  last_name?: string;
+  firstName?: string;
+  lastName?: string;
   avatar_url?: string;
   major?: string;
   interests: { id: string; name: string }[];
   age_range?: string;
   origin?: string;
-  housing_status?: string;
-  comfort_level?: number;
+  housingStatus?: string;
+  comfortLevel?: number;
   graduation_year?: number;
   about_me?: string;
-  created_at: string;
+  createdAt: string;
 }
 
 export default function ProfilePage() {
@@ -107,7 +108,7 @@ export default function ProfilePage() {
   }
 
   // coalesce comfort_level for TS
-  const comfortLevel = profile.comfort_level ?? 0;
+  const comfortLevel = profile.comfortLevel ?? 0;
 
   return (
     <div className="bg-light min-vh-100">
@@ -116,26 +117,32 @@ export default function ProfilePage() {
         <Row className="justify-content-center mb-5">
           <Col lg={8} className="d-flex align-items-center justify-content-between">
             <div className="d-flex align-items-center">
-              <Image
-                src={profile.avatar_url || '/default-avatar.png'}
-                alt="Avatar"
-                roundedCircle
-                style={{ width: 80, height: 80, border: '4px solid var(--bs-success)' }}
-              />
+              {profile.avatar_url ? (
+                <Image
+                  src={profile.avatar_url}
+                  alt="Profile Picture"
+                  roundedCircle
+                  style={{ width: '80px', height: '80px', border: '4px solid var(--bs-success)' }}
+                />
+              ) : (
+                <InitialAvatar name={profile.name || profile.firstName || profile.email} size={80} />
+              )}
               <div className="ms-3">
                 <h1 className="h4 fw-bold mb-0">
-                  {profile.first_name && profile.last_name
-                    ? `${profile.first_name} ${profile.last_name}`
+                  {profile.firstName && profile.lastName
+                    ? `${profile.firstName} ${profile.lastName}`
                     : profile.name || profile.email}
                   's Profile
                 </h1>
                 <p className="text-muted mb-0">
                   Member since
                   {' '}
-                  {new Date(profile.created_at).toLocaleDateString(undefined, {
-                    year: 'numeric',
-                    month: 'long',
-                  })}
+                  {profile.createdAt
+                    ? new Date(profile.createdAt).toLocaleDateString(undefined, {
+                      year: 'numeric',
+                      month: 'long',
+                    })
+                    : 'Unknown'}
                 </p>
               </div>
             </div>
@@ -218,18 +225,18 @@ export default function ProfilePage() {
                         <p className="fw-medium mb-0">{profile.graduation_year}</p>
                       </Col>
                     )}
-                    {profile.housing_status && (
+                    {profile.housingStatus && (
                       <Col sm={6} className="mb-3">
                         <p className="text-muted mb-1">Housing Status</p>
                         <p className="fw-medium mb-0">
-                          {profile.housing_status
+                          {profile.housingStatus
                             .split('_')
                             .map((w) => w[0].toUpperCase() + w.slice(1).toLowerCase())
                             .join(' ')}
                         </p>
                       </Col>
                     )}
-                    {profile.comfort_level != null && (
+                    {profile.comfortLevel != null && (
                       <Col sm={6} className="mb-3">
                         <p className="text-muted mb-1">Comfort Level</p>
                         <div className="d-flex text-warning">

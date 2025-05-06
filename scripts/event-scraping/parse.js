@@ -307,7 +307,8 @@ export function parseEventDetailPage(htmlContent, eventUrl, eventId) {
 
   // --- Description (using all <p> tags logic) ---
   const descriptionParas = [];
-  eventDisplayDiv.find('p').each((index, element) => {
+  // MODIFIED SELECTOR: Exclude paragraphs that directly contain a <strong> tag
+  eventDisplayDiv.find('p:not(:has(> strong))').each((index, element) => {
     const paragraphText = $(element).text().trim();
     if (paragraphText) {
       descriptionParas.push(paragraphText);
@@ -315,7 +316,7 @@ export function parseEventDetailPage(htmlContent, eventUrl, eventId) {
   });
   // Assign to camelCase key:
   eventData.description = descriptionParas.length > 0 ? descriptionParas.join('\n\n') : null;
-  console.log(`[${eventId}] Extracted description from all <p> tags.`);
+  console.log(`[${eventId}] Extracted description from <p> tags not containing <strong>.`);
 
   // --- Find Sections (Sponsor, Info, Ticket) ---
   // ... (logic remains the same) ...
