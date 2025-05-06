@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/naming-convention, indent */
+
 'use client';
 
 import Link from 'next/link';
@@ -114,11 +116,9 @@ export default function EditProfilePage() {
   }, [router]);
 
   const handleToggleInterest = (interest: string) => {
-    setInterests((prev) =>
-      prev.includes(interest)
-        ? prev.filter((i) => i !== interest)
-        : [...prev, interest]
-    );
+    setInterests((prev) => (prev.includes(interest)
+      ? prev.filter((i) => i !== interest)
+      : [...prev, interest]));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -167,7 +167,14 @@ export default function EditProfilePage() {
   };
 
   if (loading) return <div className="p-4">Loading profile...</div>;
-  if (error) return <div className="p-4 text-danger">Error: {error}</div>;
+  if (error) {
+    return (
+      <div className="p-4 text-danger">
+        Error:
+        {error}
+      </div>
+    );
+  }
   if (!profile) return <div className="p-4">No profile data.</div>;
 
   return (
@@ -177,7 +184,9 @@ export default function EditProfilePage() {
           <Col lg={8} xl={7}>
             <div className="mb-4 text-center text-md-start">
               <h1 className="h2 fw-bold mb-2">Edit Profile</h1>
-              <p className="text-muted">Update your information to get better recommendations.</p>
+              <p className="text-muted">
+                Update your information to get better recommendations.
+              </p>
             </div>
             <Card className="shadow-sm">
               <Card.Body className="p-4 p-md-5">
@@ -187,12 +196,22 @@ export default function EditProfilePage() {
                   <Row className="g-3 mb-4">
                     <Col md={6}>
                       <FloatingLabel label="First Name">
-                        <Form.Control type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+                        <Form.Control
+                          type="text"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          required
+                        />
                       </FloatingLabel>
                     </Col>
                     <Col md={6}>
                       <FloatingLabel label="Last Name">
-                        <Form.Control type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+                        <Form.Control
+                          type="text"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          required
+                        />
                       </FloatingLabel>
                     </Col>
                     <Col md={12}>
@@ -294,7 +313,9 @@ export default function EditProfilePage() {
                             className="rounded-pill"
                             onClick={() => handleToggleInterest(interest)}
                           >
-                            {interest} ×
+                            {interest}
+                            {' '}
+                            ×
                           </Button>
                         ))}
                       </div>
@@ -350,7 +371,9 @@ export default function EditProfilePage() {
                       onChange={(e) => setAboutMe(e.target.value)}
                     />
                     <div className="text-end text-muted small mt-1">
-                      {about_me.length}/{MAX_ABOUT_ME_LENGTH}
+                      {about_me.length}
+                      /
+                      {MAX_ABOUT_ME_LENGTH}
                     </div>
                   </FloatingLabel>
 

@@ -51,7 +51,7 @@ export async function GET() {
       ...user,
       createdAt: user.createdAt.toISOString(),
       interests,
-    });    
+    });
   } catch (err: any) {
     console.error('❌ GET /api/profileapi/profile error:', err);
     return NextResponse.json(

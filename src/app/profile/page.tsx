@@ -117,16 +117,16 @@ export default function ProfilePage() {
         <Row className="justify-content-center mb-5">
           <Col lg={8} className="d-flex align-items-center justify-content-between">
             <div className="d-flex align-items-center">
-            {profile.avatar_url ? (
-                    <Image
-                      src={profile.avatar_url}
-                      alt="Profile Picture"
-                      roundedCircle
-                      style={{ width: '80px', height: '80px', border: '4px solid var(--bs-success)' }}
-                    />
-                  ) : (
-                    <InitialAvatar name={profile.name || profile.firstName || profile.email} />
-                  )}
+              {profile.avatar_url ? (
+                <Image
+                  src={profile.avatar_url}
+                  alt="Profile Picture"
+                  roundedCircle
+                  style={{ width: '80px', height: '80px', border: '4px solid var(--bs-success)' }}
+                />
+              ) : (
+                <InitialAvatar name={profile.name || profile.firstName || profile.email} />
+              )}
               <div className="ms-3">
                 <h1 className="h4 fw-bold mb-0">
                   {profile.firstName && profile.lastName
@@ -135,14 +135,15 @@ export default function ProfilePage() {
                   's Profile
                 </h1>
                 <p className="text-muted mb-0">
-  Member since{' '}
-  {profile.createdAt
-    ? new Date(profile.createdAt).toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'long',
-      })
-    : 'Unknown'}
-</p>
+                  Member since
+                  {' '}
+                  {profile.createdAt
+                    ? new Date(profile.createdAt).toLocaleDateString(undefined, {
+                      year: 'numeric',
+                      month: 'long',
+                    })
+                    : 'Unknown'}
+                </p>
               </div>
             </div>
             <div className="d-flex gap-2">

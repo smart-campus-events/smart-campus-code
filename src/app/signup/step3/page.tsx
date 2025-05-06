@@ -53,9 +53,7 @@ export default function SignupStep3Page() {
   };
 
   const toggleInterest = (interest: string) => {
-    setSelectedInterests(prev =>
-      prev.includes(interest) ? prev.filter(i => i !== interest) : [...prev, interest]
-    );
+    setSelectedInterests(prev => (prev.includes(interest) ? prev.filter(i => i !== interest) : [...prev, interest]));
   };
 
   const isInterestSelected = (interest: string) => selectedInterests.includes(interest);
@@ -166,7 +164,10 @@ export default function SignupStep3Page() {
                     {' '}
                     <span className="text-danger">*</span>
                     <span className="text-muted small fw-normal ms-1">
-                      (Select at least {MIN_INTERESTS})
+                      (Select at least
+                      {' '}
+                      {MIN_INTERESTS}
+                      )
                     </span>
                   </Form.Label>
                   <Row className="g-3">
@@ -175,7 +176,9 @@ export default function SignupStep3Page() {
                         <Card className="h-100 border shadow-sm">
                           <Card.Body>
                             <Card.Title as="h6" className="text-muted small text-uppercase mb-3">
-                              {getCategoryIcon(cat)} {cat}
+                              {getCategoryIcon(cat)}
+                              {' '}
+                              {cat}
                             </Card.Title>
                             <Stack direction="horizontal" gap={2} className="flex-wrap">
                               {ints.map(int => (
@@ -242,11 +245,11 @@ export default function SignupStep3Page() {
                             variant="outline-danger"
                             size="sm"
                             className="rounded-pill"
-                            onClick={() =>
-                              setSelectedInterests(prev => prev.filter(i => i !== interest))
-                            }
+                            onClick={() => setSelectedInterests(prev => prev.filter(i => i !== interest))}
                           >
-                            {interest} ×
+                            {interest}
+                            {' '}
+                            ×
                           </Button>
                         ))}
                       </Stack>
@@ -255,7 +258,11 @@ export default function SignupStep3Page() {
 
                   {selectedInterests.length > 0 && selectedInterests.length < MIN_INTERESTS && (
                     <Form.Text className="text-danger d-block mt-2">
-                      Please select at least {MIN_INTERESTS - selectedInterests.length} more interest(s).
+                      Please select at least
+                      {' '}
+                      {MIN_INTERESTS - selectedInterests.length}
+                      {' '}
+                      more interest(s).
                     </Form.Text>
                   )}
                 </Form.Group>
@@ -264,11 +271,15 @@ export default function SignupStep3Page() {
                 <Stack direction="horizontal" gap={3} className="justify-content-between pt-3">
                   <Link href="/signup/step2" passHref>
                     <Button variant="outline-secondary" disabled={loading}>
-                      <ArrowLeft className="me-1" /> Back
+                      <ArrowLeft className="me-1" />
+                      {' '}
+                      Back
                     </Button>
                   </Link>
                   <Button type="submit" variant="success" disabled={!canContinue || loading}>
-                    Continue <ArrowRight className="ms-1" />
+                    Continue
+                    {' '}
+                    <ArrowRight className="ms-1" />
                   </Button>
                 </Stack>
               </Stack>

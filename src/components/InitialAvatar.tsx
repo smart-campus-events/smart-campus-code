@@ -3,7 +3,7 @@ import React from 'react';
 
 interface InitialAvatarProps {
   name: string;
-  size?: number;
+  size: number;
 }
 
 const InitialAvatar: React.FC<InitialAvatarProps> = ({ name, size = 80 }) => {
