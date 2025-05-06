@@ -8,6 +8,7 @@ import {
 import {
   GeoAlt, Calendar3, /* Clock, */ Link45deg, EnvelopeAt, PeopleFill, Building,
   /* XCircleFill, */ CalendarCheck, Cash, InfoCircle, PinMapFill, Star, StarFill,
+  Globe,
 } from 'react-bootstrap-icons';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -410,19 +411,36 @@ export default function EventDetailPage() {
                 </Alert>
               )}
 
-              {event.eventPageUrl && (
-                <Button 
-                  variant="outline-secondary" 
-                  className="w-100 mt-2"
-                  as="a"
-                  href={event.eventPageUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Link45deg className="me-2" />
-                  Official Event Page
-                </Button>
-              )}
+              {/* Event Links Section */}
+              <div className="w-100 mt-2 d-flex flex-column gap-2">
+                {event.eventPageUrl && (
+                  <Button 
+                    variant="outline-secondary" 
+                    className="w-100"
+                    as="a"
+                    href={event.eventPageUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Link45deg className="me-2" />
+                    Official Event Page
+                  </Button>
+                )}
+                
+                {event.eventUrl && event.eventUrl !== event.eventPageUrl && (
+                  <Button 
+                    variant="outline-primary" 
+                    className="w-100"
+                    as="a"
+                    href={event.eventUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Globe className="me-2" />
+                    View on UH Manoa Calendar
+                  </Button>
+                )}
+              </div>
             </Col>
           </Row>
         </Card.Body>

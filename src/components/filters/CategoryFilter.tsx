@@ -6,27 +6,35 @@ interface Category {
   id: string;
   name: string;
   count?: number;
+  clubCount?: number;
+  eventCount?: number;
 }
 
 interface CategoryFilterProps {
   onApplyFilters: (categories: string[]) => void;
   activeFilters: string[];
+  context?: 'clubs' | 'events'; // Optional context prop to determine filtering behavior
 }
 
-const CategoryFilter: React.FC<CategoryFilterProps> = ({ onApplyFilters, activeFilters }) => {
+const CategoryFilter: React.FC<CategoryFilterProps> = ({ 
+  onApplyFilters, 
+  activeFilters, 
+  context = 'clubs' // Default to clubs for backward compatibility
+}) => {
   const [show, setShow] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(activeFilters);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch categories when the component mounts
+  // Fetch categories when the component mounts or context changes
   useEffect(() => {
     const fetchCategories = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch('/api/categories');
+        // Fetch categories with context parameter
+        const response = await fetch(`/api/categories?context=${context}`);
         if (!response.ok) {
           throw new Error(`Failed to fetch categories: ${response.status}`);
         }
@@ -41,7 +49,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ onApplyFilters, activeF
     };
 
     fetchCategories();
-  }, []);
+  }, [context]);
 
   // Reset selected categories when activeFilters change (external update)
   useEffect(() => {
@@ -71,6 +79,11 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ onApplyFilters, activeF
     handleClose();
   };
 
+  // Determine the appropriate title based on context
+  const modalTitle = context === 'events' 
+    ? 'Filter Events by Category' 
+    : 'Filter Clubs by Category';
+
   return (
     <>
       <Button
@@ -87,7 +100,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ onApplyFilters, activeF
 
       <Modal show={show} onHide={handleClose} size="lg">
         <Modal.Header closeButton>
-          <Modal.Title>Filter Clubs by Category</Modal.Title>
+          <Modal.Title>{modalTitle}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {isLoading && (
@@ -113,7 +126,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ onApplyFilters, activeF
               <ListGroup className="mb-3">
                 {categories
                   .sort((a, b) => {
-                    // Sort by club count (descending) then by name (ascending)
+                    // Sort by count (descending) then by name (ascending)
                     if ((b.count || 0) === (a.count || 0)) {
                       return a.name.localeCompare(b.name);
                     }

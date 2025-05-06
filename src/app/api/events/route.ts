@@ -1,19 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { AttendanceType, ContentStatus, Prisma } from '@prisma/client';
+import { ContentStatus, Prisma, AttendanceType } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 
 // GET /api/events - Get a list of events with optional filtering
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q') || '';
-  const categoryId = searchParams.get('category');
+  const categoryIds = searchParams.getAll('category');
   const page = parseInt(searchParams.get('page') || '1', 10);
-  const limit = parseInt(searchParams.get('limit') || '20', 10);
-  const sort = searchParams.get('sort') || 'Date: Soonest';
+  const limit = parseInt(searchParams.get('limit') || '1000', 10);
+  const sort = searchParams.get('sort') || 'date-asc';
   const skip = (page - 1) * limit;
+  const pastEvents = searchParams.get('pastEvents') === 'true';
+  const attendanceType = searchParams.get('attendanceType') || null;
 
   try {
+    // Current date for filtering upcoming vs past events
+    const currentDate = new Date();
+
     // Define the where clause with explicit type
     const where: Prisma.EventWhereInput = {
       status: ContentStatus.APPROVED,
@@ -21,39 +26,48 @@ export async function GET(request: NextRequest) {
         OR: [
           { title: { contains: query, mode: 'insensitive' } },
           { description: { contains: query, mode: 'insensitive' } },
+          { location: { contains: query, mode: 'insensitive' } },
           { organizerSponsor: { contains: query, mode: 'insensitive' } },
         ],
       } : {}),
-      ...(categoryId ? {
+      ...(categoryIds.length > 0 ? {
         categories: {
           some: {
-            categoryId,
+            categoryId: {
+              in: categoryIds,
+            },
           },
         },
       } : {}),
+      ...(pastEvents 
+        ? { startDateTime: { lt: currentDate } }  // Past events
+        : { startDateTime: { gte: currentDate } } // Upcoming events (default)
+      ),
+      ...(attendanceType ? {
+        attendanceType: attendanceType as AttendanceType,
+      } : {}),
     };
 
-    // Define orderBy based on sort parameter
-    let orderBy: Prisma.EventOrderByWithRelationInput = {};
-
+    // Determine sort options based on sort parameter
+    let orderBy: Prisma.EventOrderByWithRelationInput;
+    
     switch (sort) {
-      case 'Date: Soonest':
-        orderBy = { startDateTime: 'asc' };
-        break;
-      case 'Date: Latest':
+      case 'date-desc':
         orderBy = { startDateTime: 'desc' };
         break;
-      case 'A-Z':
+      case 'title-asc':
         orderBy = { title: 'asc' };
         break;
-      case 'Z-A':
+      case 'title-desc':
         orderBy = { title: 'desc' };
         break;
+      case 'date-asc':
       default:
         orderBy = { startDateTime: 'asc' };
+        break;
     }
 
-    // Execute the query with pagination using the prisma instance
+    // Execute the query with pagination
     const events = await prisma.event.findMany({
       where,
       include: {
@@ -62,6 +76,7 @@ export async function GET(request: NextRequest) {
             category: true,
           },
         },
+        organizerClub: true,
         submittedBy: {
           select: {
             id: true,
@@ -69,7 +84,6 @@ export async function GET(request: NextRequest) {
             email: true,
           },
         },
-        organizerClub: true,
         _count: {
           select: {
             rsvps: true,
@@ -81,7 +95,7 @@ export async function GET(request: NextRequest) {
       take: limit,
     });
 
-    // Get total count for pagination using the prisma instance
+    // Get total count for pagination
     const total = await prisma.event.count({ where });
 
     return NextResponse.json({
@@ -123,48 +137,28 @@ export async function POST(request: NextRequest) {
       endDateTime,
       allDay,
       description,
-      costAdmission,
       attendanceType,
       location,
       locationVirtualUrl,
       organizerSponsor,
       contactName,
-      contactEmail,
       contactPhone,
+      contactEmail,
       eventUrl,
       eventPageUrl,
-      organizerClubId,
       categoryIds,
+      organizerClubId,
     } = data;
 
     // Validate required fields
     if (!title || !startDateTime) {
       return NextResponse.json(
-        { error: 'Title and startDateTime are required' },
+        { error: 'Title and start date/time are required' },
         { status: 400 },
       );
     }
 
-    // Check for valid attendance type
-    if (attendanceType && !Object.values(AttendanceType).includes(attendanceType)) {
-      return NextResponse.json(
-        { error: 'Invalid attendance type' },
-        { status: 400 },
-      );
-    }
-
-    // Handle date validation
-    const startDate = new Date(startDateTime);
-    const endDate = endDateTime ? new Date(endDateTime) : null;
-
-    if (endDate && startDate > endDate) {
-      return NextResponse.json(
-        { error: 'End date must be after start date' },
-        { status: 400 },
-      );
-    }
-
-    // Get user ID from session using the prisma instance
+    // Get user ID from session
     const userEmail = session.user.email;
     const user = await prisma.user.findUnique({
       where: { email: userEmail },
@@ -182,35 +176,34 @@ export async function POST(request: NextRequest) {
     const status = user.isAdmin ? ContentStatus.APPROVED : ContentStatus.PENDING;
 
     // Prepare category connections
-    const categoryConnections = categoryIds && categoryIds.length > 0
+    const categoryConnectOrCreate = categoryIds && categoryIds.length > 0
       ? categoryIds.map((categoryId: string) => ({
         categoryId,
       }))
       : [];
 
-    // Create the event using the prisma instance
+    // Create the event
     const event = await prisma.event.create({
       data: {
         title,
-        startDateTime: startDate,
-        endDateTime: endDate,
+        startDateTime: new Date(startDateTime),
+        endDateTime: endDateTime ? new Date(endDateTime) : null,
         allDay: allDay || false,
         description,
-        costAdmission,
         attendanceType: attendanceType || AttendanceType.IN_PERSON,
         location,
         locationVirtualUrl,
         organizerSponsor,
         contactName,
-        contactEmail,
         contactPhone,
+        contactEmail,
         eventUrl,
         eventPageUrl,
         status,
         submittedByUserId: user.id,
-        organizerClubId,
+        ...(organizerClubId ? { organizerClubId } : {}),
         categories: {
-          create: categoryConnections,
+          create: categoryConnectOrCreate,
         },
       },
       include: {
@@ -228,11 +221,12 @@ export async function POST(request: NextRequest) {
     console.error('Error creating event:', error);
     // Handle potential Prisma errors more gracefully
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      // Handle specific error cases if needed
-      return NextResponse.json(
-        { error: `Database error: ${error.message}` },
-        { status: 400 },
-      );
+      if (error.code === 'P2002') {
+        return NextResponse.json(
+          { error: 'This event may already exist.' },
+          { status: 409 },
+        );
+      }
     }
     return NextResponse.json(
       { error: 'Failed to create event' },

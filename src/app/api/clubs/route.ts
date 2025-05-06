@@ -8,9 +8,9 @@ import { prisma } from '@/lib/prisma'; // Reverted: Removed .ts extension
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q') || '';
-  const categoryId = searchParams.get('category');
+  const categoryIds = searchParams.getAll('category');
   const page = parseInt(searchParams.get('page') || '1', 10);
-  const limit = parseInt(searchParams.get('limit') || '20', 10);
+  const limit = parseInt(searchParams.get('limit') || '1000', 10);
   const sort = searchParams.get('sort') || 'A-Z';
   const skip = (page - 1) * limit;
 
@@ -24,10 +24,12 @@ export async function GET(request: NextRequest) {
           { purpose: { contains: query, mode: 'insensitive' } },
         ],
       } : {}),
-      ...(categoryId ? {
+      ...(categoryIds.length > 0 ? {
         categories: {
           some: {
-            categoryId,
+            categoryId: {
+              in: categoryIds,
+            },
           },
         },
       } : {}),

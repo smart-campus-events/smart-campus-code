@@ -1,21 +1,19 @@
 'use client';
 
-/* eslint-disable max-len */
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Container, Row, Col, Card, Form, Button, Badge, InputGroup,
   Dropdown, Pagination, Breadcrumb, ButtonGroup, Spinner, Alert,
 } from 'react-bootstrap';
 import {
-  Search, Funnel, X, Bookmark, BookmarkFill, Clock, Grid3x3GapFill, ListUl,
+  Search, X, Bookmark, BookmarkFill, Clock, Grid3x3GapFill, ListUl,
   ChevronLeft, ChevronRight,
 } from 'react-bootstrap-icons';
 import Link from 'next/link';
 import debounce from 'lodash/debounce';
-import { useSession } from 'next-auth/react';
+import CategoryFilter from '@/components/filters/CategoryFilter';
 
-// Define the Club type based on expected API response (adjust as needed)
-// This should ideally align with Prisma types, possibly using Prisma.ClubGetPayload
+// Define the Club type based on expected API response
 interface Category {
   id: string;
   name: string;
@@ -32,13 +30,11 @@ interface Club {
   meetingTime: string | null;
   meetingLocation: string | null;
   logoUrl: string | null;
-  categories: ClubCategory[]; // Updated to match include
+  categories: ClubCategory[];
   _count: {
     favoritedBy: number;
     hostedEvents: number;
   };
-  // Add slug if available/needed, or generate dynamically
-  // slug: string;
 }
 
 interface PaginationInfo {
@@ -48,37 +44,53 @@ interface PaginationInfo {
   totalPages: number;
 }
 
-const CLUBS_PER_PAGE = 9; // Adjust as needed
+// Interface for the API-returned category with count
+interface CategoryWithCount extends Category {
+  count: number;
+}
+
+const CLUBS_PER_PAGE = 30; // Increased from 9 to show more clubs per page
 
 export default function ClubsPage() {
-  const { data: session, status } = useSession();
   const [clubs, setClubs] = useState<Club[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeFilters, setActiveFilters] = useState<string[]>([]); // Store category IDs or names
-  const [sortBy, setSortBy] = useState('A-Z'); // Add more sort options later
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  const [activeFilterIds, setActiveFilterIds] = useState<string[]>([]);
+  const [activeFilterNames, setActiveFilterNames] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState('A-Z');
+  const [viewMode, setViewMode] = useState('grid');
   const [currentPage, setCurrentPage] = useState(1);
   const [favoriteClubIds, setFavoriteClubIds] = useState<string[]>([]);
-  const [isLoadingFavorites, setIsLoadingFavorites] = useState(false);
+  const [categories, setCategories] = useState<CategoryWithCount[]>([]);
 
-  // --- Data Fetching ---
-  // Step 1: Create a stable fetch function that doesn't recreate with sortBy changes
-  const fetchClubsData = useCallback(async (page = 1, search = '', sort = 'A-Z') => {
+  // Fetch categories for the filter
+  const fetchCategories = useCallback(async () => {
+    try {
+      const response = await fetch('/api/categories');
+      if (!response.ok) {
+        throw new Error(`Failed to fetch categories: ${response.status}`);
+      }
+      const data = await response.json();
+      setCategories(data.categories || []);
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+    }
+  }, []);
+
+  // Create a stable fetch function
+  const fetchClubsData = useCallback(async (page = 1, search = '', sort = 'A-Z', categoryIds: string[] = []) => {
     setIsLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: CLUBS_PER_PAGE.toString(),
-        q: search,
-        // Add sort param directly
-        ...(sort && { sort }),
+      // Build URL with multiple category parameters if needed
+      let url = `/api/clubs?page=${page}&limit=${CLUBS_PER_PAGE}&q=${search}&sort=${sort}`;
+      categoryIds.forEach(id => {
+        url += `&category=${id}`;
       });
 
-      const response = await fetch(`/api/clubs?${params.toString()}`);
+      const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -93,13 +105,11 @@ export default function ClubsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []); // No dependencies - this function never changes
+  }, []);
 
   // Fetch user's favorite clubs
   const fetchFavoriteClubs = useCallback(async () => {
-    // For development without authentication, use localStorage
     try {
-      // Get favorites from localStorage if available
       if (typeof window !== 'undefined') {
         const storedFavorites = localStorage.getItem('favoriteClubs');
         if (storedFavorites) {
@@ -111,12 +121,12 @@ export default function ClubsPage() {
     }
   }, []);
 
-  // Step 2: Create a function that uses the current sortBy value
+  // Function that uses the current sortBy and filter values
   const fetchClubs = useCallback((page: number, search: string) => {
-    fetchClubsData(page, search, sortBy);
-  }, [fetchClubsData, sortBy]);
+    fetchClubsData(page, search, sortBy, activeFilterIds);
+  }, [fetchClubsData, sortBy, activeFilterIds]);
 
-  // Step 3: Create a debounced search handler using useMemo (created only once)
+  // Create a debounced search handler
   const debouncedSearch = useMemo(
     () => debounce((searchText: string, fetchFn: (page: number, search: string) => void) => {
       setCurrentPage(1);
@@ -125,65 +135,70 @@ export default function ClubsPage() {
     [],
   );
 
-  // Step 4: Cleanup the debounced function on component unmount
+  // Cleanup the debounced function on component unmount
   useEffect(() => () => {
     debouncedSearch.cancel();
   }, [debouncedSearch]);
 
-  // Initial fetch when component mounts or page/sortBy changes
+  // Initial fetch when component mounts or page/sortBy/filters changes
   useEffect(() => {
     fetchClubs(currentPage, searchTerm);
-  }, [currentPage, fetchClubs, searchTerm]); // Added searchTerm to dependency array
+  }, [currentPage, fetchClubs, searchTerm, activeFilterIds]);
 
   // Fetch user's favorite clubs when component mounts
   useEffect(() => {
     fetchFavoriteClubs();
-  }, [fetchFavoriteClubs]);
+    fetchCategories();
+  }, [fetchFavoriteClubs, fetchCategories]);
 
-  // --- Event Handlers ---
+  // Filter Event Handlers
+  const handleCategoryFiltersChange = (selectedCategoryIds: string[]) => {
+    setActiveFilterIds(selectedCategoryIds);
+
+    const selectedNames = selectedCategoryIds.map(id => {
+      const category = categories.find(c => c.id === id);
+      return category ? category.name : '';
+    }).filter(Boolean);
+
+    setActiveFilterNames(selectedNames);
+    setCurrentPage(1);
+  };
+
+  const handleRemoveFilter = (filterNameToRemove: string) => {
+    const category = categories.find(c => c.name === filterNameToRemove);
+    if (!category) return;
+
+    const updatedFilterIds = activeFilterIds.filter(id => id !== category.id);
+    setActiveFilterIds(updatedFilterIds);
+
+    setActiveFilterNames(activeFilterNames.filter(name => name !== filterNameToRemove));
+    setCurrentPage(1);
+  };
+
+  // Search Event Handler
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newSearchTerm = event.target.value;
     setSearchTerm(newSearchTerm);
     debouncedSearch(newSearchTerm, fetchClubs);
   };
 
-  const handleFilterClick = () => {
-    // TODO: Implement filter modal/offcanvas
-    console.log('Filter button clicked - Not implemented');
-    // When filters change, reset page and call fetchClubs
-    // setCurrentPage(1);
-    // fetchClubs(1, searchTerm, newFilters);
-  };
-
   const handleSortSelect = (eventKey: string | null) => {
     if (eventKey && eventKey !== sortBy) {
       setSortBy(eventKey);
-      setCurrentPage(1); // Reset page on sort change
-      // fetchClubs will be called by the useEffect due to sortBy dependency
+      setCurrentPage(1);
     }
-  };
-
-  const handleRemoveFilter = (filterToRemove: string) => {
-    setActiveFilters(activeFilters.filter(f => f !== filterToRemove));
-    // TODO: Refetch/filter data based on new filters
-    setCurrentPage(1);
-    // fetchClubs(1, searchTerm, updatedFilters);
-    console.log('Remove filter - Not fully implemented');
   };
 
   const handlePageChange = (pageNumber: number) => {
     if (pageNumber !== currentPage) {
       setCurrentPage(pageNumber);
-      // Fetching is handled by the useEffect dependency on currentPage
     }
   };
 
   const handleBookmark = async (clubId: string) => {
-    // No login required for now
     try {
       const isCurrentlyFavorited = favoriteClubIds.includes(clubId);
 
-      // Optimistically update the UI
       let updatedFavorites;
       if (isCurrentlyFavorited) {
         updatedFavorites = favoriteClubIds.filter(id => id !== clubId);
@@ -191,15 +206,12 @@ export default function ClubsPage() {
         updatedFavorites = [...favoriteClubIds, clubId];
       }
 
-      // Update state
       setFavoriteClubIds(updatedFavorites);
 
-      // Save to localStorage
       if (typeof window !== 'undefined') {
         localStorage.setItem('favoriteClubs', JSON.stringify(updatedFavorites));
       }
 
-      // Make the API call (currently just a stub that returns success)
       const method = isCurrentlyFavorited ? 'DELETE' : 'POST';
       await fetch(`/api/clubs/${clubId}/favorite`, {
         method,
@@ -213,15 +225,15 @@ export default function ClubsPage() {
     }
   };
 
-  // --- Pagination Rendering ---
+  // Pagination Rendering
   const renderPaginationItems = () => {
     if (!pagination || pagination.totalPages <= 1) return null;
 
     const items = [];
     const { totalPages } = pagination;
-    const maxPagesToShow = 5; // Adjust number of page links shown
+    const maxPagesToShow = 5;
 
-    if (totalPages <= maxPagesToShow + 2) { // Show all pages if not too many
+    if (totalPages <= maxPagesToShow + 2) {
       for (let number = 1; number <= totalPages; number++) {
         items.push(
           <Pagination.Item key={number} active={number === currentPage} onClick={() => handlePageChange(number)}>
@@ -230,8 +242,15 @@ export default function ClubsPage() {
         );
       }
     } else {
-      // Logic for showing ellipsis
-      items.push(<Pagination.Item key={1} active={currentPage === 1} onClick={() => handlePageChange(1)}>{1}</Pagination.Item>);
+      items.push(
+        <Pagination.Item
+          key={1}
+          active={currentPage === 1}
+          onClick={() => handlePageChange(1)}
+        >
+          {1}
+        </Pagination.Item>,
+      );
 
       const startEllipsisNeeded = currentPage > maxPagesToShow - 1;
       const endEllipsisNeeded = currentPage < totalPages - (maxPagesToShow - 2);
@@ -243,7 +262,6 @@ export default function ClubsPage() {
       let startPage = Math.max(2, currentPage - Math.floor((maxPagesToShow - 2) / 2));
       let endPage = Math.min(totalPages - 1, currentPage + Math.ceil((maxPagesToShow - 2) / 2));
 
-      // Adjust start/end if near beginning or end
       if (currentPage < maxPagesToShow - 1) {
         endPage = maxPagesToShow - 1;
       }
@@ -264,7 +282,11 @@ export default function ClubsPage() {
       }
 
       items.push(
-        <Pagination.Item key={totalPages} active={currentPage === totalPages} onClick={() => handlePageChange(totalPages)}>
+        <Pagination.Item
+          key={totalPages}
+          active={currentPage === totalPages}
+          onClick={() => handlePageChange(totalPages)}
+        >
           {totalPages}
         </Pagination.Item>,
       );
@@ -272,7 +294,7 @@ export default function ClubsPage() {
     return items;
   };
 
-  // --- Rendering Helpers ---
+  // Results Count Renderer
   const renderResultsCount = () => {
     if (!pagination) return null;
 
@@ -289,7 +311,7 @@ export default function ClubsPage() {
     return `Showing ${start}–${end} of ${total} clubs`;
   };
 
-  // --- Main Render ---
+  // Main Render
   return (
     <div className="bg-light py-5 min-vh-100">
       <Container>
@@ -345,13 +367,10 @@ export default function ClubsPage() {
                 </InputGroup>
               </Col>
               <Col md={4}>
-                <Button variant="light" onClick={handleFilterClick} className="w-100 text-start">
-                  <Funnel className="me-2" />
-                  <span className="me-1">Filter</span>
-                  {activeFilters.length > 0 && (
-                    <Badge pill bg="primary" className="ms-1">{activeFilters.length}</Badge>
-                  )}
-                </Button>
+                <CategoryFilter
+                  onApplyFilters={handleCategoryFiltersChange}
+                  activeFilters={activeFilterIds}
+                />
               </Col>
               <Col md={3}>
                 <Dropdown onSelect={handleSortSelect}>
@@ -371,9 +390,9 @@ export default function ClubsPage() {
         </Card>
 
         {/* Active Filter Pills (if any) */}
-        {activeFilters.length > 0 && (
+        {activeFilterNames.length > 0 && (
           <div className="mb-4 d-flex flex-wrap gap-2">
-            {activeFilters.map(filter => (
+            {activeFilterNames.map(filter => (
               <Badge
                 key={filter}
                 pill
@@ -428,8 +447,11 @@ export default function ClubsPage() {
                 <Card className="h-100 shadow-sm hover-lift">
                   <Card.Body className="d-flex flex-column">
                     <div className="d-flex justify-content-between align-items-start mb-2">
-                      {/* Removed legacyBehavior, wrapping Card.Title directly */}
-                      <Link href={`/clubs/${club.id}`} passHref className="text-decoration-none text-dark stretched-link">
+                      <Link
+                        href={`/clubs/${club.id}`}
+                        passHref
+                        className="text-decoration-none text-dark stretched-link"
+                      >
                         <Card.Title as="h6" className="mb-1 fw-semibold">{club.name}</Card.Title>
                       </Link>
                       <Button
@@ -441,7 +463,11 @@ export default function ClubsPage() {
                           e.preventDefault();
                           handleBookmark(club.id);
                         }}
-                        aria-label={`${favoriteClubIds.includes(club.id) ? 'Remove from favorites' : 'Add to favorites'}: ${club.name}`}
+                        aria-label={
+                          `${favoriteClubIds.includes(club.id)
+                            ? 'Remove from favorites'
+                            : 'Add to favorites'}: ${club.name}`
+                        }
                       >
                         {favoriteClubIds.includes(club.id) ? <BookmarkFill className="text-primary" /> : <Bookmark />}
                       </Button>
@@ -457,7 +483,6 @@ export default function ClubsPage() {
                           {(club.meetingTime || club.meetingLocation) && (
                           <div className="d-flex align-items-center text-muted small mb-2">
                             <Clock size={12} className="me-1" />
-                            {/* Display meeting info concisely */}
                             <span>
                               {club.meetingTime || 'Meeting time TBD'}
                               {club.meetingLocation ? ` @ ${club.meetingLocation}` : ''}
@@ -521,9 +546,19 @@ export default function ClubsPage() {
         {pagination && pagination.totalPages > 1 && (
           <div className="d-flex justify-content-center mt-5">
             <Pagination size="sm">
-              <Pagination.Prev onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}><ChevronLeft size={14} /></Pagination.Prev>
+              <Pagination.Prev
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft size={14} />
+              </Pagination.Prev>
               {renderPaginationItems()}
-              <Pagination.Next onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === pagination.totalPages}><ChevronRight size={14} /></Pagination.Next>
+              <Pagination.Next
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === pagination.totalPages}
+              >
+                <ChevronRight size={14} />
+              </Pagination.Next>
             </Pagination>
           </div>
         )}
@@ -531,12 +566,3 @@ export default function ClubsPage() {
     </div>
   );
 }
-
-// Note: You might want to add custom CSS for hover-lift effect if not globally defined.
-// .hover-lift {
-//   transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-// }
-// .hover-lift:hover {
-//   transform: translateY(-3px);
-//   box-shadow: var(--bs-card-box-shadow), 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-// }
