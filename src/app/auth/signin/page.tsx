@@ -156,7 +156,7 @@ const SignIn = () => {
                         label="Remember me"
                         disabled={isLoading}
                       />
-                      <Link href="/auth/forgot-password" className="text-decoration-none">
+                      <Link href="/auth/change-password" className="text-decoration-none">
                         Forgot password?
                       </Link>
                     </div>

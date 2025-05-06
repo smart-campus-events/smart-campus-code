@@ -108,7 +108,7 @@ export default function SignupStep3Page() {
   };
 
   return (
-    <div className="bg-light min-vh-100 d-flex flex-column">
+    <div className="bg-light min-vh-100 d-flex flex-column overflow-auto">
       <Container className="py-4 py-md-5 flex-grow-1 d-flex flex-column">
         <SignupProgress currentStep={3} totalSteps={5} />
 

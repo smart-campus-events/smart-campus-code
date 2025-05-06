@@ -135,7 +135,7 @@ export default function SignupStep2Page() {
   const strengthLabel = ['Weak', 'Fair', 'Good', 'Strong'][passwordStrength - 1] || '';
 
   return (
-    <div className="bg-light min-vh-100 d-flex flex-column">
+    <div className="bg-light min-vh-100 d-flex flex-column overflow-auto">
       <Container className="py-4 py-md-5 flex-grow-1 d-flex flex-column">
         <SignupProgress currentStep={2} totalSteps={5} />
         <Row className="justify-content-center">

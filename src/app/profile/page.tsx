@@ -109,6 +109,10 @@ export default function ProfilePage() {
 
   // coalesce comfort_level for TS
   const comfortLevel = profile.comfortLevel ?? 0;
+  const avatarSrc = profile.avatar_url?.trim() || '';
+  const displayName = profile.firstName
+    ? `${profile.firstName}${profile.lastName ? ` ${profile.lastName}` : ''}`
+    : profile.email;
 
   return (
     <div className="bg-light min-vh-100">
@@ -117,15 +121,15 @@ export default function ProfilePage() {
         <Row className="justify-content-center mb-5">
           <Col lg={8} className="d-flex align-items-center justify-content-between">
             <div className="d-flex align-items-center">
-              {profile.avatar_url ? (
+              {avatarSrc ? (
                 <Image
-                  src={profile.avatar_url}
+                  src={avatarSrc}
                   alt="Profile Picture"
                   roundedCircle
                   style={{ width: '80px', height: '80px', border: '4px solid var(--bs-success)' }}
                 />
               ) : (
-                <InitialAvatar name={profile.name || profile.firstName || profile.email} size={80} />
+                <InitialAvatar name={displayName} size={80} />
               )}
               <div className="ms-3">
                 <h1 className="h4 fw-bold mb-0">

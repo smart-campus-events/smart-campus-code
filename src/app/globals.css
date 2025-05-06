@@ -30,7 +30,7 @@ body {
 .gradient-background {
    /* Example gradient matching the HTML */
   background: linear-gradient(to bottom, #eff6ff, #ffffff);
-  min-height: 100vh;
+  min-height: 100px;
 }
 
 /* Optional: Replicate specific Tailwind spacing/sizing if Bootstrap utilities aren't enough */

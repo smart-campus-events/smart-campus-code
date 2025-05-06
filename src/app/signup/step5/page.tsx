@@ -56,7 +56,7 @@ export default function SignupStep5Page() {
   if (error || !profile) return <div className="p-4 text-center text-danger">{error || 'No profile data.'}</div>;
 
   return (
-    <div className="bg-light min-vh-100 d-flex flex-column">
+    <div className="bg-light min-vh-100 d-flex flex-column overflow-auto">
       <Container className="py-4 py-md-5 flex-grow-1 d-flex flex-column">
         <SignupProgress currentStep={5} totalSteps={5} />
 

@@ -2,6 +2,7 @@
 
 'use client';
 
+import InitialAvatar from '@/components/InitialAvatar';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
@@ -116,9 +117,7 @@ export default function EditProfilePage() {
   }, [router]);
 
   const handleToggleInterest = (interest: string) => {
-    setInterests((prev) => (prev.includes(interest)
-      ? prev.filter((i) => i !== interest)
-      : [...prev, interest]));
+    setInterests((prev) => (prev.includes(interest) ? prev.filter((i) => i !== interest) : [...prev, interest]));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -163,6 +162,8 @@ export default function EditProfilePage() {
       return;
     }
 
+    // force a refresh so that any server data (or session) picks up the new name
+    router.refresh();
     router.push('/profile');
   };
 
@@ -171,6 +172,7 @@ export default function EditProfilePage() {
     return (
       <div className="p-4 text-danger">
         Error:
+        {' '}
         {error}
       </div>
     );
@@ -178,10 +180,16 @@ export default function EditProfilePage() {
   if (!profile) return <div className="p-4">No profile data.</div>;
 
   return (
-    <div className="bg-light min-vh-100">
+    <div className="bg-light min-vh-100 overflow-auto">
       <Container className="py-4 py-md-5">
         <Row className="justify-content-center">
           <Col lg={8} xl={7}>
+
+            {/* Live‑updating avatar preview */}
+            <div className="text-center mb-4">
+              <InitialAvatar name={firstName} size={80} />
+            </div>
+
             <div className="mb-4 text-center text-md-start">
               <h1 className="h2 fw-bold mb-2">Edit Profile</h1>
               <p className="text-muted">
