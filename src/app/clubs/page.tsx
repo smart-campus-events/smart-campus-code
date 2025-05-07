@@ -1,17 +1,34 @@
 'use client';
 
 /* eslint-disable max-len */
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import debounce from 'lodash/debounce';
+import Link from 'next/link';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Container, Row, Col, Card, Form, Button, Badge, InputGroup,
-  Dropdown, Pagination, Breadcrumb, ButtonGroup, Spinner, Alert,
+  Alert,
+  Badge,
+  Breadcrumb,
+  Button,
+  ButtonGroup,
+  Card,
+  Col,
+  Container,
+  Dropdown,
+  Form,
+  InputGroup,
+  Pagination,
+  Row,
+  Spinner,
 } from 'react-bootstrap';
 import {
-  Search, Funnel, X, Bookmark, Clock, Grid3x3GapFill, ListUl,
+  Bookmark,
   ChevronLeft, ChevronRight,
+  Clock,
+  Funnel,
+  Grid3x3GapFill, ListUl,
+  Search,
+  X,
 } from 'react-bootstrap-icons';
-import Link from 'next/link';
-import debounce from 'lodash/debounce';
 
 // Define the Club type based on expected API response (adjust as needed)
 // This should ideally align with Prisma types, possibly using Prisma.ClubGetPayload
@@ -248,7 +265,7 @@ export default function ClubsPage() {
   };
 
   return (
-    <div className="bg-light min-vh-100">
+    <div className="bg-light min-vh-100 overflow-auto">
       <Container className="py-4 py-md-5">
         <Breadcrumb className="mb-4">
           <Breadcrumb.Item linkAs={Link} href="/dashboard">Dashboard</Breadcrumb.Item>

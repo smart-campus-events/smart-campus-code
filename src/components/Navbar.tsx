@@ -27,7 +27,7 @@ const NavBar: React.FC = () => {
   const showFullNav = isLoggedIn && !disableFullNav;
 
   return (
-    <Navbar bg="light" expand="lg">
+    <Navbar bg="success" expand="lg">
       <Container>
         <Navbar.Brand as={Link} href={isLoggedIn ? '/dashboard' : '/'}>
           Manoa Compass
