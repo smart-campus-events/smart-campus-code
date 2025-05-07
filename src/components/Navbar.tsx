@@ -23,15 +23,28 @@ const NavBar: React.FC = () => {
   const currentStep = signupMatch ? parseInt(signupMatch[1], 10) : null;
   const inSignupFlow = signupMatch !== null;
   // disable full nav for steps 1–4
-  const disableFullNav = inSignupFlow && (currentStep !== null && currentStep < 5);
+  const disableFullNav = inSignupFlow && currentStep !== null && currentStep < 5;
   const showFullNav = isLoggedIn && !disableFullNav;
+
+  // clickable on steps 1 & 2 (or anywhere outside steps 3/4)
+  const brandIsClickable = !inSignupFlow
+    || currentStep === 1
+    || currentStep === 2
+    || (currentStep !== null && currentStep >= 5);
 
   return (
     <Navbar bg="light" expand="lg">
       <Container>
-        <Navbar.Brand as={Link} href={isLoggedIn ? '/dashboard' : '/'}>
-          Manoa Compass
-        </Navbar.Brand>
+        {brandIsClickable ? (
+          <Navbar.Brand as={Link} href={isLoggedIn ? '/dashboard' : '/'}>
+            Manoa Compass
+          </Navbar.Brand>
+        ) : (
+          <Navbar.Brand>
+            Manoa Compass
+          </Navbar.Brand>
+        )}
+
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="ms-auto align-items-center">
