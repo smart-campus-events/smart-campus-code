@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
+import nextAuthOptionsConfig from '@/lib/authOptions';
+import { prisma } from '@/lib/prisma';
 import { ContentStatus } from '@prisma/client';
 import type { Session } from 'next-auth';
 import { getServerSession } from 'next-auth/next';
-import { prisma } from '@/lib/prisma';
-import nextAuthOptionsConfig from '@/lib/authOptions';
+import { NextResponse } from 'next/server';
 
 // Utility to check if user is admin
 async function isAdminUser(): Promise<boolean> {
@@ -52,13 +52,13 @@ export async function GET(request: Request) {
     const selectClause = minimal
       ? { id: true, name: true } // Only ID and Name for dropdowns
       : { // Full details for the manage table
-        id: true,
-        name: true,
-        purpose: true,
-        status: true,
-        createdAt: true,
-        contactEmail: true,
-      };
+          id: true,
+          name: true,
+          purpose: true,
+          status: true,
+          createdAt: true,
+          contactEmail: true,
+        };
 
     const clubs = await prisma.club.findMany({
       where: whereClause,
@@ -66,7 +66,10 @@ export async function GET(request: Request) {
       orderBy: minimal ? { name: 'asc' } : { createdAt: 'desc' },
       skip: minimal ? 0 : skip, // Don't skip if minimal (get all)
       take: limit,
-      select: selectClause,
+      select: {
+        ...selectClause,
+        favoritedBy: true,
+      },
     });
 
     // Don't need pagination info if minimal=true
