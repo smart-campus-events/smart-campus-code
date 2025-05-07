@@ -52,13 +52,13 @@ export async function GET(request: Request) {
     const selectClause = minimal
       ? { id: true, name: true } // Only ID and Name for dropdowns
       : { // Full details for the manage table
-          id: true,
-          name: true,
-          purpose: true,
-          status: true,
-          createdAt: true,
-          contactEmail: true,
-        };
+        id: true,
+        name: true,
+        purpose: true,
+        status: true,
+        createdAt: true,
+        contactEmail: true,
+      };
 
     const clubs = await prisma.club.findMany({
       where: whereClause,

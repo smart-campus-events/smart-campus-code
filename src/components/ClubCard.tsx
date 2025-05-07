@@ -1,3 +1,4 @@
+/* eslint-disable no-template-curly-in-string */
 // src/components/ClubCard.tsx
 import type { ClubWithDetails } from '@/types/prismaExtendedTypes'; // Adjust path
 import { useSession } from 'next-auth/react';
@@ -36,8 +37,8 @@ const ClubCard: React.FC<ClubCardProps> = ({ club }) => {
   useEffect(() => {
     if (session?.user && club.favoritedBy) {
       setIsFollowed(
-        club.favoritedBy.some(f => f.id === session.user?.id)
-        );
+        club.favoritedBy.some(f => f.id === session.user?.id),
+      );
     }
   }, [session, club.favoritedBy]);
 
@@ -115,7 +116,8 @@ const ClubCard: React.FC<ClubCardProps> = ({ club }) => {
                 style={{ width: '20px', height: '20px', lineHeight: '1' }}
                 aria-label="Previous categories"
               >
-                <i className="fas fa-chevron-left small" />{' '}
+                <i className="fas fa-chevron-left small" />
+                {' '}
               </Button>
             )}
 
@@ -130,7 +132,7 @@ const ClubCard: React.FC<ClubCardProps> = ({ club }) => {
                   >
                     {ec.category.name}
                   </Badge>
-                )
+                ),
               )}
             </div>
 
@@ -145,7 +147,8 @@ const ClubCard: React.FC<ClubCardProps> = ({ club }) => {
                 style={{ width: '20px', height: '20px', lineHeight: '1' }}
                 aria-label="Next categories"
               >
-                <i className="fas fa-chevron-right small" />{' '}
+                <i className="fas fa-chevron-right small" />
+                {' '}
               </Button>
             )}
           </Stack>
