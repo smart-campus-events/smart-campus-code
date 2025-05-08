@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 
 // GET /api/events - Get a list of events with optional filtering
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
+  const { searchParams } = request.nextUrl;
   const query = searchParams.get('q') || '';
   const categoryIds = searchParams.getAll('category');
   const page = parseInt(searchParams.get('page') || '1', 10);
