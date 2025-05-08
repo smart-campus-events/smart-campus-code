@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
         },
       } : {}),
       ...(pastEvents 
-        ? { startDateTime: { lt: currentDate } }  // Past events
+        ? { startDateTime: { lt: currentDate } } // Past events
         : { startDateTime: { gte: currentDate } } // Upcoming events (default)
       ),
       ...(attendanceType ? {

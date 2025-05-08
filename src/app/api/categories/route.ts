@@ -23,26 +23,26 @@ export async function GET(request: NextRequest) {
               where: {
                 club: {
                   status: ContentStatus.APPROVED,
-                }
-              }
+                },
+              },
             },
             // Also include events count
             events: {
               where: {
                 event: {
                   status: ContentStatus.APPROVED,
-                }
-              }
-            }
-          }
-        }
-      }
+                },
+              },
+            },
+          },
+        },
+      },
     });
 
     // Format the response to include counts based on context
     const formattedCategories = categories.map(category => {
       // Determine which count to use as the primary count based on context
-      let count = context === 'events' 
+      const count = context === 'events' 
         ? category._count.events 
         : category._count.clubs;
       

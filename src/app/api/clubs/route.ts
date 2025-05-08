@@ -110,7 +110,6 @@ export async function POST(request: NextRequest) {
 
     const {
       name,
-      logoUrl,
       purpose,
       primaryContactName,
       contactEmail,
@@ -172,7 +171,6 @@ export async function POST(request: NextRequest) {
     const club = await prisma.club.create({
       data: {
         name,
-        logoUrl,
         purpose,
         primaryContactName,
         contactEmail,

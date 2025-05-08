@@ -1,7 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import nextAuthOptionsConfig from '@/lib/authOptions';
-import { prisma } from '@/lib/prisma';
 import type { Session } from 'next-auth';
 
 // Type for session with user ID
