@@ -14,13 +14,18 @@
  * 2. Execute the script directly using Node.js: `node path/to/your/script/club-category-tagging.js` (adjust path as needed)
  */
 
-// Using require for CommonJS modules
-const { PrismaClient } = require('@prisma/client');
-const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
-const dotenv = require('dotenv');
-const path = require('path');
+// Using ES Module imports instead of CommonJS require
+import { PrismaClient } from '@prisma/client';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // --- Configuration ---
+
+// Get the directory name using ES modules approach
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Load environment variables (assuming .env is at the project root relative to CWD)
 // If running the script from within the 'scripts' folder, adjust the path.
