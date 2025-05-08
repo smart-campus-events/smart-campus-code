@@ -10,7 +10,7 @@
 export function formatDate(dateInput: Date | string): string {
   // Convert string to Date if needed
   const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
-  
+
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
@@ -26,7 +26,7 @@ export function formatDate(dateInput: Date | string): string {
 export function formatTime(dateInput: Date | string): string {
   // Convert string to Date if needed
   const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
-  
+
   return date.toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
@@ -42,7 +42,7 @@ export function formatTime(dateInput: Date | string): string {
 export function getRelativeTimeString(dateInput: Date | string): string {
   // Convert string to Date if needed
   const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
-  
+
   const now = new Date();
   const diffInMs = date.getTime() - now.getTime();
   const diffInSecs = Math.floor(diffInMs / 1000);
@@ -96,7 +96,7 @@ export function isSameDay(date1Input: Date | string, date2Input: Date | string):
   // Convert strings to Date objects if needed
   const date1 = typeof date1Input === 'string' ? new Date(date1Input) : date1Input;
   const date2 = typeof date2Input === 'string' ? new Date(date2Input) : date2Input;
-  
+
   return (
     date1.getFullYear() === date2.getFullYear()
     && date1.getMonth() === date2.getMonth()

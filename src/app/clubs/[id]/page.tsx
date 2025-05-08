@@ -1,8 +1,12 @@
 'use client';
 
+/* eslint-disable react/no-unescaped-entities */
+/* eslint-disable no-underscore-dangle */
+/* eslint-disable max-len */
+
 import React, { useState, useEffect } from 'react';
 import {
-  Container, Row, Col, Card, Badge, Button, Spinner, Alert, ListGroup, Tab, Nav,
+  Container, Row, Col, Card, Badge, Button, Spinner, Alert, ListGroup, Tab, Nav, Toast,
 } from 'react-bootstrap';
 import {
   GeoAlt, Calendar3, Link45deg, EnvelopeAt, People, Instagram, Facebook, Twitter,
@@ -10,30 +14,15 @@ import {
 } from 'react-bootstrap-icons';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useSession } from 'next-auth/react';
 
 // Define types
-interface Category {
-  id: string;
-  name: string;
-}
-
-interface ClubCategory {
-  category: Category;
-}
 
 interface Event {
   id: string;
   title: string;
   startDateTime: string;
   location: string | null;
-}
-
-interface User {
-  id: string;
-  name: string | null;
-  email: string;
 }
 
 interface Club {
@@ -56,6 +45,7 @@ interface Club {
     email: string;
   } | null;
   createdAt: string;
+  hostedEvents?: Event[];
   _count: {
     favoritedBy: number;
     hostedEvents: number;
@@ -67,25 +57,29 @@ export default function ClubDetailPage() {
   const params = useParams();
   const router = useRouter();
   const clubId = params.id as string;
-  
+
   const [club, setClub] = useState<Club | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('about');
   const [isFavorited, setIsFavorited] = useState(false);
   const [isLoadingFavorite, setIsLoadingFavorite] = useState(false);
+
+  // Toast notification state
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastVariant, setToastVariant] = useState<'danger' | 'success' | 'warning'>('danger');
 
   useEffect(() => {
     // Fetch club details
     const fetchClubDetails = async () => {
       if (!clubId) return;
-      
+
       setIsLoading(true);
       setError(null);
-      
+
       try {
         const response = await fetch(`/api/clubs/${clubId}`);
-        
+
         if (!response.ok) {
           if (response.status === 404) {
             throw new Error('Club not found');
@@ -95,7 +89,7 @@ export default function ClubDetailPage() {
             throw new Error('Failed to load club details');
           }
         }
-        
+
         const data = await response.json();
         setClub(data);
       } catch (err: any) {
@@ -105,7 +99,7 @@ export default function ClubDetailPage() {
         setIsLoading(false);
       }
     };
-    
+
     fetchClubDetails();
   }, [clubId]);
 
@@ -113,7 +107,7 @@ export default function ClubDetailPage() {
   useEffect(() => {
     const checkFavoriteStatus = async () => {
       if (!session?.user || status !== 'authenticated' || !clubId) return;
-      
+
       setIsLoadingFavorite(true);
       try {
         const response = await fetch('/api/user/favorites');
@@ -122,25 +116,28 @@ export default function ClubDetailPage() {
         }
         const data = await response.json();
         setIsFavorited(data.favoriteClubIds.includes(clubId));
-      } catch (error) {
-        console.error('Error checking favorite status:', error);
+      } catch (err) { // Renamed from 'error' to 'err' to fix shadowing issue
+        console.error('Error checking favorite status:', err);
       } finally {
         setIsLoadingFavorite(false);
       }
     };
-    
+
     checkFavoriteStatus();
   }, [session, status, clubId]);
 
   const handleFollowClub = async () => {
     if (status !== 'authenticated') {
-      alert('Please sign in to follow this club');
+      // Show toast instead of alert
+      setToastVariant('warning');
+      setToastMessage('Please sign in to follow this club');
+      setShowToast(true);
       return;
     }
-    
+
     try {
       setIsLoadingFavorite(true);
-      
+
       // Optimistically update UI
       setIsFavorited(!isFavorited);
       if (club) {
@@ -148,13 +145,13 @@ export default function ClubDetailPage() {
           ...club,
           _count: {
             ...club._count,
-            favoritedBy: isFavorited 
-              ? club._count.favoritedBy - 1 
-              : club._count.favoritedBy + 1
-          }
+            favoritedBy: isFavorited
+              ? club._count.favoritedBy - 1
+              : club._count.favoritedBy + 1,
+          },
         });
       }
-      
+
       // Make the API call
       const method = isFavorited ? 'DELETE' : 'POST';
       const response = await fetch(`/api/clubs/${clubId}/favorite`, {
@@ -167,11 +164,11 @@ export default function ClubDetailPage() {
       if (!response.ok) {
         throw new Error(`Failed to ${isFavorited ? 'unfollow' : 'follow'} club`);
       }
-      
+
       // No need to update state here since we already did it optimistically
     } catch (err: any) {
       console.error('Error following club:', err);
-      
+
       // Revert the optimistic updates on error
       setIsFavorited(!isFavorited);
       if (club) {
@@ -179,14 +176,17 @@ export default function ClubDetailPage() {
           ...club,
           _count: {
             ...club._count,
-            favoritedBy: isFavorited 
-              ? club._count.favoritedBy + 1 
-              : club._count.favoritedBy - 1
-          }
+            favoritedBy: isFavorited
+              ? club._count.favoritedBy + 1
+              : club._count.favoritedBy - 1,
+          },
         });
       }
-      
-      alert(`Error: ${err.message}`);
+
+      // Show toast instead of alert
+      setToastVariant('danger');
+      setToastMessage(`Error: ${err.message}`);
+      setShowToast(true);
     } finally {
       setIsLoadingFavorite(false);
     }
@@ -237,6 +237,28 @@ export default function ClubDetailPage() {
   // Render Club Details
   return (
     <Container className="my-4">
+      {/* Toast notification component */}
+      <div
+        className="position-fixed bottom-0 end-0 p-3"
+        style={{ zIndex: 1050 }}
+      >
+        <Toast
+          onClose={() => setShowToast(false)}
+          show={showToast}
+          delay={5000}
+          autohide
+          bg={toastVariant}
+          className="text-white"
+        >
+          <Toast.Header>
+            <strong className="me-auto">
+              {toastVariant === 'danger' ? 'Error' : 'Notification'}
+            </strong>
+          </Toast.Header>
+          <Toast.Body>{toastMessage}</Toast.Body>
+        </Toast>
+      </div>
+
       {/* Breadcrumb Navigation */}
       <div className="mb-4">
         <Link href="/clubs" className="text-decoration-none">
@@ -253,14 +275,14 @@ export default function ClubDetailPage() {
                 <Building size={50} className="text-secondary" />
               </div>
             </Col>
-            
+
             <Col md={7}>
               <h1 className="h2 mb-1">{club.name}</h1>
               <div className="mb-2">
                 {club.categories.map(cat => (
-                  <Badge 
-                    key={cat.category.id} 
-                    bg="secondary" 
+                  <Badge
+                    key={cat.category.id}
+                    bg="secondary"
                     className="me-1"
                   >
                     {cat.category.name}
@@ -270,23 +292,31 @@ export default function ClubDetailPage() {
               <div className="text-muted small d-flex align-items-center flex-wrap">
                 {club.meetingLocation && (
                   <span className="me-3 d-flex align-items-center">
-                    <GeoAlt className="me-1" /> {club.meetingLocation}
+                    <GeoAlt className="me-1" />
+                    {' '}
+                    {club.meetingLocation}
                   </span>
                 )}
                 {club.meetingTime && (
                   <span className="me-3 d-flex align-items-center">
-                    <Calendar3 className="me-1" /> {club.meetingTime}
+                    <Calendar3 className="me-1" />
+                    {' '}
+                    {club.meetingTime}
                   </span>
                 )}
                 <span className="d-flex align-items-center">
-                  <People className="me-1" /> {club._count.favoritedBy} followers
+                  <People className="me-1" />
+                  {' '}
+                  {club._count.favoritedBy}
+                  {' '}
+                  followers
                 </span>
               </div>
             </Col>
-            
+
             <Col md={3} className="text-md-end">
-              <Button 
-                variant={isFavorited ? "outline-primary" : "primary"}
+              <Button
+                variant={isFavorited ? 'outline-primary' : 'primary'}
                 className="mb-2 w-100"
                 onClick={handleFollowClub}
                 disabled={isLoadingFavorite}
@@ -302,19 +332,21 @@ export default function ClubDetailPage() {
               </Button>
               <div className="d-flex justify-content-md-end justify-content-center gap-2">
                 {club.websiteUrl && (
-                  <a 
-                    href={club.websiteUrl} 
-                    target="_blank" 
+                  <a
+                    href={club.websiteUrl}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="btn btn-sm btn-outline-secondary"
                   >
-                    <Link45deg /> Website
+                    <Link45deg />
+                    {' '}
+                    Website
                   </a>
                 )}
                 {club.instagramUrl && (
-                  <a 
-                    href={club.instagramUrl} 
-                    target="_blank" 
+                  <a
+                    href={club.instagramUrl}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="btn btn-sm btn-outline-secondary"
                   >
@@ -322,9 +354,9 @@ export default function ClubDetailPage() {
                   </a>
                 )}
                 {club.facebookUrl && (
-                  <a 
-                    href={club.facebookUrl} 
-                    target="_blank" 
+                  <a
+                    href={club.facebookUrl}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="btn btn-sm btn-outline-secondary"
                   >
@@ -332,9 +364,9 @@ export default function ClubDetailPage() {
                   </a>
                 )}
                 {club.twitterUrl && (
-                  <a 
-                    href={club.twitterUrl} 
-                    target="_blank" 
+                  <a
+                    href={club.twitterUrl}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="btn btn-sm btn-outline-secondary"
                   >
@@ -359,7 +391,9 @@ export default function ClubDetailPage() {
                   </Nav.Item>
                   <Nav.Item>
                     <Nav.Link eventKey="events">
-                      Events {club._count.hostedEvents > 0 && `(${club._count.hostedEvents})`}
+                      Events
+                      {' '}
+                      {club._count.hostedEvents > 0 && `(${club._count.hostedEvents})`}
                     </Nav.Link>
                   </Nav.Item>
                 </Nav>
@@ -369,7 +403,7 @@ export default function ClubDetailPage() {
                   <Tab.Pane eventKey="about">
                     <h3 className="h5 mb-3">About This Club</h3>
                     <p className="mb-4">{club.purpose}</p>
-                    
+
                     {club.joinInfo && (
                       <>
                         <h3 className="h5 mb-3">How To Join</h3>
@@ -393,7 +427,7 @@ export default function ClubDetailPage() {
                                     month: 'short',
                                     day: 'numeric',
                                     hour: 'numeric',
-                                    minute: '2-digit'
+                                    minute: '2-digit',
                                   })}
                                 </span>
                                 {event.location && (
@@ -421,7 +455,7 @@ export default function ClubDetailPage() {
             </Card>
           </Tab.Container>
         </Col>
-        
+
         <Col lg={4}>
           <Card className="border-0 shadow-sm mb-4">
             <Card.Body>
@@ -467,4 +501,4 @@ export default function ClubDetailPage() {
       </Row>
     </Container>
   );
-} 
+}

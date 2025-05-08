@@ -13,13 +13,14 @@ interface Category {
 interface CategoryFilterProps {
   onApplyFilters: (categories: string[]) => void;
   activeFilters: string[];
+  // eslint-disable-next-line react/require-default-props
   context?: 'clubs' | 'events'; // Optional context prop to determine filtering behavior
 }
 
-const CategoryFilter: React.FC<CategoryFilterProps> = ({ 
-  onApplyFilters, 
-  activeFilters, 
-  context = 'clubs' // Default to clubs for backward compatibility
+const CategoryFilter: React.FC<CategoryFilterProps> = ({
+  onApplyFilters,
+  activeFilters,
+  context = 'clubs', // Default to clubs for backward compatibility
 }) => {
   const [show, setShow] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -80,8 +81,8 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
   };
 
   // Determine the appropriate title based on context
-  const modalTitle = context === 'events' 
-    ? 'Filter Events by Category' 
+  const modalTitle = context === 'events'
+    ? 'Filter Events by Category'
     : 'Filter Clubs by Category';
 
   return (

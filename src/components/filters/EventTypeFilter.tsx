@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Dropdown } from 'react-bootstrap';
+import { Dropdown } from 'react-bootstrap';
 import { Calendar3 } from 'react-bootstrap-icons';
 
 // Define attendance types that match the Prisma schema
@@ -43,17 +43,17 @@ const EventTypeFilter: React.FC<EventTypeFilterProps> = ({ onTypeChange, activeT
         <span className="me-auto">{getSelectedTypeLabel()}</span>
       </Dropdown.Toggle>
       <Dropdown.Menu>
-        <Dropdown.Item 
-          eventKey={null as any} 
+        <Dropdown.Item
+          eventKey={null as any}
           active={selectedType === null}
           onClick={() => handleTypeSelect(null)}
         >
           All Event Types
         </Dropdown.Item>
         {ATTENDANCE_TYPES.map(type => (
-          <Dropdown.Item 
-            key={type.value} 
-            eventKey={type.value} 
+          <Dropdown.Item
+            key={type.value}
+            eventKey={type.value}
             active={selectedType === type.value}
           >
             {type.label}
@@ -64,4 +64,4 @@ const EventTypeFilter: React.FC<EventTypeFilterProps> = ({ onTypeChange, activeT
   );
 };
 
-export default EventTypeFilter; 
+export default EventTypeFilter;

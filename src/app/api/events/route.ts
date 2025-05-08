@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
           },
         },
       } : {}),
-      ...(pastEvents 
+      ...(pastEvents
         ? { startDateTime: { lt: currentDate } } // Past events
         : { startDateTime: { gte: currentDate } } // Upcoming events (default)
       ),
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
 
     // Determine sort options based on sort parameter
     let orderBy: Prisma.EventOrderByWithRelationInput;
-    
+
     switch (sort) {
       case 'date-desc':
         orderBy = { startDateTime: 'desc' };

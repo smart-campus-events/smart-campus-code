@@ -1,13 +1,18 @@
 'use client';
 
+/* eslint-disable max-len */
+/* eslint-disable no-underscore-dangle */
+/* eslint-disable react/no-unescaped-entities */
+/* eslint-disable no-nested-ternary */
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Container, Row, Col, Card, Form, Button, Badge, InputGroup,
   Dropdown, Pagination, Breadcrumb, ButtonGroup, Spinner, Alert,
 } from 'react-bootstrap';
 import {
-  Search, X, Bookmark, BookmarkFill, Clock, GeoAlt, Grid3x3GapFill, ListUl,
-  ChevronLeft, ChevronRight, Calendar2Event, Globe, 
+  Search, X, Bookmark, BookmarkFill, GeoAlt, Grid3x3GapFill, ListUl,
+  ChevronLeft, ChevronRight, Calendar2Event, Globe,
 } from 'react-bootstrap-icons';
 import Link from 'next/link';
 import debounce from 'lodash/debounce';
@@ -50,10 +55,10 @@ interface Event {
 }
 
 interface PaginationInfo {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }
 
 // Interface for the API-returned category with count
@@ -95,24 +100,24 @@ export default function EventsPage() {
 
   // Create a stable fetch function
   const fetchEventsData = useCallback(async (
-    page = 1, 
-    search = '', 
-    sort = 'date-asc', 
-    categoryIds: string[] = [], 
+    page = 1,
+    search = '',
+    sort = 'date-asc',
+    categoryIds: string[] = [],
     pastEvents = false,
-    eventType: string | null = null
+    eventType: string | null = null,
   ) => {
-      setIsLoading(true);
-      setError(null);
+    setIsLoading(true);
+    setError(null);
     try {
       // Build URL with multiple category parameters if needed
       let url = `/api/events?page=${page}&limit=${EVENTS_PER_PAGE}&q=${search}&sort=${sort}&pastEvents=${pastEvents}`;
-      
+
       // Add category filters
       categoryIds.forEach(id => {
         url += `&category=${id}`;
       });
-      
+
       // Add attendance type filter if selected
       if (eventType) {
         url += `&attendanceType=${eventType}`;
@@ -123,15 +128,15 @@ export default function EventsPage() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-        setEvents(data.events);
-        setPagination(data.pagination);
+      setEvents(data.events);
+      setPagination(data.pagination);
     } catch (err: any) {
       console.error('Failed to fetch events:', err);
       setError(err.message || 'Failed to load events. Please try refreshing.');
       setEvents([]);
       setPagination(null);
-      } finally {
-        setIsLoading(false);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -231,7 +236,7 @@ export default function EventsPage() {
 
   const handlePageChange = (pageNumber: number) => {
     if (pageNumber !== currentPage) {
-    setCurrentPage(pageNumber);
+      setCurrentPage(pageNumber);
     }
   };
 
@@ -273,9 +278,9 @@ export default function EventsPage() {
     try {
       // Use this to display in Hawaii time
       const options = { timeZone: 'Pacific/Honolulu' };
-      
+
       const start = new Date(event.startDateTime);
-      
+
       // Create formatter for Hawaii time
       const formatInHST = (date: Date, pattern: string) => {
         // Convert to Hawaii time string
@@ -283,16 +288,16 @@ export default function EventsPage() {
         // Format using the pattern
         return format(dateInHST, pattern);
       };
-      
+
       // Check if time is midnight (likely a default/placeholder)
       const hawaiiStart = new Date(start.toLocaleString('en-US', options));
       const isMidnight = hawaiiStart.getHours() === 0 && hawaiiStart.getMinutes() === 0;
-      
+
       // If midnight, only show the date
       if (isMidnight) {
         return formatInHST(start, 'MMM d, yyyy');
       }
-      
+
       // Just show the date and start time, no end time (matching UH Manoa calendar style)
       return formatInHST(start, 'MMM d, yyyy - h:mm a');
     } catch (e) {
@@ -307,7 +312,12 @@ export default function EventsPage() {
       case 'ONLINE':
         return <Globe className="me-1" />;
       case 'HYBRID':
-        return <><GeoAlt className="me-1" /><Globe className="ms-1 me-1" /></>;
+        return (
+          <>
+            <GeoAlt className="me-1" />
+            <Globe className="ms-1 me-1" />
+          </>
+        );
       case 'IN_PERSON':
       default:
         return <GeoAlt className="me-1" />;
@@ -326,20 +336,20 @@ export default function EventsPage() {
       for (let number = 1; number <= totalPages; number++) {
         items.push(
           <Pagination.Item key={number} active={number === currentPage} onClick={() => handlePageChange(number)}>
-          {number}
+            {number}
+          </Pagination.Item>,
+        );
+      }
+    } else {
+      items.push(
+        <Pagination.Item
+          key={1}
+          active={currentPage === 1}
+          onClick={() => handlePageChange(1)}
+        >
+          {1}
         </Pagination.Item>,
       );
-    }
-  } else {
-      items.push(
-      <Pagination.Item
-        key={1}
-        active={currentPage === 1}
-        onClick={() => handlePageChange(1)}
-      >
-        {1}
-      </Pagination.Item>,
-    );
 
       const startEllipsisNeeded = currentPage > maxPagesToShow - 1;
       const endEllipsisNeeded = currentPage < totalPages - (maxPagesToShow - 2);
@@ -358,7 +368,7 @@ export default function EventsPage() {
         startPage = totalPages - (maxPagesToShow - 2);
       }
 
-    for (let number = startPage; number <= endPage; number++) {
+      for (let number = startPage; number <= endPage; number++) {
         items.push(
           <Pagination.Item key={number} active={number === currentPage} onClick={() => handlePageChange(number)}>
             {number}
@@ -452,13 +462,13 @@ export default function EventsPage() {
           <Card.Body>
             <Row className="g-3 align-items-center">
               <Col md={5}>
-                  <InputGroup>
-                    <InputGroup.Text><Search /></InputGroup.Text>
-                    <Form.Control
+                <InputGroup>
+                  <InputGroup.Text><Search /></InputGroup.Text>
+                  <Form.Control
                     placeholder="Search events..."
-                      value={searchTerm}
-                      onChange={handleSearchChange}
-                    />
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                  />
                   {searchTerm && (
                     <Button
                       variant="light"
@@ -467,7 +477,7 @@ export default function EventsPage() {
                       <X />
                     </Button>
                   )}
-                  </InputGroup>
+                </InputGroup>
               </Col>
               <Col md={3}>
                 <CategoryFilter
@@ -487,10 +497,10 @@ export default function EventsPage() {
                   <Dropdown.Toggle variant="light" className="w-100 text-start" id="sort-dropdown">
                     Sort:
                     {' '}
-                    {sortBy === 'date-asc' ? 'Date: Soonest' :
-                      sortBy === 'date-desc' ? 'Date: Latest' :
-                      sortBy === 'title-asc' ? 'Title: A-Z' :
-                      'Title: Z-A'}
+                    {sortBy === 'date-asc' ? 'Date: Soonest'
+                      : sortBy === 'date-desc' ? 'Date: Latest'
+                        : sortBy === 'title-asc' ? 'Title: A-Z'
+                          : 'Title: Z-A'}
                   </Dropdown.Toggle>
                   <Dropdown.Menu>
                     <Dropdown.Item eventKey="date-asc" active={sortBy === 'date-asc'}>Date: Soonest</Dropdown.Item>
@@ -508,26 +518,26 @@ export default function EventsPage() {
         {activeFilterNames.length > 0 && (
           <div className="mb-4 d-flex flex-wrap gap-2">
             {activeFilterNames.map(filter => (
-                  <Badge
-                    key={filter}
-                    pill
+              <Badge
+                key={filter}
+                pill
                 bg="light"
                 text="dark"
                 className="py-2 px-3 d-flex align-items-center"
-                  >
-                    {filter}
-                    <Button
-                      variant="link"
+              >
+                {filter}
+                <Button
+                  variant="link"
                   className="p-0 ms-2 text-danger"
-                      onClick={() => handleRemoveFilter(filter)}
-                      aria-label={`Remove ${filter} filter`}
-                    >
+                  onClick={() => handleRemoveFilter(filter)}
+                  aria-label={`Remove ${filter} filter`}
+                >
                   <X size={14} />
-                    </Button>
-                  </Badge>
-                ))}
-              </div>
-            )}
+                </Button>
+              </Badge>
+            ))}
+          </div>
+        )}
 
         {/* Results Count */}
         <p className="text-muted small mb-4">
@@ -611,8 +621,11 @@ export default function EventsPage() {
                         <div className="mt-auto">
                           {event.organizerSponsor && (
                           <div className="d-flex align-items-center text-muted small mb-2">
-                              <span>Organized by: {event.organizerClub ? event.organizerClub.name : event.organizerSponsor}</span>
-                            </div>
+                            <span>
+                              Organized by:
+                              {event.organizerClub ? event.organizerClub.name : event.organizerSponsor}
+                            </span>
+                          </div>
                           )}
                           <div className="d-flex flex-wrap gap-1">
                             {event.categories.slice(0, 3).map(ec => (
@@ -632,9 +645,9 @@ export default function EventsPage() {
                           </div>
                           {event.eventUrl && (
                             <div className="mt-2">
-                              <a 
-                                href={event.eventUrl} 
-                                target="_blank" 
+                              <a
+                                href={event.eventUrl}
+                                target="_blank"
                                 rel="noopener noreferrer"
                                 className="btn btn-outline-secondary btn-sm position-relative z-1"
                                 onClick={(e) => e.stopPropagation()}
@@ -671,11 +684,14 @@ export default function EventsPage() {
                               <span className="text-muted fst-italic">No description available</span>
                             )}
                           </p>
-                          </div>
+                        </div>
                         <div className="text-end flex-shrink-0">
                           {event.organizerSponsor && (
                             <div className="text-muted small mb-2">
-                              <span>By: {event.organizerClub ? event.organizerClub.name : event.organizerSponsor}</span>
+                              <span>
+                                By:
+                                {event.organizerClub ? event.organizerClub.name : event.organizerSponsor}
+                              </span>
                             </div>
                           )}
                           <div className="d-flex flex-wrap gap-1 justify-content-end">
@@ -687,9 +703,9 @@ export default function EventsPage() {
                           </div>
                           {event.eventUrl && (
                             <div className="mt-2">
-                              <a 
-                                href={event.eventUrl} 
-                                target="_blank" 
+                              <a
+                                href={event.eventUrl}
+                                target="_blank"
                                 rel="noopener noreferrer"
                                 className="btn btn-outline-secondary btn-sm position-relative z-1"
                                 onClick={(e) => e.stopPropagation()}
@@ -719,7 +735,7 @@ export default function EventsPage() {
             >
               <ChevronLeft size={14} />
             </Pagination.Prev>
-              {renderPaginationItems()}
+            {renderPaginationItems()}
             <Pagination.Next
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === pagination.totalPages}
