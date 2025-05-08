@@ -2,14 +2,14 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Alert, Spinner, Container, Row, Col } from 'react-bootstrap'; // Assuming use of react-bootstrap
+import { useEffect, useState } from 'react';
+import { Alert, Col, Container, Row, Spinner } from 'react-bootstrap'; // Assuming use of react-bootstrap
 // Import your EventCard component (adjust path as needed)
 import EventCard from '@/components/EventCard';
 // Import the NEW ClubCard component (adjust path as needed)
 import ClubCard from '@/components/ClubCard';
 // Import types (adjust paths as needed)
-import type { EventWithDetails, ClubWithDetails } from '@/types/prismaExtendedTypes';
+import type { ClubWithDetails, EventWithDetails } from '@/types/prismaExtendedTypes';
 
 interface ApiResponse {
   topRecommendations: EventWithDetails[];
@@ -52,7 +52,9 @@ export default function SuggestionsPage() {
         <Row xs={1} md={2} lg={3} className="g-4">
           {events.map((event) => (
             <Col key={event.id}>
-              <EventCard event={event} />
+              <EventCard
+                event={event}
+              />
             </Col>
           ))}
         </Row>

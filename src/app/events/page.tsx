@@ -1,16 +1,32 @@
 'use client';
 
+import Image from 'next/image';
+import Link from 'next/link';
 import React, { useState } from 'react';
 import {
-  Container, Row, Col, Card, Form, Button, Badge, InputGroup,
-  Dropdown, Pagination, Breadcrumb, ButtonGroup,
+  Badge,
+  Breadcrumb,
+  Button,
+  ButtonGroup,
+  Card,
+  Col,
+  Container,
+  Dropdown,
+  Form,
+  InputGroup,
+  Pagination,
+  Row,
 } from 'react-bootstrap';
 import {
-  Search, Funnel, X, CalendarEvent, GeoAlt, // Changed Clock to CalendarEvent, Added GeoAlt
-  Grid3x3GapFill, ListUl, ChevronLeft, ChevronRight, Star, // Added Star as an alternative bookmark icon
+  CalendarEvent,
+  ChevronLeft, ChevronRight,
+  Funnel,
+  GeoAlt, // Changed Clock to CalendarEvent, Added GeoAlt
+  Grid3x3GapFill, ListUl,
+  Search,
+  Star,
+  X,
 } from 'react-bootstrap-icons';
-import Link from 'next/link';
-import Image from 'next/image';
 
 // TODO: Replace hardcoded data with actual data fetching, filtering, sorting, pagination
 // TODO: Implement filter modal/offcanvas functionality
@@ -179,7 +195,7 @@ export default function EventsPage() {
   }
 
   return (
-    <div className="bg-light min-vh-100">
+    <div className="bg-light min-vh-100 overflow-auto">
       {/* Assuming Header/Navigation is handled by the main layout */}
 
       <Container className="py-4 py-md-5">

@@ -39,18 +39,23 @@ interface ProfileData {
   createdAt: string;
 }
 
+// shape of each saved event coming back from your API
+interface SavedEvent {
+  id: string;
+  title: string;
+  startDateTime: string; // ISO string
+  location: string;
+}
+
 export default function ProfilePage() {
   const router = useRouter();
+
   const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [savedEvents, setSavedEvents] = useState<SavedEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // dummy data for Saved Events / My RIOs
-  const savedEvents = [
-    { month: 'MAR', day: '15', name: 'Tech Meetup', details: '6:00 PM – Campus Center' },
-    { month: 'MAR', day: '20', name: 'Beach Cleanup', details: '9:00 AM – Ala Moana' },
-  ];
-
+  // dummy data for My RIOs
   const myRios = [
     {
       imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg',
@@ -67,6 +72,7 @@ export default function ProfilePage() {
   useEffect(() => {
     (async () => {
       try {
+        // 1) load profile
         const res = await fetch('/api/profileapi/profile', { credentials: 'include' });
         if (res.status === 401) {
           router.push('/login');
@@ -77,6 +83,17 @@ export default function ProfilePage() {
         }
         const data: ProfileData = await res.json();
         setProfile(data);
+
+        // 2) fetch all saved events
+        const evRes = await fetch('/api/savedEvents', { credentials: 'include' });
+        if (!evRes.ok) {
+          throw new Error(`Could not fetch saved events: ${evRes.status}`);
+        }
+        const allEvents: SavedEvent[] = await evRes.json();
+
+        // 3) shuffle & keep two at random
+        const shuffled = allEvents.sort(() => 0.5 - Math.random());
+        setSavedEvents(shuffled.slice(0, 2));
       } catch (e: any) {
         setError(e.message);
       } finally {
@@ -114,8 +131,12 @@ export default function ProfilePage() {
     ? `${profile.firstName}${profile.lastName ? ` ${profile.lastName}` : ''}`
     : profile.email;
 
+  // helper to format date/time
+  const fmtDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+
   return (
-    <div className="bg-light min-vh-100">
+    <div className="bg-light min-vh-100 overflow-auto">
       <Container className="py-4 py-md-5">
         {/* Profile Header */}
         <Row className="justify-content-center mb-5">
@@ -139,8 +160,7 @@ export default function ProfilePage() {
                   's Profile
                 </h1>
                 <p className="text-muted mb-0">
-                  Member since
-                  {' '}
+                  Member since&nbsp;
                   {profile.createdAt
                     ? new Date(profile.createdAt).toLocaleDateString(undefined, {
                       year: 'numeric',
@@ -157,7 +177,6 @@ export default function ProfilePage() {
                 onClick={() => router.push('/profile/edit')}
               >
                 <PencilSquare className="me-1" />
-                {' '}
                 Edit Profile
               </Button>
               <Button
@@ -166,7 +185,6 @@ export default function ProfilePage() {
                 onClick={() => router.push('/api/auth/signout')}
               >
                 <BoxArrowRight className="me-1" />
-                {' '}
                 Logout
               </Button>
             </div>
@@ -269,18 +287,26 @@ export default function ProfilePage() {
               <Card className="shadow-sm">
                 <Card.Body>
                   <Card.Title className="h5 mb-4">Saved Events</Card.Title>
-                  {savedEvents.map((e, idx) => (
-                    <div key={idx} className="d-flex mb-3">
-                      <div className="text-center me-3">
-                        <h6 className="mb-0">{e.month}</h6>
-                        <p className="h4 mb-0">{e.day}</p>
+                  {savedEvents.map((e) => {
+                    const [month, dayNum] = fmtDate(e.startDateTime).split(' ');
+                    return (
+                      <div key={e.id} className="d-flex mb-3">
+                        <div className="text-center me-3">
+                          <h6 className="mb-0">{month}</h6>
+                          <p className="h4 mb-0">{dayNum}</p>
+                        </div>
+                        <div>
+                          <p className="fw-semibold mb-1">{e.title}</p>
+                          <p className="text-muted mb-0">
+                            {fmtTime(e.startDateTime)}
+                            {' '}
+                            –
+                            {e.location}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="fw-semibold mb-1">{e.name}</p>
-                        <p className="text-muted mb-0">{e.details}</p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   <div className="text-center mt-3">
                     <Button variant="primary" size="sm" onClick={() => router.push('/events')}>
                       View All Events
