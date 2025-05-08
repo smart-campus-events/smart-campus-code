@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma'; // Reverted: Removed .ts extension
 
 // GET /api/clubs - Get a list of clubs with optional filtering
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
+  const searchParams = request.nextUrl.searchParams;
   const query = searchParams.get('q') || '';
   const categoryIds = searchParams.getAll('category');
   const page = parseInt(searchParams.get('page') || '1', 10);

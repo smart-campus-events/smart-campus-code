@@ -8,8 +8,7 @@ import { ContentStatus } from '@prisma/client';
 /* eslint-disable import/prefer-default-export, no-underscore-dangle */
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const context = searchParams.get('context');
+    const context = request.nextUrl.searchParams.get('context');
 
     // Get categories with appropriate counts based on context
     const categories = await prisma.category.findMany({

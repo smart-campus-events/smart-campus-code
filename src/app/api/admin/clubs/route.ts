@@ -26,7 +26,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  const { searchParams } = new URL(request.url);
+  const searchParams = request.nextUrl.searchParams;
   const statusFilter = searchParams.get('status') as string | null;
   const minimal = searchParams.get('minimal') === 'true'; // Check for minimal flag
   const page = parseInt(searchParams.get('page') || '1', 10);
