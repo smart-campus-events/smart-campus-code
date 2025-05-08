@@ -5,11 +5,12 @@ import { ContentStatus } from '@prisma/client';
 // GET /api/categories
 // Fetches the list of all available categories with counts for clubs and/or events
 // Optional query param: ?context=events or ?context=clubs
+/* eslint-disable import/prefer-default-export, no-underscore-dangle */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const context = searchParams.get('context');
-    
+
     // Get categories with appropriate counts based on context
     const categories = await prisma.category.findMany({
       orderBy: {
@@ -42,10 +43,10 @@ export async function GET(request: NextRequest) {
     // Format the response to include counts based on context
     const formattedCategories = categories.map(category => {
       // Determine which count to use as the primary count based on context
-      const count = context === 'events' 
-        ? category._count.events 
+      const count = context === 'events'
+        ? category._count.events
         : category._count.clubs;
-      
+
       return {
         id: category.id,
         name: category.name,

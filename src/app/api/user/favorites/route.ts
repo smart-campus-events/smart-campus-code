@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // type SessionWithId = Session & { user: Session['user'] & { id: string } };
 
 // GET /api/user/favorites - Get all clubs favorited by the current user
+/* eslint-disable import/prefer-default-export, @typescript-eslint/no-unused-vars */
 export async function GET(_request: NextRequest) {
   // TEMPORARILY SKIPPING AUTHENTICATION
   // Get user session and verify authentication

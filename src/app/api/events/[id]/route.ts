@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 // GET /api/events/[id] - Get a single event by ID
+/* eslint-disable import/prefer-default-export */
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } },
@@ -49,4 +50,4 @@ export async function GET(
       { status: 500 },
     );
   }
-} 
+}

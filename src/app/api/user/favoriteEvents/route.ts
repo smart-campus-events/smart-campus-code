@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { Session } from 'next-auth';
 
 // Type for session with user ID
+/* eslint-disable @typescript-eslint/no-unused-vars */
 type SessionWithId = Session & { user: Session['user'] & { id: string } };
 
 // GET /api/user/favoriteEvents - Get all events favorited by the current user
+/* eslint-disable import/prefer-default-export */
 export async function GET(_request: NextRequest) {
   // TEMPORARILY SKIPPING AUTHENTICATION
   // Get user session and verify authentication
