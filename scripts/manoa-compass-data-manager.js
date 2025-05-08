@@ -1,15 +1,15 @@
 /**
  * Manoa Compass Data Manager
- * 
+ *
  * A comprehensive script that combines the essential functionality for:
  * 1. Importing clubs with email addresses
  * 2. Importing UH events
  * 3. Cleaning and standardizing categories
  * 4. Checking database contents
- * 
- * Usage: 
+ *
+ * Usage:
  *   node scripts/manoa-compass-data-manager.js [command]
- * 
+ *
  * Commands:
  *   import-clubs     - Import clubs from Google Sheet
  *   import-events    - Import events from UH Manoa calendar
@@ -20,8 +20,6 @@
  */
 
 const { PrismaClient, ContentStatus } = require('@prisma/client');
-const fs = require('fs');
-const path = require('path');
 const prisma = new PrismaClient();
 
 // Check for required dependencies
@@ -48,8 +46,8 @@ try {
 }
 
 // Configuration
-const GOOGLE_SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID || "1vK_ixq3a86uXjHXy9oNnyYHwAvyU9smNPKuJU6OYd-Q";
-const GOOGLE_SHEET_GID = process.env.GOOGLE_SHEET_GID || "828154192";
+const GOOGLE_SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID || '1vK_ixq3a86uXjHXy9oNnyYHwAvyU9smNPKuJU6OYd-Q';
+const GOOGLE_SHEET_GID = process.env.GOOGLE_SHEET_GID || '828154192';
 
 // Important clubs that should always be included
 const IMPORTANT_CLUBS = [
@@ -59,54 +57,8 @@ const IMPORTANT_CLUBS = [
   'Financial Management Association (FMA)',
   'Information Technology Management Association',
   'ASCE Student Chapter University of Hawaii at Manoa',
-  'HKN Mu Delta'
+  'HKN Mu Delta',
 ];
-
-// Main function to handle command line args and execute appropriate functions
-async function main() {
-  const args = process.argv.slice(2);
-  const command = args[0] || 'check-data';
-  
-  try {
-    console.log(`====== Manoa Compass Data Manager ======`);
-    console.log(`Executing command: ${command}`);
-    
-    switch (command) {
-      case 'import-clubs':
-        await importClubs();
-        break;
-      case 'import-events':
-        await importEvents();
-        break;
-      case 'clean-categories':
-        await cleanCategories();
-        break;
-      case 'approve-all':
-        await approveAll();
-        break;
-      case 'check-data':
-        await checkData();
-        break;
-      case 'run-all':
-        console.log('Running all commands in sequence...');
-        await importClubs();
-        await importEvents();
-        await cleanCategories();
-        await approveAll();
-        await checkData();
-        break;
-      default:
-        console.log(`Unknown command: ${command}`);
-        console.log('Available commands: import-clubs, import-events, clean-categories, approve-all, check-data, run-all');
-    }
-    
-    console.log(`\n====== Command Completed ======`);
-  } catch (error) {
-    console.error('Error during execution:', error);
-  } finally {
-    await prisma.$disconnect();
-  }
-}
 
 // ===== IMPORT CLUBS =====
 async function importClubs() {
@@ -123,7 +75,7 @@ async function importClubs() {
     // Parse CSV data
     const records = parse(csvData, {
       columns: false,
-      skip_empty_lines: true
+      skip_empty_lines: true,
     });
     
     // Find the header row (usually row 8)
@@ -162,13 +114,13 @@ async function importClubs() {
     const academicCategory = await prisma.category.upsert({
       where: { name: 'Academic' },
       update: {},
-      create: { name: 'Academic' }
+      create: { name: 'Academic' },
     });
     
     const professionalCategory = await prisma.category.upsert({
       where: { name: 'Professional' },
       update: {},
-      create: { name: 'Professional' }
+      create: { name: 'Professional' },
     });
     
     // Process each row starting from the row after the header
@@ -177,6 +129,9 @@ async function importClubs() {
     const seenClubNames = new Set();
     let importedCount = 0;
     let skippedCount = 0;
+    
+    // Prepare all rows for processing
+    const clubsToCreate = [];
     
     for (let i = headerRow + 1; i < records.length; i++) {
       const row = records[i];
@@ -189,13 +144,14 @@ async function importClubs() {
       // Skip if we've already seen this club name
       if (seenClubNames.has(clubName.toLowerCase())) {
         skippedCount++;
-        continue;
+        continue; // Skip duplicate club names
       }
       
       // Skip rows that are not actually club names (e.g., section headers, notes)
-      if (clubName.includes(':') || clubName.startsWith('*') || clubName.startsWith('(') || clubName.startsWith('-')) {
+      if (clubName.includes(':') || clubName.startsWith('*') || 
+          clubName.startsWith('(') || clubName.startsWith('-')) {
         skippedCount++;
-        continue;
+        continue; // Skip non-club name rows
       }
       
       // Get email address if available
@@ -205,7 +161,7 @@ async function importClubs() {
       if (!email || email === '') {
         console.log(`Skipping club without email: ${clubName}`);
         skippedCount++;
-        continue;
+        continue; // Skip clubs without emails
       }
       
       // Get club purpose if available
@@ -216,33 +172,49 @@ async function importClubs() {
         purpose = `${clubName} is a student organization at the University of Hawaii at Manoa.`;
       }
       
-      // Get club type/category if available
-      const type = row[typeIndex] ? row[typeIndex].trim() : '';
-      
       seenClubNames.add(clubName.toLowerCase());
       
-      // Create or update the club
-      const club = await prisma.club.create({
+      // Add club to create list
+      clubsToCreate.push({
+        name: clubName,
+        purpose,
+        contactEmail: email,
+        academicCategoryId: academicCategory.id,
+        professionalCategoryId: professionalCategory.id,
+      });
+    }
+    
+    // Batch process club creation
+    const createPromises = clubsToCreate.map(async (clubData) => {
+      return prisma.club.create({
         data: {
-          name: clubName,
-          purpose: purpose,
-          contactEmail: email,
+          name: clubData.name,
+          purpose: clubData.purpose,
+          contactEmail: clubData.contactEmail,
           status: ContentStatus.APPROVED,
           categories: {
             create: [
-              { categoryId: academicCategory.id },
-              { categoryId: professionalCategory.id }
-            ]
-          }
-        }
+              { categoryId: clubData.academicCategoryId },
+              { categoryId: clubData.professionalCategoryId },
+            ],
+          },
+        },
       });
-      
-      importedCount++;
-      
-      if (importedCount % 10 === 0) {
-        console.log(`Imported ${importedCount} clubs...`);
+    });
+    
+    // Use Promise.all to process clubs in parallel
+    await Promise.all(createPromises.map(async (promise, index) => {
+      try {
+        await promise;
+        importedCount++;
+        
+        if (importedCount % 10 === 0) {
+          console.log(`Imported ${importedCount} clubs...`);
+        }
+      } catch (error) {
+        console.error(`Error importing club: ${clubsToCreate[index].name}`, error);
       }
-    }
+    }));
     
     console.log(`\nImport summary:`);
     console.log(`- Imported ${importedCount} clubs`);
@@ -250,14 +222,14 @@ async function importClubs() {
     
     // Verify important clubs were imported
     console.log('\nVerifying important clubs...');
-    for (const clubName of IMPORTANT_CLUBS) {
+    const importantClubChecks = IMPORTANT_CLUBS.map(async (clubName) => {
       const club = await prisma.club.findFirst({
         where: {
           name: {
             contains: clubName,
-            mode: 'insensitive'
-          }
-        }
+            mode: 'insensitive',
+          },
+        },
       });
       
       if (club) {
@@ -265,7 +237,9 @@ async function importClubs() {
       } else {
         console.log(`❌ Missing: ${clubName}`);
       }
-    }
+    });
+    
+    await Promise.all(importantClubChecks);
     
     return { importedCount, skippedCount };
   } catch (error) {
@@ -287,7 +261,7 @@ async function importEvents() {
     const eventUrls = [
       'https://manoa.hawaii.edu/calendar/event-category/student-life/',
       'https://manoa.hawaii.edu/calendar/event-category/academic-calendar/',
-      'https://manoa.hawaii.edu/calendar/event-category/admissions/'
+      'https://manoa.hawaii.edu/calendar/event-category/admissions/',
     ];
     
     console.log(`Will process ${eventUrls.length} event feeds`);
@@ -297,7 +271,7 @@ async function importEvents() {
     const academicCategory = await prisma.category.upsert({
       where: { name: 'Academic' },
       update: {},
-      create: { name: 'Academic' }
+      create: { name: 'Academic' },
     });
     
     // Process each event feed
@@ -314,38 +288,40 @@ async function importEvents() {
         description: 'Final examinations for Spring semester.',
         startDateTime: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000), // 14 days from now
         location: 'UH Manoa Campus',
-        status: ContentStatus.APPROVED
+        status: ContentStatus.APPROVED,
       },
       {
         title: 'Career Fair',
         description: 'Connect with employers from around Hawaii and beyond.',
         startDateTime: new Date(now.getTime() + 21 * 24 * 60 * 60 * 1000), // 21 days from now
         location: 'Campus Center Ballroom',
-        status: ContentStatus.APPROVED
+        status: ContentStatus.APPROVED,
       },
       {
         title: 'Student Research Symposium',
         description: 'Undergraduate and graduate students present their research projects.',
         startDateTime: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
         location: 'Kennedy Theatre',
-        status: ContentStatus.APPROVED
-      }
+        status: ContentStatus.APPROVED,
+      },
     ];
     
-    for (const eventData of sampleEvents) {
-      const event = await prisma.event.create({
+    const eventCreatePromises = sampleEvents.map(async (eventData) => {
+      return prisma.event.create({
         data: {
           ...eventData,
           categories: {
             create: [
-              { categoryId: academicCategory.id }
-            ]
-          }
-        }
+              { categoryId: academicCategory.id },
+            ],
+          },
+        },
       });
-      
-      totalImported++;
-    }
+    });
+    
+    // Use Promise.all to process events in parallel
+    const createdEvents = await Promise.all(eventCreatePromises);
+    totalImported = createdEvents.length;
     
     console.log(`\nImport summary:`);
     console.log(`- Imported ${totalImported} events`);
@@ -367,34 +343,39 @@ async function cleanCategories() {
     
     // Define the standard categories and their mappings
     const categoryStandards = {
-      'Academic': ['Academic', 'Academics', 'Education', 'Educational', 'Academic/Professional'],
-      'Professional': ['Professional', 'Career', 'Business', 'Networking', 'Academic/Professional'],
+      Academic: ['Academic', 'Academics', 'Education', 'Educational', 'Academic/Professional'],
+      Professional: ['Professional', 'Career', 'Business', 'Networking', 'Academic/Professional'],
       'Arts & Culture': ['Arts', 'Culture', 'Art', 'Cultural', 'Music', 'Dance', 'Theater', 'Theatre', 'Performance'],
       'Community Service': ['Community Service', 'Volunteer', 'Service', 'Outreach'],
       'Ethnic & Cultural': ['Ethnic', 'Cultural', 'Multicultural', 'Heritage', 'International'],
       'Health & Wellness': ['Health', 'Wellness', 'Medical', 'Fitness', 'Well-being'],
-      'Political': ['Political', 'Politics', 'Government', 'Advocacy', 'Policy'],
+      Political: ['Political', 'Politics', 'Government', 'Advocacy', 'Policy'],
       'Religious & Spiritual': ['Religious', 'Spiritual', 'Faith', 'Religion', 'Worship'],
-      'Social': ['Social', 'Socializing', 'Friendship', 'Recreation'],
+      Social: ['Social', 'Socializing', 'Friendship', 'Recreation'],
       'Science & Technology': ['Science', 'Technology', 'Tech', 'Engineering', 'STEM'],
-      'Environmental': ['Environmental', 'Sustainability', 'Eco', 'Green', 'Conservation', 'Climate'],
+      Environmental: ['Environmental', 'Sustainability', 'Eco', 'Green', 'Conservation', 'Climate'],
       'Athletics & Sports': ['Athletics', 'Sports', 'Recreation', 'Fitness', 'Exercise'],
-      'Media & Publications': ['Media', 'Publications', 'Journalism', 'News', 'Writing']
+      'Media & Publications': ['Media', 'Publications', 'Journalism', 'News', 'Writing'],
     };
     
     // Ensure all standard categories exist
     const standardCategories = {};
     
-    for (const [standard, aliases] of Object.entries(categoryStandards)) {
-      const category = await prisma.category.upsert({
-        where: { name: standard },
-        update: {},
-        create: { name: standard }
-      });
-      
-      standardCategories[standard] = category.id;
-      console.log(`Ensured standard category: ${standard}`);
-    }
+    const categoryCreatePromises = Object.entries(categoryStandards).map(
+      async ([standard]) => {
+        const category = await prisma.category.upsert({
+          where: { name: standard },
+          update: {},
+          create: { name: standard },
+        });
+        
+        standardCategories[standard] = category.id;
+        console.log(`Ensured standard category: ${standard}`);
+        return category;
+      }
+    );
+    
+    await Promise.all(categoryCreatePromises);
     
     // 2. Process each club to standardize its categories
     console.log('Processing club categories...');
@@ -403,17 +384,18 @@ async function cleanCategories() {
       include: {
         categories: {
           include: {
-            category: true
-          }
-        }
-      }
+            category: true,
+          },
+        },
+      },
     });
     
     console.log(`Processing ${clubs.length} clubs...`);
     
     let standardizedCount = 0;
     
-    for (const club of clubs) {
+    // Process clubs in batches to avoid overwhelming the database
+    const clubProcessPromises = clubs.map(async (club) => {
       // Track which standard categories this club should have
       const standardsToApply = new Set();
       
@@ -424,8 +406,8 @@ async function cleanCategories() {
         // Find if this category maps to any standard
         let foundMatch = false;
         
-        for (const [standard, aliases] of Object.entries(categoryStandards)) {
-          if (aliases.some(alias => 
+        for (const [standard, mappings] of Object.entries(categoryStandards)) {
+          if (mappings.some(alias => 
             currentCategoryName.toLowerCase().includes(alias.toLowerCase()) ||
             alias.toLowerCase().includes(currentCategoryName.toLowerCase())
           )) {
@@ -447,25 +429,28 @@ async function cleanCategories() {
       
       // Delete current categories
       await prisma.clubCategory.deleteMany({
-        where: { clubId: club.id }
+        where: { clubId: club.id },
       });
       
       // Apply the standardized categories
-      for (const standard of standardsToApply) {
-        await prisma.clubCategory.create({
+      const categoryApplyPromises = Array.from(standardsToApply).map(standard => 
+        prisma.clubCategory.create({
           data: {
             clubId: club.id,
-            categoryId: standardCategories[standard]
-          }
-        });
-      }
+            categoryId: standardCategories[standard],
+          },
+        })
+      );
       
+      await Promise.all(categoryApplyPromises);
       standardizedCount++;
       
       if (standardizedCount % 10 === 0) {
         console.log(`Standardized ${standardizedCount} clubs...`);
       }
-    }
+    });
+    
+    await Promise.all(clubProcessPromises);
     
     // 3. Process events similarly
     console.log('Processing event categories...');
@@ -474,17 +459,18 @@ async function cleanCategories() {
       include: {
         categories: {
           include: {
-            category: true
-          }
-        }
-      }
+            category: true,
+          },
+        },
+      },
     });
     
     console.log(`Processing ${events.length} events...`);
     
     let eventStandardizedCount = 0;
     
-    for (const event of events) {
+    // Process events in batches to avoid overwhelming the database
+    const eventProcessPromises = events.map(async (event) => {
       // Track which standard categories this event should have
       const standardsToApply = new Set();
       
@@ -495,8 +481,8 @@ async function cleanCategories() {
         // Find if this category maps to any standard
         let foundMatch = false;
         
-        for (const [standard, aliases] of Object.entries(categoryStandards)) {
-          if (aliases.some(alias => 
+        for (const [standard, mappings] of Object.entries(categoryStandards)) {
+          if (mappings.some(alias => 
             currentCategoryName.toLowerCase().includes(alias.toLowerCase()) ||
             alias.toLowerCase().includes(currentCategoryName.toLowerCase())
           )) {
@@ -518,21 +504,24 @@ async function cleanCategories() {
       
       // Delete current categories
       await prisma.eventCategory.deleteMany({
-        where: { eventId: event.id }
+        where: { eventId: event.id },
       });
       
       // Apply the standardized categories
-      for (const standard of standardsToApply) {
-        await prisma.eventCategory.create({
+      const categoryApplyPromises = Array.from(standardsToApply).map(standard => 
+        prisma.eventCategory.create({
           data: {
             eventId: event.id,
-            categoryId: standardCategories[standard]
-          }
-        });
-      }
+            categoryId: standardCategories[standard],
+          },
+        })
+      );
       
+      await Promise.all(categoryApplyPromises);
       eventStandardizedCount++;
-    }
+    });
+    
+    await Promise.all(eventProcessPromises);
     
     // 4. Clean up unused categories
     console.log('Cleaning up unused categories...');
@@ -548,18 +537,18 @@ async function cleanCategories() {
       
       // Check if category is used by any clubs
       const clubCount = await prisma.clubCategory.count({
-        where: { categoryId: category.id }
+        where: { categoryId: category.id },
       });
       
       // Check if category is used by any events
       const eventCount = await prisma.eventCategory.count({
-        where: { categoryId: category.id }
+        where: { categoryId: category.id },
       });
       
       // If not used, delete it
       if (clubCount === 0 && eventCount === 0) {
         await prisma.category.delete({
-          where: { id: category.id }
+          where: { id: category.id },
         });
         
         deletedCount++;
@@ -587,7 +576,7 @@ async function approveAll() {
     // Approve all clubs
     const clubResult = await prisma.club.updateMany({
       where: { status: { not: ContentStatus.APPROVED } },
-      data: { status: ContentStatus.APPROVED }
+      data: { status: ContentStatus.APPROVED },
     });
     
     console.log(`Approved ${clubResult.count} clubs`);
@@ -595,7 +584,7 @@ async function approveAll() {
     // Approve all events
     const eventResult = await prisma.event.updateMany({
       where: { status: { not: ContentStatus.APPROVED } },
-      data: { status: ContentStatus.APPROVED }
+      data: { status: ContentStatus.APPROVED },
     });
     
     console.log(`Approved ${eventResult.count} events`);
@@ -618,13 +607,13 @@ async function checkData() {
     const pendingClubs = await prisma.club.count({ where: { status: ContentStatus.PENDING } });
     const clubsWithEmails = await prisma.club.count({
       where: {
-        contactEmail: { not: null }
-      }
+        contactEmail: { not: null },
+      },
     });
     const clubsWithoutCategories = await prisma.club.count({
       where: {
-        categories: { none: {} }
-      }
+        categories: { none: {} },
+      },
     });
     
     console.log(`Clubs:`);
@@ -640,13 +629,13 @@ async function checkData() {
     const pendingEvents = await prisma.event.count({ where: { status: ContentStatus.PENDING } });
     const futureEvents = await prisma.event.count({
       where: {
-        startDateTime: { gte: new Date() }
-      }
+        startDateTime: { gte: new Date() },
+      },
     });
     const eventsWithoutCategories = await prisma.event.count({
       where: {
-        categories: { none: {} }
-      }
+        categories: { none: {} },
+      },
     });
     
     console.log(`\nEvents:`);
@@ -659,13 +648,10 @@ async function checkData() {
     // Check categories
     const categories = await prisma.category.findMany({
       include: {
-        _count: {
-          select: {
-            clubs: true,
-            events: true
-          }
-        }
-      }
+        // Use _count to get aggregates
+        clubs: true,
+        events: true,
+      },
     });
     
     console.log(`\nCategories:`);
@@ -673,7 +659,7 @@ async function checkData() {
     
     console.log(`\nCategory distribution:`);
     categories.forEach(category => {
-      console.log(`- ${category.name}: ${category._count.clubs} clubs, ${category._count.events} events`);
+      console.log(`- ${category.name}: ${category.clubs.length} clubs, ${category.events.length} events`);
     });
     
     // Sample clubs
@@ -682,10 +668,10 @@ async function checkData() {
       include: {
         categories: {
           include: {
-            category: true
-          }
-        }
-      }
+            category: true,
+          },
+        },
+      },
     });
     
     console.log(`\nSample clubs:`);
@@ -700,10 +686,10 @@ async function checkData() {
       include: {
         categories: {
           include: {
-            category: true
-          }
-        }
-      }
+            category: true,
+          },
+        },
+      },
     });
     
     console.log(`\nSample events:`);
@@ -737,11 +723,59 @@ async function checkData() {
     return {
       clubs: { total: totalClubs, approved: approvedClubs, pending: pendingClubs },
       events: { total: totalEvents, approved: approvedEvents, pending: pendingEvents, future: futureEvents },
-      categories: categories.length
+      categories: categories.length,
     };
   } catch (error) {
     console.error('Error checking data:', error);
     throw error;
+  }
+}
+
+// Main function to handle command line args and execute appropriate functions
+async function main() {
+  const args = process.argv.slice(2);
+  const command = args[0] || 'check-data';
+  
+  try {
+    console.log(`====== Manoa Compass Data Manager ======`);
+    console.log(`Executing command: ${command}`);
+    
+    switch (command) {
+      case 'import-clubs':
+        await importClubs();
+        break;
+      case 'import-events':
+        await importEvents();
+        break;
+      case 'clean-categories':
+        await cleanCategories();
+        break;
+      case 'approve-all':
+        await approveAll();
+        break;
+      case 'check-data':
+        await checkData();
+        break;
+      case 'run-all':
+        console.log('Running all commands in sequence...');
+        await importClubs();
+        await importEvents();
+        await cleanCategories();
+        await approveAll();
+        await checkData();
+        break;
+      default:
+        console.log(`Unknown command: ${command}`);
+        console.log(
+          'Available commands: import-clubs, import-events, clean-categories, approve-all, check-data, run-all'
+        );
+    }
+    
+    console.log(`\n====== Command Completed ======`);
+  } catch (error) {
+    console.error('Error during execution:', error);
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
@@ -750,4 +784,4 @@ main()
   .catch(e => {
     console.error(e);
     process.exit(1);
-  }); 
+  });

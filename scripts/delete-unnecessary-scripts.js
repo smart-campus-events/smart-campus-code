@@ -1,6 +1,6 @@
 /**
  * Script to clean up the scripts directory by deleting unnecessary scripts
- * 
+ *
  * This script:
  * 1. Keeps only essential scripts in the main scripts directory
  * 2. Permanently deletes all other scripts to save storage space
@@ -16,7 +16,7 @@ const SCRIPTS_DIR = path.join(__dirname);
 const ESSENTIAL_SCRIPTS = [
   'manoa-compass-data-manager.js',
   'delete-unnecessary-scripts.js',
-  'README.md'
+  'README.md',
 ];
 
 console.log('=== CLEANING UP SCRIPTS DIRECTORY ===');
@@ -24,36 +24,34 @@ console.log('=== CLEANING UP SCRIPTS DIRECTORY ===');
 // Get all files in the scripts directory
 try {
   const files = fs.readdirSync(SCRIPTS_DIR);
-  
+
   let deletedCount = 0;
   let keptCount = 0;
-  
+
   for (const file of files) {
     const filePath = path.join(SCRIPTS_DIR, file);
-    
-    // Skip directories 
+
+    // Handle directories
     const isDirectory = fs.statSync(filePath).isDirectory();
     if (isDirectory) {
       console.log(`Processing directory: ${file}`);
-      
+
       // For directories, delete all files inside it
       try {
         const subFiles = fs.readdirSync(filePath);
         let subDeletedCount = 0;
-        
+
         for (const subFile of subFiles) {
           const subFilePath = path.join(filePath, subFile);
-          
+
           // Skip subdirectories
-          if (fs.statSync(subFilePath).isDirectory()) {
-            continue;
+          if (!fs.statSync(subFilePath).isDirectory()) {
+            // Delete the file
+            fs.unlinkSync(subFilePath);
+            subDeletedCount++;
           }
-          
-          // Delete the file
-          fs.unlinkSync(subFilePath);
-          subDeletedCount++;
         }
-        
+
         // Delete the now-empty directory
         fs.rmdirSync(filePath);
         console.log(`Deleted directory ${file} and its ${subDeletedCount} files`);
@@ -61,31 +59,26 @@ try {
       } catch (subError) {
         console.error(`Error processing subdirectory ${file}: ${subError.message}`);
       }
-      
-      continue;
-    }
-    
-    // Skip essential scripts
-    if (ESSENTIAL_SCRIPTS.includes(file)) {
+    } else if (ESSENTIAL_SCRIPTS.includes(file)) {
+      // Handle essential scripts
       console.log(`Keeping essential script: ${file}`);
       keptCount++;
-      continue;
-    }
-    
-    // Delete the file
-    try {
-      fs.unlinkSync(filePath);
-      console.log(`Deleted: ${file}`);
-      deletedCount++;
-    } catch (deleteError) {
-      console.error(`Error deleting ${file}: ${deleteError.message}`);
+    } else {
+      // Handle unnecessary files - delete them
+      try {
+        fs.unlinkSync(filePath);
+        console.log(`Deleted: ${file}`);
+        deletedCount++;
+      } catch (deleteError) {
+        console.error(`Error deleting ${file}: ${deleteError.message}`);
+      }
     }
   }
-  
-  console.log(`\nCleanup complete!`);
+
+  console.log('\nCleanup complete!');
   console.log(`- Deleted ${deletedCount} files/directories`);
   console.log(`- Kept ${keptCount} essential scripts`);
-  
+
   // Create a new README.md with information about the scripts
   const readmePath = path.join(SCRIPTS_DIR, 'README.md');
   const readmeContent = `# Manoa Compass Scripts
@@ -121,8 +114,7 @@ Available commands:
 
   fs.writeFileSync(readmePath, readmeContent);
   console.log('Created new README.md');
-  
 } catch (error) {
   console.error(`Error cleaning up scripts: ${error}`);
   process.exit(1);
-} 
+}
