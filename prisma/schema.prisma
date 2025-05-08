@@ -150,7 +150,6 @@ model Club {
 
   // --- Core Club Details ---
   name                 String         @unique // Unique name of the club
-  logoUrl              String?        // Optional URL to a logo image file
   purpose              String         @db.Text // Core purpose/mission statement (required)
   categoryDescription  String?        // From schema2, use instead of single category field? Maybe store primary category via relation?
                                       // Using category relation instead based on Plan

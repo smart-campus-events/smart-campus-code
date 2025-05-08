@@ -93,7 +93,6 @@ export async function PUT(
     const data = await request.json();
     const {
       name,
-      logoUrl,
       purpose,
       primaryContactName,
       contactEmail,
@@ -143,7 +142,6 @@ export async function PUT(
     // Prepare data for update, excluding categoryIds field itself
     const updateData: Prisma.ClubUpdateInput = {
       name,
-      logoUrl,
       purpose,
       primaryContactName,
       contactEmail,
@@ -155,7 +153,7 @@ export async function PUT(
       meetingLocation,
       joinInfo,
       status,
-      ...(categoryIds !== undefined ? { categories: categoryUpdateOperations } : {}), // Apply category updates if provided
+      categories: categoryUpdateOperations,
     };
 
     // Update the club

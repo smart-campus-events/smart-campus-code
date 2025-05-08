@@ -33,7 +33,16 @@ interface User {
 interface Club {
   id: string;
   name: string;
-  logoUrl: string | null;
+  purpose: string;
+  primaryContactName: string | null;
+  contactEmail: string | null;
+  websiteUrl: string | null;
+  instagramUrl: string | null;
+  facebookUrl: string | null;
+  twitterUrl: string | null;
+  meetingTime: string | null;
+  meetingLocation: string | null;
+  joinInfo: string | null;
 }
 
 interface Event {
@@ -553,35 +562,18 @@ export default function EventDetailPage() {
               <Card.Body className="p-4">
                 <h2 className="h5 mb-3">Organized By</h2>
                 
-                <div className="d-flex align-items-center">
-                  {event.organizerClub.logoUrl ? (
-                    <img 
-                      src={event.organizerClub.logoUrl} 
-                      alt={event.organizerClub.name}
-                      width={40}
-                      height={40}
-                      className="rounded-circle me-3"
-                    />
-                  ) : (
-                    <div 
-                      className="bg-light rounded-circle d-flex align-items-center justify-content-center me-3"
-                      style={{ width: '40px', height: '40px' }}
-                    >
-                      <span className="text-secondary">
-                        {event.organizerClub.name.substring(0, 2).toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-                  
-                  <div>
-                    <h3 className="h6 mb-0">{event.organizerClub.name}</h3>
-                    <Link 
-                      href={`/clubs/${event.organizerClub.id}`} 
-                      className="small"
-                    >
-                      View Club Profile
-                    </Link>
-                  </div>
+                <div className="d-flex justify-content-center align-items-center rounded bg-light" style={{ width: '40px', height: '40px' }}>
+                  <Building size={20} className="text-secondary" />
+                </div>
+                
+                <div>
+                  <h3 className="h6 mb-0">{event.organizerClub.name}</h3>
+                  <Link 
+                    href={`/clubs/${event.organizerClub.id}`} 
+                    className="small"
+                  >
+                    View Club Profile
+                  </Link>
                 </div>
               </Card.Body>
             </Card>

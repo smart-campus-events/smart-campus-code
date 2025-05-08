@@ -18,6 +18,10 @@ export async function GET(request: NextRequest) {
     // Define the where clause with explicit type
     const where: Prisma.ClubWhereInput = {
       status: ContentStatus.APPROVED,
+      // Only include clubs with a contact email
+      contactEmail: {
+        not: null,
+      },
       ...(query ? {
         OR: [
           { name: { contains: query, mode: 'insensitive' } },

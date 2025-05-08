@@ -29,7 +29,6 @@ interface Club {
   purpose: string;
   meetingTime: string | null;
   meetingLocation: string | null;
-  logoUrl: string | null;
   categories: ClubCategory[];
   _count: {
     favoritedBy: number;
