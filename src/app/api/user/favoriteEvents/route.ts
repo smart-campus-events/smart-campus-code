@@ -8,7 +8,7 @@ import type { Session } from 'next-auth';
 type SessionWithId = Session & { user: Session['user'] & { id: string } };
 
 // GET /api/user/favoriteEvents - Get all events favorited by the current user
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   // TEMPORARILY SKIPPING AUTHENTICATION
   // Get user session and verify authentication
   // const session = await getServerSession(nextAuthOptionsConfig) as SessionWithId;
@@ -32,5 +32,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
-export default { GET };
