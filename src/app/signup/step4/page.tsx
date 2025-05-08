@@ -62,8 +62,8 @@ export default function SignupStep4Page() {
         body: JSON.stringify({
           ...(ageRange && { age_range: ageRange }),
           ...(origin && { origin }),
-          ...(housingStatus && { housing_status: housingStatus }),
-          comfort_level: comfortLevel,
+          ...(housingStatus && { housingStatus }),
+          comfortLevel,
           ...(aboutMe && { about_me: aboutMe }),
         }),
       });
@@ -79,7 +79,7 @@ export default function SignupStep4Page() {
   };
 
   return (
-    <div className="bg-light min-vh-100 d-flex flex-column">
+    <div className="bg-light min-vh-100 d-flex flex-column overflow-auto">
       <Container className="py-4 py-md-5 flex-grow-1 d-flex flex-column">
         <SignupProgress currentStep={4} totalSteps={5} />
         <Row className="justify-content-center">

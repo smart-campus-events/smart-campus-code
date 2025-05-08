@@ -37,7 +37,7 @@ export default function SignupStep1Page() {
               <p className="text-muted small mb-0">
                 Already have an account?
                 {' '}
-                <Link href="/login" className="fw-medium">Login</Link>
+                <Link href="/auth/signin" className="fw-medium">Login</Link>
                 {' '}
                 { /* Assuming /login exists */ }
               </p>

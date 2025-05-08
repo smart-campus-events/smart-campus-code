@@ -37,7 +37,7 @@ export default function SignupStep1Page() {
               <p className="text-muted small mb-0">
                 Already have an account?
                 {' '}
-                <Link href="/login" passHref legacyBehavior>
+                <Link href="/auth/signin" passHref legacyBehavior>
                   <Button as="a" variant="link" className="p-0 fw-medium">
                     Login
                   </Button>
