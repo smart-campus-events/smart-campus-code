@@ -79,6 +79,7 @@ export async function GET(/* request: Request */) {
           status: 'APPROVED',
           startDateTime: { gte: new Date() },
           categories: { some: { categoryId: { in: userInterestCategoryIds } } },
+          rsvps: { none: { userId } },
           // Optional: rsvps: { none: { userId: userId } }
         },
         include: eventArgs.include,

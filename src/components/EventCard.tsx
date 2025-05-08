@@ -1,17 +1,23 @@
 // src/components/EventCard.tsx
-import React, { useState } from 'react';
-import { Card, Button, Badge, Stack } from 'react-bootstrap';
+
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { Badge, Button, Card, Spinner, Stack } from 'react-bootstrap';
 
 // --- Import the SHARED type definition from your central types file ---
 // This ensures consistency across your application.
 import type { EventWithDetails } from '@/types/prismaExtendedTypes';
 // Assuming EventWithDetails defines categories as:
-// categories: (EventCategory & { category: Category })[];
+//   categories: (EventCategory & { category: Category })[];
 // and organizerClub as:
-// organizerClub: { name: string } | null;
+//   organizerClub: { name: string } | null;
+// and includes rsvps: { userId: string }[]
 
 // --- You might not need these individual imports anymore if EventWithDetails covers everything ---
-// import type { Event as PrismaEvent, Club, EventCategory, Category } from '@prisma/client';
+// import type { Event as PrismaEvent, Club, EventCategory, Category, RSVP } from '@prisma/client';
+
+import { useSession } from 'next-auth/react';
 
 // Define a list of Bootstrap background colors for category badges
 const badgeColors: string[] = [
@@ -27,12 +33,54 @@ const badgeColors: string[] = [
 // Helper function to cycle through badge colors
 const getColorByIndex = (index: number): string => badgeColors[index % badgeColors.length];
 
-// Define the props interface using the imported shared type
 interface EventCardProps {
   event: EventWithDetails;
 }
 
 const EventCard: React.FC<EventCardProps> = ({ event }) => {
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
+
+  // --- RSVP state & handlers ---
+  const [isRSVPed, setIsRSVPed] = useState(false);
+  const [loadingRSVP, setLoadingRSVP] = useState(false);
+
+  // initialize RSVP state from event.rsvps once on mount
+  useEffect(() => {
+    if (userId) {
+      setIsRSVPed(event.rsvps.some((r) => r.userId === userId));
+    }
+    // run only on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Toggle RSVP status (optimistic UI + API call)
+  const toggleRSVP = async () => {
+    if (!userId) {
+      // Optionally redirect to login
+      return;
+    }
+
+    const nextStatus = !isRSVPed;
+    setIsRSVPed(nextStatus);
+    setLoadingRSVP(true);
+
+    try {
+      const res = await fetch(`/api/events/${event.id}/rsvp`, {
+        method: nextStatus ? 'POST' : 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) throw new Error('RSVP request failed');
+    } catch (err) {
+      console.error('RSVP toggle failed:', err);
+      // revert on error
+      setIsRSVPed(!nextStatus);
+    } finally {
+      setLoadingRSVP(false);
+    }
+  };
+  // --- End RSVP logic ---
+
   // Destructure properties from the event object.
   // Type safety comes from the EventWithDetails interface.
   const {
@@ -40,43 +88,43 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
     description,
     startDateTime,
     location,
-    categories = [], // Default to empty array handles case if categories is optional or empty
-    organizerClub, // Correctly typed as { name: string } | null from imported type
+    categories = [], // Default to empty array if undefined
+    organizerClub, // { name: string } | null
     eventUrl,
     eventPageUrl,
   } = event;
 
   // --- State and handlers for Category Pagination ---
   const categoriesPerPage = 3;
-  // Safely calculate total pages, handling potentially undefined/empty categories
-  const totalPages = Math.ceil((categories || []).length / categoriesPerPage);
+  const totalPages = Math.ceil(categories.length / categoriesPerPage);
   const [currentPage, setCurrentPage] = useState(0);
 
-  // Calculate the slice of categories to display for the current page
   const startIndex = currentPage * categoriesPerPage;
-  const endIndex = startIndex + categoriesPerPage;
-  // Safely slice categories
-  const currentCategories = (categories || []).slice(startIndex, endIndex);
+  const currentCategories = categories.slice(
+    startIndex,
+    startIndex + categoriesPerPage,
+  );
 
-  const handleNext = () => {
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1));
-  };
-
-  const handlePrev = () => {
-    setCurrentPage((prev) => Math.max(prev - 1, 0));
-  };
+  const handlePrev = () => setCurrentPage((prev) => Math.max(prev - 1, 0));
+  const handleNext = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1));
   // --- End Category Pagination Logic ---
 
   // Format date and time for display
-  const formattedDate = new Date(startDateTime).toLocaleDateString(undefined, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
-  const formattedTime = new Date(startDateTime).toLocaleTimeString(undefined, {
-    hour: 'numeric',
-    minute: '2-digit',
-  });
+  const formattedDate = new Date(startDateTime).toLocaleDateString(
+    undefined,
+    {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    },
+  );
+  const formattedTime = new Date(startDateTime).toLocaleTimeString(
+    undefined,
+    {
+      hour: 'numeric',
+      minute: '2-digit',
+    },
+  );
 
   // Determine the link for the main button (prefer eventUrl)
   const cardLink = eventUrl || eventPageUrl;
@@ -97,7 +145,8 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
         {/* Display truncated description */}
         <Card.Text className="flex-grow-1">
           {description
-            ? description.substring(0, 100) + (description.length > 100 ? '...' : '')
+            ? description.substring(0, 100)
+              + (description.length > 100 ? '...' : '')
             : 'No description available.'}
         </Card.Text>
 
@@ -105,18 +154,15 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
         <div className="mb-2">
           <small className="text-muted">
             <i className="fa-solid fa-location-dot me-1" aria-hidden="true" />
-            {' '}
             {location || 'Location TBD'}
           </small>
         </div>
 
         {/* Display Organizer Club Name if available */}
-        {/* This check works correctly with the imported type */}
         {organizerClub && (
           <div className="mb-2">
             <small className="text-muted">
               <i className="fa-solid fa-users me-1" aria-hidden="true" />
-              {' '}
               Hosted by:
               {' '}
               {organizerClub.name}
@@ -125,7 +171,7 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
         )}
 
         {/* --- Category Pills with Pagination --- */}
-        {(categories || []).length > 0 ? (
+        {categories.length > 0 ? (
           <Stack direction="horizontal" gap={2} className="mb-3 align-items-center">
             {/* Previous Button */}
             {totalPages > 1 && (
@@ -135,7 +181,7 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
                 onClick={handlePrev}
                 disabled={currentPage === 0}
                 className="p-0 border-0"
-                style={{ width: '20px', height: '20px', lineHeight: '1' }}
+                style={{ width: 20, height: 20 }}
                 aria-label="Previous categories"
               >
                 <i className="fas fa-chevron-left small" aria-hidden="true" />
@@ -144,12 +190,10 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
 
             {/* Badges Container */}
             <div className="flex-grow-1 overflow-hidden">
-              {/* Map through the categories for the current page */}
-              {/* Ensure 'ec' type matches the structure in EventWithDetails */}
-              {currentCategories.map((ec, index) => (
+              {currentCategories.map((ec, idx) => (
                 <Badge
-                  key={ec.category.id} // Use the unique category ID
-                  bg={getColorByIndex(startIndex + index)} // Get color based on overall index
+                  key={ec.category.id}
+                  bg={getColorByIndex(startIndex + idx)}
                   className="me-1 mb-1"
                 >
                   {ec.category.name}
@@ -165,7 +209,7 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
                 onClick={handleNext}
                 disabled={currentPage === totalPages - 1}
                 className="p-0 border-0"
-                style={{ width: '20px', height: '20px', lineHeight: '1' }}
+                style={{ width: 20, height: 20 }}
                 aria-label="Next categories"
               >
                 <i className="fas fa-chevron-right small" aria-hidden="true" />
@@ -173,7 +217,6 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
             )}
           </Stack>
         ) : (
-          // Fallback if no categories are present
           <div className="mb-3">
             <Badge bg="secondary" className="me-1 mb-1">
               General
@@ -182,17 +225,30 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
         )}
         {/* --- End Category Pills --- */}
 
-        {/* Button to link to external event source */}
-        <Button
-          variant="primary"
-          href={cardLink || '#'} // Fallback href to prevent errors, button is disabled below if no link
-          target="_blank"
-          rel="noopener noreferrer"
-          disabled={!cardLink} // Disable if no valid link exists
-          className="mt-auto" // Push button to the bottom
-        >
-          {cardLink ? 'View Event Source' : 'Details Unavailable'}
-        </Button>
+        {/* RSVP + View Source Buttons */}
+        <Stack direction="horizontal" gap={2} className="mt-auto">
+          <Button
+            onClick={toggleRSVP}
+            disabled={loadingRSVP}
+            variant={isRSVPed ? 'success' : 'outline-primary'}
+          >
+            {(() => {
+              if (loadingRSVP) return <Spinner animation="border" size="sm" />;
+              if (isRSVPed) return 'RSVP’d';
+              return 'RSVP';
+            })()}
+          </Button>
+
+          <Button
+            variant="primary"
+            href={cardLink || '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            disabled={!cardLink}
+          >
+            {cardLink ? 'View Event Source' : 'Details Unavailable'}
+          </Button>
+        </Stack>
       </Card.Body>
     </Card>
   );

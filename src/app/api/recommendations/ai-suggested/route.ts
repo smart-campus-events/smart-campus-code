@@ -1,18 +1,16 @@
 // src/app/api/recommendations/ai-suggested/route.ts
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import type { Session } from 'next-auth';
-import type {
-  Event as PrismaEvent,
-  User as PrismaUser,
-  Category,
-  EventCategory,
-  Club as PrismaClub, // Import Club type
-  ClubCategory, // Import ClubCategory type
-} from '@prisma/client';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import nextAuthOptionsConfig from '@/lib/authOptions';
 import { prisma } from '@/lib/prisma';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import type {
+  Category, // Import Club type
+  ClubCategory, EventCategory,
+  Club as PrismaClub, Event as PrismaEvent,
+  User as PrismaUser, RSVP,
+} from '@prisma/client';
+import type { Session } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
+import { NextResponse } from 'next/server';
 
 // --- Gemini API Integration ---
 const API_KEY = process.env.GEMINI_API_KEY;
@@ -44,6 +42,7 @@ type UserWithInterests = PrismaUser & { interests: ({ category: Category }
 type EventWithDetails = PrismaEvent & {
   categories: (EventCategory & { category: Category })[];
   organizerClub: { name: string } | null; // Use 'organizerClub' based on Event schema
+  rsvps: RSVP[];
 };
 
 // Club type (using relevant fields)
@@ -192,6 +191,7 @@ async function fetchEventDetails(ids: string[]): Promise<EventWithDetails[]> {
     include: {
       categories: { include: { category: true } },
       organizerClub: { select: { name: true } }, // Renamed from hostClub to organizerClub
+      rsvps: true,
     },
     orderBy: { startDateTime: 'asc' }, // Keep ordering consistent if needed elsewhere
   });
@@ -351,7 +351,7 @@ export async function GET() {
     // Fetch current pools for fallback logic even on cache hit
     const potentialEvents: EventWithDetails[] = await prisma.event.findMany({
       where: { status: { in: ['APPROVED', 'PENDING'] }, startDateTime: { gte: new Date() } },
-      include: { categories: { include: { category: true } }, organizerClub: { select: { name: true } } },
+      include: { categories: { include: { category: true } }, organizerClub: { select: { name: true } }, rsvps: true },
       orderBy: { startDateTime: 'asc' },
       take: 75,
     });
@@ -380,7 +380,7 @@ export async function GET() {
     // 2. Fetch Pool of Potential Events & Clubs (Including PENDING)
     const potentialEvents: EventWithDetails[] = await prisma.event.findMany({
       where: { status: { in: ['APPROVED', 'PENDING'] }, startDateTime: { gte: new Date() } },
-      include: { categories: { include: { category: true } }, organizerClub: { select: { name: true } } },
+      include: { categories: { include: { category: true } }, organizerClub: { select: { name: true } }, rsvps: true },
       orderBy: { startDateTime: 'asc' },
       take: 75,
     });

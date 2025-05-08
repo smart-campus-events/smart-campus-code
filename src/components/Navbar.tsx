@@ -33,7 +33,7 @@ const NavBar: React.FC = () => {
     || (currentStep !== null && currentStep >= 5);
 
   return (
-    <Navbar bg="light" expand="lg">
+    <Navbar bg="success" expand="lg">
       <Container>
         {brandIsClickable ? (
           <Navbar.Brand as={Link} href={isLoggedIn ? '/dashboard' : '/'}>
