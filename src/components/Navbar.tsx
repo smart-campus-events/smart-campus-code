@@ -54,6 +54,9 @@ const NavBar: React.FC = () => {
                 <Nav.Link as={Link} href="/dashboard" active={pathName === '/dashboard'}>
                   Dashboard
                 </Nav.Link>
+                <Nav.Link as={Link} href="/suggestions" active={pathName === '/dashboard'}>
+                  Suggestions
+                </Nav.Link>
                 <Nav.Link as={Link} href="/clubs" active={pathName === '/clubs'}>
                   Clubs
                 </Nav.Link>
