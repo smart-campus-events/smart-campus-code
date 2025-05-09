@@ -1,12 +1,12 @@
 {
-  "crons": [
-    {
-      "path": "/api/admin/worker",
-      "schedule": "0 12 * * *"
-    },
-    {
-      "path": "/api/admin/scheduler",
-      "schedule": "0 12 * * *"
-    }
-  ]
-}
+    "crons": [
+      {
+        "path": "/api/admin/worker", 
+        "schedule": "0 12 * * *"  
+      },
+      {
+        "path": "/api/admin/scheduler", 
+        "schedule": "0 12 * * *"    
+      }
+    ]
+  }
