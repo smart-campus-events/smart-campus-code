@@ -1,26 +1,31 @@
 // src/app/api/recommendations/ai-suggested/route.ts
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import type { Session } from 'next-auth';
-import type {
-  Event as PrismaEvent,
-  User as PrismaUser,
-  Category,
-  EventCategory,
-  Club as PrismaClub, // Import Club type
-  ClubCategory, // Import ClubCategory type
-} from '@prisma/client';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+/* eslint-disable max-len */
+/* eslint-disable import/prefer-default-export */
+
 import nextAuthOptionsConfig from '@/lib/authOptions';
 import { prisma } from '@/lib/prisma';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import type {
+  Category, // Import Club type
+  ClubCategory, EventCategory,
+  Club as PrismaClub, Event as PrismaEvent,
+  User as PrismaUser,
+} from '@prisma/client';
+import type { Session } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
+import { NextResponse } from 'next/server';
 
-export const dynamic = 'force-dynamic';
+console.log('[DEBUG] ai-suggested/route.ts: Module load START');
+
+console.log('[DEBUG] ai-suggested/route.ts: Imports loaded');
 
 // --- Gemini API Integration ---
 const API_KEY = process.env.GEMINI_API_KEY;
 if (!API_KEY) console.error('GEMINI_API_KEY environment variable not set.');
 const genAI = API_KEY ? new GoogleGenerativeAI(API_KEY) : null;
 const model = genAI?.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
+
+console.log('[DEBUG] ai-suggested/route.ts: Gemini integration setup');
 
 // --- Updated AI Response Interface ---
 interface AiRankingResponse {
@@ -259,6 +264,8 @@ function applyOrderingAndFallback<T extends { id: string }>(
   return orderedList;
 }
 
+console.log('[DEBUG] ai-suggested/route.ts: Before GET function definition');
+
 // --- Helper Function: Process AI Response to Final Output --- (Updated)
 async function processAndFormatResponse(
   aiResponse: AiRankingResponse,
@@ -270,6 +277,7 @@ async function processAndFormatResponse(
     topClubRecommendations: ClubWithDetails[], // Add clubs
     branchOutClubSuggestions: ClubWithDetails[] // Add clubs
   }> {
+  console.log('[DEBUG] ai-suggested/route.ts: processAndFormatResponse START');
   // Fetch details based on AI IDs
   const topRecsFetched = await fetchEventDetails(aiResponse.rankedEventIds);
   const branchOutRecsFetched = await fetchEventDetails(aiResponse.branchOutEventIds);
@@ -327,77 +335,78 @@ async function processAndFormatResponse(
   Branch=${orderedBranchOutEvents.length}), Clubs(Top=${orderedTopClubs.length}, 
   Branch=${orderedBranchOutClubs.length})`);
 
-  return {
-    topRecommendations: orderedTopEvents,
-    branchOutSuggestions: orderedBranchOutEvents,
-    topClubRecommendations: orderedTopClubs,
-    branchOutClubSuggestions: orderedBranchOutClubs,
-  };
+  // Simplified return for clarity
+  return { topRecommendations: orderedTopEvents, branchOutSuggestions: orderedBranchOutEvents, topClubRecommendations: orderedTopClubs, branchOutClubSuggestions: orderedBranchOutClubs };
 }
 
-// GET /api/recommendations/ai-suggested (Main function - Updated)
-// eslint-disable-next-line import/prefer-default-export
+console.log('[DEBUG] ai-suggested/route.ts: After processAndFormatResponse function definition');
+
 export async function GET() {
-  const session = (await getServerSession(nextAuthOptionsConfig)) as SessionWithId;
-  if (!session?.user?.id) {
+  console.log('[DEBUG] ai-suggested/route.ts: GET function invoked');
+  const session = await getServerSession(nextAuthOptionsConfig) as SessionWithId | null;
+  console.log('[DEBUG] ai-suggested/route.ts: Session fetched', session ? `User ID: ${session.user?.id}` : 'No session');
+
+  if (!session || !session.user || !session.user.id) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
   const userId = session.user.id;
 
   // --- Cache Check ---
-  const cachedEntry = recommendationCache.get(userId);
-  if (cachedEntry && (Date.now() - cachedEntry.timestamp < CACHE_TTL_MS)) {
-    console.log(`Cache HIT for user ${userId}`);
-    const aiResponse = cachedEntry.data;
-
-    // Fetch current pools for fallback logic even on cache hit
-    const potentialEvents: EventWithDetails[] = await prisma.event.findMany({
-      where: { status: { in: ['APPROVED', 'PENDING'] }, startDateTime: { gte: new Date() } },
-      include: { categories: { include: { category: true } }, organizerClub: { select: { name: true } } },
-      orderBy: { startDateTime: 'asc' },
-      take: 75,
-    });
-    const potentialClubs: ClubWithDetails[] = await prisma.club.findMany({
-      where: { status: { in: ['APPROVED', 'PENDING'] } },
-      include: { categories: { include: { category: true } } },
-      orderBy: { name: 'asc' },
-      take: 75, // Order clubs for consistent fallback
-    });
-
-    const cachedResult = await processAndFormatResponse(aiResponse, potentialEvents, potentialClubs);
-    return NextResponse.json(cachedResult);
+  const cacheKey = `user-${userId}-recommendations`;
+  const cached = recommendationCache.get(cacheKey);
+  if (cached && (Date.now() - cached.timestamp < CACHE_TTL_MS)) {
+    console.log('[DEBUG] ai-suggested/route.ts: Cache HIT for AiRankingResponse. Re-processing with fresh details.');
+    // We have cached AiRankingResponse (IDs), now we need to re-fetch and re-format.
+    const [potentialEvents, potentialClubs] = await Promise.all([
+      prisma.event.findMany({
+        where: { status: { in: ['APPROVED', 'PENDING'] }, startDateTime: { gte: new Date() } },
+        include: { categories: { include: { category: true } }, organizerClub: { select: { name: true } }, rsvps: true },
+        orderBy: { startDateTime: 'asc' },
+        take: 75,
+      }),
+      prisma.club.findMany({
+        where: { status: { in: ['APPROVED', 'PENDING'] } },
+        include: { categories: { include: { category: true } } },
+        orderBy: { name: 'asc' },
+        take: 75,
+      }),
+    ]);
+    console.log(`[DEBUG] ai-suggested/route.ts: Fetched ${potentialEvents.length} potential events, ${potentialClubs.length} potential clubs for cached ID processing`);
+    const processedCachedResponse = await processAndFormatResponse(cached.data, potentialEvents, potentialClubs); // cached.data is AiRankingResponse
+    return NextResponse.json(processedCachedResponse); // Return the newly PROCESSED response
   }
-  console.log(`Cache MISS for user ${userId}`);
+  console.log('[DEBUG] ai-suggested/route.ts: No cache or cache stale');
   // --- End Cache Check ---
 
   try {
-    // 1. Fetch User Data
-    const user: UserWithInterests | null = await prisma.user.findUnique({
+    console.log('[DEBUG] ai-suggested/route.ts: Attempting to fetch user with interests');
+    const userWithInterests = await prisma.user.findUnique({
       where: { id: userId },
       include: { interests: { include: { category: true } } },
     });
-    if (!user) return NextResponse.json({ message: 'User not found' }, { status: 404 });
-    console.log(`User ${userId} interests: ${user.interests?.map(i => i.category.name).join(', ')}`);
+    console.log('[DEBUG] ai-suggested/route.ts: User with interests fetched:', userWithInterests ? 'Yes' : 'No');
 
-    // 2. Fetch Pool of Potential Events & Clubs (Including PENDING)
-    const potentialEvents: EventWithDetails[] = await prisma.event.findMany({
-      where: { status: { in: ['APPROVED', 'PENDING'] }, startDateTime: { gte: new Date() } },
-      include: { categories: { include: { category: true } }, organizerClub: { select: { name: true } } },
-      orderBy: { startDateTime: 'asc' },
-      take: 75,
-    });
-    console.log(`Workspaceed ${potentialEvents.length} potential events (incl. PENDING).`);
+    console.log('[DEBUG] ai-suggested/route.ts: Attempting to fetch all approved events and clubs');
+    const [eventsFromPrisma, clubsFromPrisma] = await Promise.all([
+      prisma.event.findMany({
+        where: { status: { in: ['APPROVED', 'PENDING'] }, startDateTime: { gte: new Date() } },
+        include: { categories: { include: { category: true } }, organizerClub: { select: { name: true } }, rsvps: true },
+        orderBy: { startDateTime: 'asc' },
+        take: 75,
+      }),
+      prisma.club.findMany({
+        where: { status: { in: ['APPROVED', 'PENDING'] } },
+        include: { categories: { include: { category: true } } },
+        orderBy: { name: 'asc' },
+        take: 75, // Order clubs
+      }),
+    ]);
+    const allEvents: EventWithDetails[] = eventsFromPrisma;
+    const allClubs: ClubWithDetails[] = clubsFromPrisma;
+    console.log(`[DEBUG] ai-suggested/route.ts: Fetched ${allEvents.length} events, ${allClubs.length} clubs`);
 
-    const potentialClubs: ClubWithDetails[] = await prisma.club.findMany({
-      where: { status: { in: ['APPROVED', 'PENDING'] } },
-      include: { categories: { include: { category: true } } },
-      orderBy: { name: 'asc' },
-      take: 75, // Order clubs
-    });
-    console.log(`Workspaceed ${potentialClubs.length} potential clubs (incl. PENDING).`);
-
-    // Return empty if nothing to recommend
-    if (potentialEvents.length === 0 && potentialClubs.length === 0) {
+    if (!userWithInterests && allEvents.length === 0 && allClubs.length === 0) {
+      console.log('[DEBUG] ai-suggested/route.ts: No user interests and no events/clubs, returning empty.');
       return NextResponse.json({
         topRecommendations: [],
         branchOutSuggestions: [],
@@ -406,28 +415,29 @@ export async function GET() {
       });
     }
 
-    // 3. Get AI Rankings (for both events and clubs)
-    const aiResponse = await getAiRankings(user, potentialEvents, potentialClubs);
-    console.log('AI Response received in GET:', aiResponse);
+    console.log('[DEBUG] ai-suggested/route.ts: Calling getAiRankings');
+    const aiResponse = await getAiRankings(userWithInterests, allEvents, allClubs);
+    console.log('[DEBUG] ai-suggested/route.ts: getAiRankings response:', aiResponse);
 
-    // --- Cache Store ---
+    // Cache the raw AiRankingResponse (IDs) immediately after getting it from AI
     if (aiResponse && (aiResponse.rankedEventIds?.length > 0 || aiResponse.branchOutEventIds?.length > 0
-     || aiResponse.rankedClubIds?.length > 0 || aiResponse.branchOutClubIds?.length > 0)) { // Check club IDs too
-      recommendationCache.set(userId, { data: aiResponse, timestamp: Date.now() });
-      console.log(`Cache SET for user ${userId}`);
+      || aiResponse.rankedClubIds?.length > 0 || aiResponse.branchOutClubIds?.length > 0)) {
+      recommendationCache.set(cacheKey, { data: aiResponse, timestamp: Date.now() });
+      console.log('[DEBUG] ai-suggested/route.ts: Raw AI ID Response CACHED for user', userId);
     }
-    // Simple cache eviction (optional)
-    if (recommendationCache.size > 1000) {
-      const firstKey = recommendationCache.keys().next().value;
-      if (firstKey) recommendationCache.delete(firstKey);
-    }
-    // --- End Cache Store ---
 
-    // 4, 5, 6: Process, Format, Fetch Details, Apply Fallback (for both)
-    const finalResult = await processAndFormatResponse(aiResponse, potentialEvents, potentialClubs);
-    return NextResponse.json(finalResult);
+    console.log('[DEBUG] ai-suggested/route.ts: Calling processAndFormatResponse');
+    const formattedResponse = await processAndFormatResponse(aiResponse, allEvents, allClubs);
+    console.log('[DEBUG] ai-suggested/route.ts: processAndFormatResponse response:', formattedResponse);
+
+    return NextResponse.json(formattedResponse);
   } catch (error) {
-    console.error('Error in GET /api/recommendations/ai-suggested:', error);
-    return NextResponse.json({ message: 'Failed to fetch recommendations due to an internal error.' }, { status: 500 });
+    console.error('[DEBUG] ai-suggested/route.ts: Error in GET handler:', error);
+    return NextResponse.json(
+      { error: 'Internal server error getting recommendations' },
+      { status: 500 },
+    );
   }
 }
+
+console.log('[DEBUG] ai-suggested/route.ts: Module load END');

@@ -11,12 +11,13 @@ import {
   Nav,
   Navbar,
 } from 'react-bootstrap';
-import { BoxArrowRight } from 'react-bootstrap-icons';
+import { BoxArrowRight, Lightbulb, Shield } from 'react-bootstrap-icons';
 
 const NavBar: React.FC = () => {
   const { data: session } = useSession();
   const pathName = usePathname();
   const isLoggedIn = !!session?.user;
+  const isAdmin = session?.user?.isAdmin === true;
 
   // detect "/signup/stepN"
   const signupMatch = pathName.match(/^\/signup\/step(\d+)$/);
@@ -63,6 +64,12 @@ const NavBar: React.FC = () => {
                 <Nav.Link as={Link} href="/events" active={pathName === '/events'}>
                   Events
                 </Nav.Link>
+                {isAdmin && (
+                  <Nav.Link as={Link} href="/admin" active={pathName === '/admin'}>
+                    <Shield className="me-1" />
+                    Admin
+                  </Nav.Link>
+                )}
                 <Nav.Link as={Link} href="/profile" active={pathName === '/profile'}>
                   Profile
                 </Nav.Link>

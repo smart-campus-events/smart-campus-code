@@ -14,11 +14,12 @@
  * 2. Execute the script directly using Node.js: `node path/to/your/script/club-category-tagging.js` (adjust path as needed)
  */
 
-// Using require for CommonJS modules
-const { PrismaClient } = require('@prisma/client');
-const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
-const dotenv = require('dotenv');
-const path = require('path');
+// Using ES Module imports instead of CommonJS require
+import { PrismaClient } from '@prisma/client';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // --- Configuration ---
 

@@ -40,7 +40,7 @@ const ClubCard: React.FC<ClubCardProps> = ({ club }) => {
         club.favoritedBy.some(f => f.id === session.user?.id),
       );
     }
-  }, []);
+  }, [session, club.favoritedBy]);
 
   // Toggle follow/unfollow
   const handleFollow = async () => {

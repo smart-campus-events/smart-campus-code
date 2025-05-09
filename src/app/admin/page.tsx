@@ -3,6 +3,8 @@
 'use client';
 
 // Required for client-side hooks
+/* eslint-disable max-len */
+/* eslint-disable import/prefer-default-export */
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
@@ -24,7 +26,7 @@ import ManageUsers from '@/components/admin/ManageUsers'; // Import the user man
 import ManageCategories from '@/components/admin/ManageCategories'; // Import the category management component
 
 // Optional: Import bootstrap icons if used in child components or here
-// You might need this if you use icons like <i className="bi bi-arrow-clockwise"></i>
+// You might not need this if you use icons like <i className="bi bi-arrow-clockwise"></i>
 // import 'bootstrap-icons/font/bootstrap-icons.css';
 
 // Define a type for the job data we fetch for the status table
@@ -49,6 +51,12 @@ function AdminPage() {
   const [jobStatuses, setJobStatuses] = useState<JobStatusDisplay[]>([]); // List of recent jobs
   const [statusLoading, setStatusLoading] = useState(true); // Loading state for the job status table
   const [statusError, setStatusError] = useState<string | null>(null); // Error fetching job statuses
+
+  // --- State for Bulk Approval Actions ---
+  const [approveEventsLoading, setApproveEventsLoading] = useState(false);
+  const [approveEventsMessage, setApproveEventsMessage] = useState<{ type: 'success' | 'danger'; text: string } | null>(null);
+  const [approveClubsLoading, setApproveClubsLoading] = useState(false);
+  const [approveClubsMessage, setApproveClubsMessage] = useState<{ type: 'success' | 'danger'; text: string } | null>(null);
 
   // --- Fetch Job Statuses Function ---
   const fetchJobStatuses = useCallback(async () => {
@@ -135,6 +143,46 @@ function AdminPage() {
     }
   };
 
+  // --- Handlers for Bulk Approval ---
+  const handleApproveAllPendingEvents = async () => {
+    setApproveEventsLoading(true);
+    setApproveEventsMessage(null);
+    try {
+      const response = await fetch('/api/admin/approve-all/events', { method: 'POST' });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+      }
+      setApproveEventsMessage({ type: 'success', text: data.message || `Successfully approved ${data.count} events.` });
+      // Optionally, trigger a refresh of content in ManageContentStatus if it's visible
+      // or notify user to refresh that tab/view.
+    } catch (error: any) {
+      console.error('Failed to approve all pending events:', error);
+      setApproveEventsMessage({ type: 'danger', text: error.message || 'Failed to approve all events.' });
+    } finally {
+      setApproveEventsLoading(false);
+    }
+  };
+
+  const handleApproveAllPendingClubs = async () => {
+    setApproveClubsLoading(true);
+    setApproveClubsMessage(null);
+    try {
+      const response = await fetch('/api/admin/approve-all/clubs', { method: 'POST' });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+      }
+      setApproveClubsMessage({ type: 'success', text: data.message || `Successfully approved ${data.count} clubs.` });
+      // Optionally, trigger a refresh
+    } catch (error: any) {
+      console.error('Failed to approve all pending clubs:', error);
+      setApproveClubsMessage({ type: 'danger', text: error.message || 'Failed to approve all clubs.' });
+    } finally {
+      setApproveClubsLoading(false);
+    }
+  };
+
   // --- Helper Function for Job Status Badge Variant ---
   const getJobStatusBadgeVariant = (status: JobStatus) => {
     switch (status) {
@@ -174,9 +222,54 @@ function AdminPage() {
         </Tab>
 
         {/* Tab 4: Background Job Scheduling & Status */}
-        <Tab eventKey="jobs" title="Background Jobs">
-          <p className="text-muted mt-3">Schedule scraping jobs and monitor their status.</p>
+        <Tab eventKey="jobs" title="Background Jobs & Bulk Actions">
+          <p className="text-muted mt-3">Schedule scraping jobs, approve content in bulk, and monitor job statuses.</p>
+
+          {/* --- Bulk Content Approval Section --- */}
+          <h2 className="h5 mt-4 mb-3">Bulk Content Approval</h2>
+          <Row className="mb-4">
+            <Col md={6} className="mb-3 mb-md-0">
+              <Card>
+                <Card.Body>
+                  <Card.Title>Approve All Pending Events</Card.Title>
+                  <Card.Text>Sets all PENDING events to APPROVED status.</Card.Text>
+                  {approveEventsMessage && <Alert variant={approveEventsMessage.type} className="mt-3">{approveEventsMessage.text}</Alert>}
+                  <Button variant="success" onClick={handleApproveAllPendingEvents} disabled={approveEventsLoading}>
+                    {approveEventsLoading ? (
+                      <>
+                        <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
+                        Approving Events...
+                      </>
+                    ) : (
+                      'Approve All Events'
+                    )}
+                  </Button>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={6}>
+              <Card>
+                <Card.Body>
+                  <Card.Title>Approve All Pending Clubs</Card.Title>
+                  <Card.Text>Sets all PENDING clubs to APPROVED status.</Card.Text>
+                  {approveClubsMessage && <Alert variant={approveClubsMessage.type} className="mt-3">{approveClubsMessage.text}</Alert>}
+                  <Button variant="success" onClick={handleApproveAllPendingClubs} disabled={approveClubsLoading}>
+                    {approveClubsLoading ? (
+                      <>
+                        <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
+                        Approving Clubs...
+                      </>
+                    ) : (
+                      'Approve All Clubs'
+                    )}
+                  </Button>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+
           {/* --- Job Scheduling Section --- */}
+          <h2 className="h5 mt-4 mb-3">Job Scheduling</h2>
           <Row className="mb-4">
             <Col md={6} className="mb-3 mb-md-0">
               <Card>
@@ -233,10 +326,13 @@ function AdminPage() {
           </Row>
 
           {/* --- Job Status Section --- */}
+          <h2 className="h5 mt-4 mb-3">Recent Job Statuses</h2>
           <Card>
             <Card.Header>
               <Row className="align-items-center">
-                <Col><h2 className="h5 mb-0">Recent Job Statuses</h2></Col>
+                <Col><h5 className="mb-0">Job Log</h5></Col>
+                {' '}
+                {/* Changed h2 to h5 for better hierarchy */}
                 <Col xs="auto">
                   <Button variant="outline-secondary" size="sm" onClick={fetchJobStatuses} disabled={statusLoading}>
                     {statusLoading ? (

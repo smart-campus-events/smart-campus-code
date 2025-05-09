@@ -45,14 +45,20 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
   const [isRSVPed, setIsRSVPed] = useState(false);
   const [loadingRSVP, setLoadingRSVP] = useState(false);
 
-  // initialize RSVP state from event.rsvps once on mount
+  // Initialize RSVP state if the event comes with a list of RSVPs
   useEffect(() => {
+    console.log('[EventCard] Event data:', event);
     if (userId) {
-      setIsRSVPed(event.rsvps.some((r) => r.userId === userId));
+      // Defensive check before calling .some()
+      if (event && event.rsvps) {
+        setIsRSVPed(event.rsvps.some((r) => r.userId === userId));
+      } else {
+        // Handle case where event or event.rsvps might be undefined
+        // console.warn('[EventCard] event or event.rsvps is undefined. Event:', event);
+        setIsRSVPed(false); // Default to not RSVPed if data is missing
+      }
     }
-    // run only on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [userId, event]);
 
   // Toggle RSVP status (optimistic UI + API call)
   const toggleRSVP = async () => {
