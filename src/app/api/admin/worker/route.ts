@@ -52,6 +52,8 @@ export async function POST(request: Request) {
   const incomingSecret = request.headers.get('x-vercel-cron-secret');
   if (!WORKER_SECRET || incomingSecret !== WORKER_SECRET) {
     console.warn(
+      'Headers:',
+      request.headers,
       'Scheduler endpoint called without valid secret. Incoming secret:',
       incomingSecret,
       'Expected secret:',

@@ -96,10 +96,10 @@ async function getAiRankings(
   const allClubIds = allClubs.map(c => c.id); // Get club IDs
 
   // Simple fallback: first few events/clubs if no AI response
-  fallbackResponse.rankedEventIds = allEventIds.slice(0, 5);
-  fallbackResponse.branchOutEventIds = allEventIds.slice(5, 8);
-  fallbackResponse.rankedClubIds = allClubIds.slice(0, 5); // Fallback for clubs
-  fallbackResponse.branchOutClubIds = allClubIds.slice(5, 8); // Fallback for clubs
+  fallbackResponse.rankedEventIds = allEventIds.slice(0, 9);
+  fallbackResponse.branchOutEventIds = allEventIds.slice(9, 12);
+  fallbackResponse.rankedClubIds = allClubIds.slice(0, 9); // Fallback for clubs
+  fallbackResponse.branchOutClubIds = allClubIds.slice(9, 12); // Fallback for clubs
 
   if (!model) { console.error('Gemini model not initialized.'); return fallbackResponse; }
   // Need user data, and *either* events *or* clubs to proceed
@@ -129,10 +129,10 @@ Suggest relevant EVENTS and CLUBS based on the user profile and available items.
 User Profile:\n${userProfileSummary}\n\nAvailable Items (Events and Clubs)
 :\n${eventSummaries}\n---\n${clubSummaries}\n\nInstructions:\n
 1. Analyze profile (major, interests, about me) vs items (title/name, desc/purpose, categories).\n
-2. Rank top 10 most relevant EVENTS.\n
-3. Identify 5 "branch out" EVENTS (related but different).\n
-4. Rank top 10 most relevant CLUBS.\n
-5. Identify 5 "branch out" CLUBS.\n
+2. Rank top 18 most relevant EVENTS.\n
+3. Identify 9 "branch out" EVENTS (related but different).\n
+4. Rank top 18 most relevant CLUBS.\n
+5. Identify 9 "branch out" CLUBS.\n
 6. Use ONLY IDs from 'Available Items'.\n
 7. Return ONLY strict JSON (NO MARKDOWN):\n
 {\n  "rankedEventIds": ["event_id1", ...],\n  
@@ -278,9 +278,9 @@ async function processAndFormatResponse(
 
   // Set minimums
   const minTopEvents = 3;
-  const minBranchEvents = 2;
+  const minBranchEvents = 3;
   const minTopClubs = 3;
-  const minBranchClubs = 2;
+  const minBranchClubs = 3;
 
   // Keep track of all IDs used across all lists to prevent duplicates from fallback
   const allUsedIds = new Set<string>();

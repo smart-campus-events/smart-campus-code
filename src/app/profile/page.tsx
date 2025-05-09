@@ -1,4 +1,4 @@
-/* eslint-disable react/no-unescaped-entities, react/no-array-index-key */
+/* eslint-disable react/no-unescaped-entities, react/no-array-index-key, no-template-curly-in-string */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 'use client';
@@ -40,11 +40,26 @@ interface ProfileData {
   createdAt: string;
 }
 
+// shape of each saved event coming back from your API
+interface SavedEvent {
+  id: string;
+  title: string;
+  startDateTime: string; // ISO string
+  location: string;
+}
+
+interface FollowedClub {
+  id: string;
+  name: string;
+  purpose?: string;
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [followedClubs, setFollowedClubs] = useState<FollowedClub[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -59,6 +74,24 @@ export default function ProfilePage() {
         }
         const data: ProfileData = await res.json();
         setProfile(data);
+
+        // 2) fetch all saved events
+        const evRes = await fetch('/api/savedEvents', { credentials: 'include' });
+        if (!evRes.ok) {
+          throw new Error(`Could not fetch saved events: ${evRes.status}`);
+        }
+        const allEvents: SavedEvent[] = await evRes.json();
+        const shuffledEvents = allEvents.sort(() => 0.5 - Math.random());
+        setSavedEvents(shuffledEvents.slice(0, 2));
+
+        // 3) fetch all followed clubs
+        const fcRes = await fetch('/api/clubs/${club.id}/follow', { credentials: 'include' });
+        if (!fcRes.ok) {
+          throw new Error(`Could not fetch followed clubs: ${fcRes.status}`);
+        }
+        const allClubs: FollowedClub[] = await fcRes.json();
+        const shuffledClubs = allClubs.sort(() => 0.5 - Math.random());
+        setFollowedClubs(shuffledClubs.slice(0, 2));
       } catch (e: any) {
         setError(e.message);
       } finally {
@@ -243,6 +276,68 @@ export default function ProfilePage() {
                       </Col>
                     </Row>
                   )}
+                </Card.Body>
+              </Card>
+            </div>
+          </Col>
+
+          {/* Right Column */}
+          <Col md={4}>
+            <div className="d-flex flex-column gap-4">
+              {/* Saved Events */}
+              <Card className="shadow-sm">
+                <Card.Body>
+                  <Card.Title className="h5 mb-4">Saved Events</Card.Title>
+                  {savedEvents.map((e) => {
+                    const [month, dayNum] = fmtDate(e.startDateTime).split(' ');
+                    return (
+                      <div key={e.id} className="d-flex mb-3">
+                        <div className="text-center me-3">
+                          <h6 className="mb-0">{month}</h6>
+                          <p className="h4 mb-0">{dayNum}</p>
+                        </div>
+                        <div>
+                          <p className="fw-semibold mb-1">{e.title}</p>
+                          <p className="text-muted mb-0">
+                            {fmtTime(e.startDateTime)}
+                            {' '}
+                            –
+                            {e.location}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  <div className="text-center mt-3">
+                    <Button variant="primary" size="sm" onClick={() => router.push('/events')}>
+                      View All Events
+                    </Button>
+                  </div>
+                </Card.Body>
+              </Card>
+
+              {/* My RIOs */}
+              <Card className="shadow-sm">
+                <Card.Body>
+                  <Card.Title className="h5 mb-4">Followed Clubs</Card.Title>
+                  {followedClubs.map((c) => (
+                    <div key={c.id} className="mb-3">
+                      <p className="fw-semibold mb-1">{c.name}</p>
+                      {c.purpose && (
+                        <p className="text-muted mb-0">
+                          {c.purpose.length > 60
+                            ? `${c.purpose.substring(0, 60)}...`
+                            : c.purpose}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                  <div className="text-center mt-3">
+                    <Button variant="primary" size="sm" onClick={() => router.push('/clubs')}>
+                      View All Clubs
+                    </Button>
+                  </div>
                 </Card.Body>
               </Card>
             </div>
