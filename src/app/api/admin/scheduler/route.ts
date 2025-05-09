@@ -37,8 +37,8 @@ async function scheduleJobIfNotExists(jobType: JobType): Promise<string> {
 // eslint-disable-next-line import/prefer-default-export
 export async function POST(request: Request) {
   // --- Security Check ---
-  const authorization = request.headers.get('Authorization');
-  if (!SCHEDULER_SECRET || authorization !== `Bearer ${SCHEDULER_SECRET}`) {
+  const incomingSecret = request.headers.get('x-vercel-cron-secret');
+  if (!SCHEDULER_SECRET || incomingSecret !== SCHEDULER_SECRET) {
     console.warn('Scheduler endpoint called without valid secret.');
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }

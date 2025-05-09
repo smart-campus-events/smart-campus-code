@@ -49,11 +49,12 @@ async function runClubScraping() {
 // eslint-disable-next-line import/prefer-default-export
 export async function POST(request: Request) {
   // --- Security Check ---
-  const authorization = request.headers.get('Authorization');
-  if (!WORKER_SECRET || authorization !== `Bearer ${WORKER_SECRET}`) {
+  const incomingSecret = request.headers.get('x-vercel-cron-secret');
+  if (!WORKER_SECRET || incomingSecret !== WORKER_SECRET) {
     console.warn('Worker endpoint called without valid secret.');
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
+
   // --------------------
 
   console.log('Worker checking for pending jobs...');
