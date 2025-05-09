@@ -124,13 +124,15 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
       day: 'numeric',
     },
   );
-  const formattedTime = new Date(startDateTime).toLocaleTimeString(
-    undefined,
-    {
-      hour: 'numeric',
-      minute: '2-digit',
-    },
-  );
+  const date = new Date(startDateTime);
+
+  // Add 10 hours
+  date.setHours(date.getHours() + 10);
+
+  const formattedTime = date.toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 
   // Determine the link for the main button (prefer eventUrl)
   const cardLink = eventUrl || eventPageUrl;

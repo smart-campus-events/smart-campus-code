@@ -6,6 +6,8 @@ import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcrypt';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // POST /api/signup
 export async function POST(req: Request) {
   try {

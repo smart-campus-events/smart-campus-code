@@ -6,6 +6,8 @@ import { NextResponse } from 'next/server';
 // Import Prisma utility types
 import { Prisma } from '@prisma/client';
 
+export const dynamic = 'force-dynamic';
+
 // Extend Session type inline to include user.id
 type SessionWithId = Session & { user: Session['user'] & { id: string } };
 
@@ -79,7 +81,6 @@ export async function GET(/* request: Request */) {
           status: 'APPROVED',
           startDateTime: { gte: new Date() },
           categories: { some: { categoryId: { in: userInterestCategoryIds } } },
-          rsvps: { none: { userId } },
           // Optional: rsvps: { none: { userId: userId } }
         },
         include: eventArgs.include,

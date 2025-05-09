@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { Session } from 'next-auth';
 import { getServerSession } from 'next-auth/next';
-import { ContentStatus } from '@prisma/client';
+import { ContentStatus } from '@prisma/client'; // Ensure this is imported
 import { prisma } from '@/lib/prisma';
 import nextAuthOptionsConfig from '@/lib/authOptions';
 
@@ -11,6 +11,7 @@ async function isAdminUser(): Promise<boolean> {
   return session?.user?.isAdmin === true;
 }
 
+// Validate if the provided status is a valid ContentStatus enum value
 function isValidContentStatus(status: any): status is ContentStatus {
   return Object.values(ContentStatus).includes(status);
 }
@@ -23,7 +24,7 @@ function isValidAttendanceType(attendanceType: any): boolean {
 // GET /api/admin/events/[eventId]
 // Fetches details for a single event.
 export async function GET(
-  request: Request, // Added request parameter (standard practice)
+  request: Request,
   { params: { eventId } }: { params: { eventId: string } },
 ) {
   if (!(await isAdminUser())) {
@@ -38,18 +39,19 @@ export async function GET(
     const event = await prisma.event.findUnique({
       where: { id: eventId },
       include: {
-        // Include related data needed for the edit form
-        categories: { // Get the IDs of connected categories
+        categories: {
           select: {
             categoryId: true,
           },
         },
-        organizerClub: { // Get the ID and name of the connected club
+        organizerClub: {
           select: {
             id: true,
             name: true,
           },
         },
+        // If you also fetch submittedBy info, handle it here
+        // submittedBy: { select: { id: true, name: true } },
       },
     });
 
@@ -57,15 +59,13 @@ export async function GET(
       return NextResponse.json({ message: 'Event not found' }, { status: 404 });
     }
 
-    // Simplify categories data before sending
-    const simplifiedEvent = {
+    const eventToReturn: any = {
       ...event,
-      categoryIds: event.categories.map(ec => ec.categoryId), // Create flat array of IDs
-      // categories field is no longer needed in the response
+      categoryIds: event.categories.map(ec => ec.categoryId),
     };
-    delete (simplifiedEvent as any).categories;
+    delete eventToReturn.categories;
 
-    return NextResponse.json(simplifiedEvent, { status: 200 });
+    return NextResponse.json(eventToReturn, { status: 200 });
   } catch (error: any) {
     console.error(`Failed to fetch event ${eventId}:`, error);
     return NextResponse.json({ message: 'Failed to fetch event details', error: error.message }, { status: 500 });
@@ -87,19 +87,24 @@ export async function PATCH(
   try {
     const body = await request.json();
 
-    // --- Basic Validation (similar to POST, but fields are optional) ---
+    // --- Basic Validation ---
     if (body.title !== undefined && (typeof body.title !== 'string' || body.title.trim() === '')) {
       return NextResponse.json({ message: 'Event title cannot be empty if provided.' }, { status: 400 });
     }
-    if (body.startDateTime && Number.isNaN(Date.parse(body.startDateTime))) {
-      return NextResponse.json({ message: 'Invalid start date/time provided.' }, { status: 400 });
+    let start = null;
+    if (body.startDateTime) {
+      start = new Date(body.startDateTime);
+      if (Number.isNaN(start.getTime())) {
+        return NextResponse.json({ message: 'Invalid start date/time provided.' }, { status: 400 });
+      }
     }
-    if (body.endDateTime && Number.isNaN(Date.parse(body.endDateTime))) {
-      return NextResponse.json({ message: 'Invalid end date/time provided.' }, { status: 400 });
+    let end = null;
+    if (body.endDateTime) {
+      end = new Date(body.endDateTime);
+      if (Number.isNaN(end.getTime())) {
+        return NextResponse.json({ message: 'Invalid end date/time provided.' }, { status: 400 });
+      }
     }
-    // Ensure start/end dates are logical if both are provided
-    const start = body.startDateTime ? new Date(body.startDateTime) : null;
-    const end = body.endDateTime ? new Date(body.endDateTime) : null;
     if (start && end && start > end) {
       return NextResponse.json({ message: 'End date/time cannot be before start date/time.' }, { status: 400 });
     }
@@ -111,52 +116,53 @@ export async function PATCH(
     }
     // -----------------------
 
+    // Destructure fields from body.
+    // Explicitly pull out fields that are handled specially (relations, or fields not to be updated).
     const {
-      categories: categoryIds, // Array of category IDs for the updated set
-      organizerClubId, // The ID of the new organizer club, or null/undefined to remove
-      ...eventData // Rest of the fields to update
+      categoryIds, // For categories relation
+      organizerClubId, // For organizerClub relation
+      submittedByUserId, // Field to IGNORE during update
+      submittedBy, // Relation object to IGNORE during update (if sent)
+      // Potentially other fields like 'createdAt', 'updatedAt' if client sends them
+      createdAt,
+      updatedAt,
+      ...otherEventData // The rest of the fields that are safe to update directly
     } = body;
 
     const updateData: any = {
-      ...eventData,
-      // Convert dates only if they are provided
-      ...(start && { startDateTime: start }),
-      ...(end && { endDateTime: end }),
-      // If endDateTime is explicitly set to null/undefined in body, handle it
-      ...(body.hasOwn('endDateTime') && !end && { endDateTime: null }),
+      ...otherEventData, // Spread the safe, updatable fields
     };
 
+    if (start) {
+      updateData.startDateTime = start;
+    }
+    if (Object.hasOwn(body, 'endDateTime')) {
+      updateData.endDateTime = end;
+    }
+
     // --- Handle Category Updates (Many-to-Many) ---
-    // This replaces all existing categories with the new set provided.
     if (Array.isArray(categoryIds)) {
       updateData.categories = {
-        // First, delete existing relations for this event
         deleteMany: {},
-        // Then, create new relations for the submitted IDs
         create: categoryIds.map((id: string) => ({
           category: { connect: { id } },
         })),
       };
     }
-    // Note: If categoryIds is not in the body, categories won't be touched.
-    // If categoryIds is an empty array [], all categories will be disconnected.
 
     // --- Handle Organizer Club Updates (One-to-Many) ---
-    if (body.hasOwn('organizerClubId')) { // Check if the key exists in the request
-      if (organizerClubId && typeof organizerClubId === 'string') {
-        // Connect to the new club
+    if (Object.hasOwn(body, 'organizerClubId')) {
+      if (organizerClubId && typeof organizerClubId === 'string' && organizerClubId !== 'none') {
         updateData.organizerClub = { connect: { id: organizerClubId } };
       } else {
-        // Disconnect if organizerClubId is null, undefined, or empty string
         updateData.organizerClub = { disconnect: true };
       }
     }
-    // If organizerClubId is not in the body, the relation won't be touched.
 
     const updatedEvent = await prisma.event.update({
       where: { id: eventId },
       data: updateData,
-      include: { // Optional: return updated relations
+      include: {
         categories: { include: { category: true } },
         organizerClub: true,
       },
@@ -169,16 +175,18 @@ export async function PATCH(
     if (error instanceof SyntaxError) {
       return NextResponse.json({ message: 'Invalid JSON body' }, { status: 400 });
     }
-    // Handle Prisma 'Record to update not found' error
     if (error.code === 'P2025') {
-      return NextResponse.json({ message: 'Event not found' }, { status: 404 });
+      return NextResponse.json({ message: 'Event not found to update' }, { status: 404 });
+    }
+    if (error.clientVersion) {
+      console.error('Prisma Error Details:', JSON.stringify(error, null, 2));
     }
     return NextResponse.json({ message: 'Failed to update event', error: error.message }, { status: 500 });
   }
 }
 
 export async function DELETE(
-  request: Request, // Added request parameter
+  request: Request,
   { params: { eventId } }: { params: { eventId: string } },
 ) {
   if (!(await isAdminUser())) {
@@ -190,19 +198,16 @@ export async function DELETE(
   }
 
   try {
-    // Attempt to delete the event
     await prisma.event.delete({
       where: { id: eventId },
     });
 
     console.log(`Admin deleted event ${eventId}`);
-    // Return 204 No Content for successful deletion
     return new Response(null, { status: 204 });
   } catch (error: any) {
     console.error(`Failed to delete event ${eventId}:`, error);
-    // Handle Prisma 'Record to delete does not exist' error
     if (error.code === 'P2025') {
-      return NextResponse.json({ message: 'Event not found' }, { status: 404 });
+      return NextResponse.json({ message: 'Event not found to delete' }, { status: 404 });
     }
     return NextResponse.json({ message: 'Failed to delete event', error: error.message }, { status: 500 });
   }

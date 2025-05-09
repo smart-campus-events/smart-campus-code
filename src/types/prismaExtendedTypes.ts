@@ -1,9 +1,9 @@
 import type {
-  Category,
-  ClubCategory,
-  EventCategory,
-  Club as PrismaClub,
   Event as PrismaEvent,
+  Club as PrismaClub,
+  Category,
+  EventCategory,
+  ClubCategory,
   RSVP,
   User,
 } from '@prisma/client';

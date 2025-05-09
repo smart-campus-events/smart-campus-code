@@ -5,6 +5,8 @@ import { getServerSession } from 'next-auth/next';
 import { prisma } from '@/lib/prisma';
 import nextAuthOptionsConfig from '@/lib/authOptions';
 
+export const dynamic = 'force-dynamic';
+
 // Utility to check if user is admin
 async function isAdminUser(): Promise<boolean> {
   const session = (await getServerSession(nextAuthOptionsConfig)) as Session;

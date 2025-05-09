@@ -75,7 +75,7 @@ export async function PATCH(
       ...(start && { startDateTime: start }),
       ...(end && { endDateTime: end }),
       // If endDateTime is explicitly set to null/undefined in body, handle it
-      ...(body.hasOwn('endDateTime') && !end && { endDateTime: null }),
+      ...(Object.hasOwn(body, 'endDateTime') && !end && { endDateTime: null }),
     };
 
     // --- Handle Category Updates (Many-to-Many) ---
@@ -94,7 +94,7 @@ export async function PATCH(
     // If categoryIds is an empty array [], all categories will be disconnected.
 
     // --- Handle Organizer Club Updates (One-to-Many) ---
-    if (body.hasOwn('organizerClubId')) { // Check if the key exists in the request
+    if (Object.hasOwn(body, 'organizerClubId')) { // Check if the key exists in the request
       if (organizerClubId && typeof organizerClubId === 'string') {
         // Connect to the new club
         updateData.organizerClub = { connect: { id: organizerClubId } };

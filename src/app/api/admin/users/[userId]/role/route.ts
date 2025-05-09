@@ -5,6 +5,8 @@ import { getServerSession } from 'next-auth/next';
 import { prisma } from '@/lib/prisma';
 import nextAuthOptionsConfig from '@/lib/authOptions';
 
+export const dynamic = 'force-dynamic';
+
 // Utility to get current admin session (including ID)
 async function getCurrentAdminSession(): Promise<(Session & { user: { id: string } }) | null> {
   const session = (await getServerSession(nextAuthOptionsConfig)) as Session & {
