@@ -169,7 +169,7 @@ export default function DashboardPage() {
           {!aiLoading && !aiError && aiSuggestions && (
             <div>
               {/* Show top club recommendations */}
-              {aiSuggestions.topClubRecommendations.length > 0 && (
+              {aiSuggestions.topClubRecommendations && aiSuggestions.topClubRecommendations.length > 0 && (
                 <div className="mb-4">
                   <h3 className="h5 mb-3">Recommended Clubs</h3>
                   <Row className="g-4 row-cols-1 row-cols-md-2 row-cols-lg-3">
@@ -183,7 +183,7 @@ export default function DashboardPage() {
               )}
 
               {/* Show top event recommendations */}
-              {aiSuggestions.topRecommendations.length > 0 && (
+              {aiSuggestions.topRecommendations && aiSuggestions.topRecommendations.length > 0 && (
                 <div>
                   <h3 className="h5 mb-3">Recommended Events</h3>
                   <Row className="g-4 row-cols-1 row-cols-md-2 row-cols-lg-3">
@@ -196,8 +196,8 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {aiSuggestions.topClubRecommendations.length === 0
-               && aiSuggestions.topRecommendations.length === 0 && (
+              {(aiSuggestions.topClubRecommendations?.length === 0 || !aiSuggestions.topClubRecommendations)
+               && (aiSuggestions.topRecommendations?.length === 0 || !aiSuggestions.topRecommendations) && (
                <Alert variant="info">
                  No AI suggestions available yet. Complete your profile to get personalized recommendations.
                </Alert>

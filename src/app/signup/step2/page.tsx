@@ -5,7 +5,7 @@
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Button,
   Card,
@@ -25,7 +25,6 @@ import {
   CheckCircleFill,
   Circle,
   Envelope,
-  Google,
   Lock,
 } from 'react-bootstrap-icons';
 import SignupProgress from '../SignupProgress';
@@ -55,8 +54,7 @@ export default function SignupStep2Page() {
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [googleError, setGoogleError] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const value = checkPasswordStrength(password);
@@ -69,22 +67,21 @@ export default function SignupStep2Page() {
     });
   }, [password]);
 
-  const handleGoogleSignUp = async () => {
-    setGoogleError(null);
-    setIsGoogleLoading(true);
-    try {
-      await signIn('google', { callbackUrl: '/signup/step3', redirect: true });
-    } catch (err) {
-      console.error('Google sign-up error:', err);
-      setGoogleError('Google sign-up failed. Please try again.');
-      setIsGoogleLoading(false);
+  useEffect(() => {
+    if (error) {
+      containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  };
+  }, [error]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
-    setGoogleError(null);
+
+    // Enforce hawaii.edu email
+    if (!/^[^@]+@hawaii\.edu$/i.test(email)) {
+      setError('Registration Only Available for Students with an @hawaii.edu Email');
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
@@ -135,201 +132,201 @@ export default function SignupStep2Page() {
   const strengthLabel = ['Weak', 'Fair', 'Good', 'Strong'][passwordStrength - 1] || '';
 
   return (
-    <div className="bg-light min-vh-100 d-flex flex-column overflow-auto">
-      <Container className="py-4 py-md-5 flex-grow-1 d-flex flex-column">
-        <SignupProgress currentStep={2} totalSteps={5} />
-        <Row className="justify-content-center">
-          <Col md={8} lg={6} xl={5}>
-            <Card className="shadow-sm border-light rounded-4">
-              <Card.Body className="p-4 p-md-5">
-                <Stack direction="horizontal" gap={3} className="mb-4 align-items-center">
-                  <Image
-                    src="https://storage.googleapis.com/uxpilot-auth.appspot.com/d8899fadb3-5df15300b4c172c2ef67.png"
-                    alt="Manoa Compass Logo"
-                    style={{ width: '40px', height: 'auto' }}
-                  />
-                  <Card.Title as="h2" className="h4 mb-0 fw-bold">Create Your Account</Card.Title>
-                </Stack>
-                <Button
-                  variant="outline-primary"
-                  onClick={handleGoogleSignUp}
-                  className="w-100 mb-3"
-                  disabled={loading || isGoogleLoading}
-                >
-                  {isGoogleLoading ? 'Processing...' : (
-                    <>
-                      <Google className="me-2" />
+    <Container
+      ref={containerRef}
+      fluid
+      className="bg-light min-vh-100 d-flex flex-column overflow-auto py-4 py-md-5"
+    >
+      <SignupProgress currentStep={2} totalSteps={5} />
+
+      <Row className="justify-content-center flex-grow-1 d-flex flex-column">
+        <Col md={8} lg={6} xl={5} className="mx-auto">
+          <Card className="shadow-sm border-light rounded-4">
+            <Card.Body className="p-4 p-md-5">
+              <Stack direction="horizontal" gap={3} className="mb-4 align-items-center">
+                <Image
+                  src="https://storage.googleapis.com/uxpilot-auth.appspot.com/d8899fadb3-5df15300b4c172c2ef67.png"
+                  alt="Manoa Compass Logo"
+                  style={{ width: '40px', height: 'auto' }}
+                />
+                <Card.Title as="h2" className="h4 mb-0 fw-bold">
+                  Create Your Account
+                </Card.Title>
+              </Stack>
+
+              <Form onSubmit={handleSubmit}>
+                <Stack gap={3}>
+                  {error && <div className="text-danger small mb-2">{error}</div>}
+
+                  <Form.Group controlId="signupFirstName">
+                    <Form.Label>
+                      First Name
                       {' '}
-                      Sign up with Google
-                    </>
-                  )}
-                </Button>
-                {googleError && <div className="text-danger small mb-3">{googleError}</div>}
-                <Form onSubmit={handleSubmit}>
-                  <Stack gap={3}>
-                    {error && <div className="text-danger small mb-2">{error}</div>}
-                    <Form.Group controlId="signupFirstName">
-                      <Form.Label>
-                        First Name
-                        {' '}
-                        <span className="text-danger">*</span>
-                      </Form.Label>
+                      <span className="text-danger">*</span>
+                    </Form.Label>
+                    <Form.Control
+                      type="text"
+                      placeholder="First Name"
+                      value={firstName}
+                      onChange={e => setFirstName(e.target.value)}
+                      required
+                      disabled={loading}
+                    />
+                  </Form.Group>
+
+                  <Form.Group controlId="signupLastName">
+                    <Form.Label>
+                      Last Name
+                      {' '}
+                      <span className="text-danger">*</span>
+                    </Form.Label>
+                    <Form.Control
+                      type="text"
+                      placeholder="Last Name"
+                      value={lastName}
+                      onChange={e => setLastName(e.target.value)}
+                      required
+                      disabled={loading}
+                    />
+                  </Form.Group>
+
+                  <Form.Group controlId="signupEmail">
+                    <Form.Label>
+                      Email Address
+                      {' '}
+                      <span className="text-danger">*</span>
+                    </Form.Label>
+                    <InputGroup>
+                      <InputGroup.Text><Envelope /></InputGroup.Text>
                       <Form.Control
-                        type="text"
-                        placeholder="First Name"
-                        value={firstName}
-                        onChange={e => setFirstName(e.target.value)}
+                        type="email"
+                        placeholder="your.email@hawaii.edu"
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
                         required
-                        disabled={loading || isGoogleLoading}
+                        disabled={loading}
                       />
-                    </Form.Group>
-                    <Form.Group controlId="signupLastName">
-                      <Form.Label>
-                        Last Name
-                        {' '}
-                        <span className="text-danger">*</span>
-                      </Form.Label>
+                    </InputGroup>
+                  </Form.Group>
+
+                  <Form.Group controlId="signupPassword">
+                    <Form.Label>
+                      Password
+                      {' '}
+                      <span className="text-danger">*</span>
+                    </Form.Label>
+                    <InputGroup>
+                      <InputGroup.Text><Lock /></InputGroup.Text>
                       <Form.Control
-                        type="text"
-                        placeholder="Last Name"
-                        value={lastName}
-                        onChange={e => setLastName(e.target.value)}
+                        type="password"
+                        placeholder="Create password"
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
                         required
-                        disabled={loading || isGoogleLoading}
+                        disabled={loading}
                       />
-                    </Form.Group>
-                    <Form.Group controlId="signupEmail">
-                      <Form.Label>
-                        Email Address
-                        {' '}
-                        <span className="text-danger">*</span>
-                      </Form.Label>
-                      <InputGroup>
-                        <InputGroup.Text><Envelope /></InputGroup.Text>
-                        <Form.Control
-                          type="email"
-                          placeholder="your.email@hawaii.edu"
-                          value={email}
-                          onChange={e => setEmail(e.target.value)}
-                          required
-                          disabled={loading || isGoogleLoading}
-                        />
-                      </InputGroup>
-                    </Form.Group>
-                    <Form.Group controlId="signupPassword">
-                      <Form.Label>
-                        Password
-                        {' '}
-                        <span className="text-danger">*</span>
-                      </Form.Label>
-                      <InputGroup>
-                        <InputGroup.Text><Lock /></InputGroup.Text>
-                        <Form.Control
-                          type="password"
-                          placeholder="Create password"
-                          value={password}
-                          onChange={e => setPassword(e.target.value)}
-                          required
-                          disabled={loading || isGoogleLoading}
-                        />
-                      </InputGroup>
-                      <ProgressBar
-                        now={(passwordStrength / 4) * 100}
-                        className="mt-2"
-                        variant={strengthVariant}
+                    </InputGroup>
+                    <ProgressBar
+                      now={(passwordStrength / 4) * 100}
+                      className="mt-2"
+                      variant={strengthVariant}
+                    />
+                    <Form.Text className={`small text-${strengthVariant}`}>
+                      Password strength:
+                      {' '}
+                      {strengthLabel}
+                    </Form.Text>
+                  </Form.Group>
+
+                  <Form.Group controlId="confirmPassword">
+                    <Form.Label>
+                      Confirm Password
+                      {' '}
+                      <span className="text-danger">*</span>
+                    </Form.Label>
+                    <InputGroup>
+                      <InputGroup.Text><Lock /></InputGroup.Text>
+                      <Form.Control
+                        type="password"
+                        placeholder="Confirm password"
+                        value={confirmPassword}
+                        onChange={e => setConfirmPassword(e.target.value)}
+                        required
+                        isInvalid={confirmPassword.length > 0 && password !== confirmPassword}
+                        disabled={loading}
                       />
-                      <Form.Text className={`small text-${strengthVariant}`}>
-                        Password strength:
-                        {' '}
-                        {strengthLabel}
-                      </Form.Text>
-                    </Form.Group>
-                    <Form.Group controlId="confirmPassword">
-                      <Form.Label>
-                        Confirm Password
-                        {' '}
-                        <span className="text-danger">*</span>
-                      </Form.Label>
-                      <InputGroup>
-                        <InputGroup.Text><Lock /></InputGroup.Text>
-                        <Form.Control
-                          type="password"
-                          placeholder="Confirm password"
-                          value={confirmPassword}
-                          onChange={e => setConfirmPassword(e.target.value)}
-                          required
-                          isInvalid={confirmPassword.length > 0 && password !== confirmPassword}
-                          disabled={loading || isGoogleLoading}
-                        />
-                        <Form.Control.Feedback type="invalid">
-                          Passwords do not match.
-                        </Form.Control.Feedback>
-                      </InputGroup>
-                    </Form.Group>
-                    <Card bg="light" body className="border">
-                      <p className="small fw-medium text-dark mb-2">Password Requirements:</p>
-                      <ListGroup variant="flush" className="small">
-                        {[
-                          { ok: requirements.length, text: 'At least 8 characters' },
-                          { ok: requirements.uppercase, text: 'One uppercase letter' },
-                          { ok: requirements.number, text: 'One number' },
-                          { ok: requirements.special, text: 'One special character' },
-                        ].map(({ ok, text }) => (
-                          <ListGroup.Item
-                            key={text}
-                            className={`d-flex gap-2 px-0 py-1 bg-transparent ${
-                              ok ? 'text-success' : 'text-muted'
-                            }`}
-                          >
-                            {ok ? <CheckCircleFill /> : <Circle size={12} />}
-                            {' '}
-                            {text}
-                          </ListGroup.Item>
-                        ))}
-                      </ListGroup>
-                    </Card>
-                    <p className="small text-muted">
-                      By creating an account, you agree to our
-                      {' '}
-                      <Link href="/terms" className="text-decoration-none">
-                        Terms of Service
-                      </Link>
-                      {' '}
-                      and
-                      {' '}
-                      <Link href="/privacy" className="text-decoration-none">
-                        Privacy Policy
-                      </Link>
-                      .
-                    </p>
-                    <Button
-                      type="submit"
-                      variant="success"
-                      size="lg"
-                      className="w-100"
-                      disabled={loading || isGoogleLoading}
+                      <Form.Control.Feedback type="invalid">
+                        Passwords do not match.
+                      </Form.Control.Feedback>
+                    </InputGroup>
+                  </Form.Group>
+
+                  <Card bg="light" body className="border">
+                    <p className="small fw-medium text-dark mb-2">Password Requirements:</p>
+                    <ListGroup variant="flush" className="small">
+                      {[
+                        { ok: requirements.length, text: 'At least 8 characters' },
+                        { ok: requirements.uppercase, text: 'One uppercase letter' },
+                        { ok: requirements.number, text: 'One number' },
+                        { ok: requirements.special, text: 'One special character' },
+                      ].map(({ ok, text }) => (
+                        <ListGroup.Item
+                          key={text}
+                          className={`d-flex gap-2 px-0 py-1 bg-transparent ${
+                            ok ? 'text-success' : 'text-muted'
+                          }`}
+                        >
+                          {ok ? <CheckCircleFill /> : <Circle size={12} />}
+                          {' '}
+                          {text}
+                        </ListGroup.Item>
+                      ))}
+                    </ListGroup>
+                  </Card>
+
+                  <p className="small text-muted">
+                    By creating an account, you agree to our
+                    {' '}
+                    <Link href="/terms" className="text-decoration-none">
+                      Terms of Service
+                    </Link>
+                    {' '}
+                    and
+                    {' '}
+                    <Link href="/privacy" className="text-decoration-none">
+                      Privacy Policy
+                    </Link>
+                    .
+                  </p>
+
+                  <Button
+                    type="submit"
+                    variant="success"
+                    size="lg"
+                    className="w-100"
+                    disabled={loading}
+                  >
+                    Create Account
+                    {' '}
+                    <ArrowRight className="ms-1" />
+                  </Button>
+
+                  <div className="text-center mt-2">
+                    <Link
+                      href="/signup/step1"
+                      className="small text-muted text-decoration-none"
                     >
-                      Create Account
+                      <ArrowLeft className="me-1" size={12} />
                       {' '}
-                      <ArrowRight className="ms-1" />
-                    </Button>
-                    <div className="text-center mt-2">
-                      <Link
-                        href="/signup/step1"
-                        className="small text-muted text-decoration-none"
-                      >
-                        <ArrowLeft className="me-1" size={12} />
-                        {' '}
-                        Back to Welcome
-                      </Link>
-                    </div>
-                  </Stack>
-                </Form>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      </Container>
-    </div>
+                      Back to Welcome
+                    </Link>
+                  </div>
+                </Stack>
+              </Form>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+    </Container>
   );
 }

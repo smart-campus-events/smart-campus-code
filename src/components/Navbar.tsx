@@ -24,15 +24,28 @@ const NavBar: React.FC = () => {
   const currentStep = signupMatch ? parseInt(signupMatch[1], 10) : null;
   const inSignupFlow = signupMatch !== null;
   // disable full nav for steps 1–4
-  const disableFullNav = inSignupFlow && (currentStep !== null && currentStep < 5);
+  const disableFullNav = inSignupFlow && currentStep !== null && currentStep < 5;
   const showFullNav = isLoggedIn && !disableFullNav;
 
+  // clickable on steps 1 & 2 (or anywhere outside steps 3/4)
+  const brandIsClickable = !inSignupFlow
+    || currentStep === 1
+    || currentStep === 2
+    || (currentStep !== null && currentStep >= 5);
+
   return (
-    <Navbar bg="light" expand="lg">
+    <Navbar bg="success" expand="lg">
       <Container>
-        <Navbar.Brand as={Link} href={isLoggedIn ? '/dashboard' : '/'}>
-          Manoa Compass
-        </Navbar.Brand>
+        {brandIsClickable ? (
+          <Navbar.Brand as={Link} href={isLoggedIn ? '/dashboard' : '/'}>
+            Manoa Compass
+          </Navbar.Brand>
+        ) : (
+          <Navbar.Brand>
+            Manoa Compass
+          </Navbar.Brand>
+        )}
+
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="ms-auto align-items-center">
@@ -42,15 +55,14 @@ const NavBar: React.FC = () => {
                 <Nav.Link as={Link} href="/dashboard" active={pathName === '/dashboard'}>
                   Dashboard
                 </Nav.Link>
+                <Nav.Link as={Link} href="/suggestions" active={pathName === '/dashboard'}>
+                  Suggestions
+                </Nav.Link>
                 <Nav.Link as={Link} href="/clubs" active={pathName === '/clubs'}>
                   Clubs
                 </Nav.Link>
                 <Nav.Link as={Link} href="/events" active={pathName === '/events'}>
                   Events
-                </Nav.Link>
-                <Nav.Link as={Link} href="/suggestions" active={pathName === '/suggestions'}>
-                  <Lightbulb className="me-1" />
-                  AI Suggestions
                 </Nav.Link>
                 {isAdmin && (
                   <Nav.Link as={Link} href="/admin" active={pathName === '/admin'}>

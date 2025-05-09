@@ -23,7 +23,7 @@ const path = require('path');
 
 // Load environment variables
 try {
-  dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+  dotenv.config({ path: path.resolve(__dirname, '../../.env') }); // Assuming .env is two levels up from script location
   console.log('Loaded environment variables from:', path.resolve(__dirname, '../../.env'));
 } catch (err) {
   console.warn('Could not load .env file. Ensure it exists at the project root.', err);
@@ -32,14 +32,9 @@ try {
 // Initialize Prisma Client
 const prisma = new PrismaClient();
 
-// Allowed Categories
-const allowedCategories = [
-  'Academic', 'Arts & Music', 'Community Service', 'Cultural',
-  'Environmental', 'Gaming', 'Health & Wellness', 'Hobbies',
-  'Outdoors & Recreation', 'Political', 'Professional Development',
-  'Religious & Spiritual', 'Social', 'Sports', 'Technology',
-];
-const allowedCategoriesSet = new Set(allowedCategories); // For efficient lookup
+// --- Allowed Categories will be fetched from the DB ---
+let allowedCategories = [];
+let allowedCategoriesSet = new Set();
 
 // Gemini API Configuration
 const { GEMINI_API_KEY } = process.env;
@@ -62,7 +57,6 @@ const geminiModel = genAI.getGenerativeModel({
 });
 
 console.log(`Using Gemini model: ${geminiModelName}`);
-console.log(`Allowed categories: ${allowedCategories.join(', ')}`);
 
 // --- Helper Functions ---
 
@@ -70,36 +64,29 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // --- Database Functions (using Prisma & Updated Schema - targeting 'categoryTags' field) ---
 
-/**
- * Fetches a batch of events from the database that have NULL or empty 'categoryTags'.
- * Uses the field names from the updated schema.
- * @param {number} limit - The maximum number of events to fetch.
- * @returns {Promise<Array<object>>} A promise resolving to an array of events needing tags.
- */
 async function fetchUntaggedEvents(limit) {
-  console.log(`Fetching up to ${limit} events with missing 'categoryTags'...`);
+  console.log(`Workspaceing up to ${limit} events with missing 'categoryTags'...`);
   try {
     const events = await prisma.event.findMany({
       where: {
-        // Find events where categoryTags is null OR an empty string
         OR: [
           { categoryTags: null },
           { categoryTags: '' },
         ],
       },
-      select: { // Select fields needed for generating tags and the event ID
-        id: true, // Use 'id' from the schema
+      select: {
+        id: true,
         title: true,
         description: true,
-        organizerSponsor: true, // Use 'organizerSponsor' from the schema
+        organizerSponsor: true,
         location: true,
       },
       take: limit,
       orderBy: {
-        createdAt: 'asc', // Use 'createdAt' from the schema
+        createdAt: 'asc',
       },
     });
-    console.log(`Fetched ${events.length} events.`);
+    console.log(`Workspaceed ${events.length} events.`);
     return events;
   } catch (error) {
     console.error('Error fetching untagged events from database:', error);
@@ -107,22 +94,14 @@ async function fetchUntaggedEvents(limit) {
   }
 }
 
-/**
- * Updates the 'categoryTags' string field for a specific event in the database.
- * @param {string} eventId - The unique ID of the event to update (field 'id').
- * @param {string} tagsString - The comma-separated string of validated tags to set.
- * @returns {Promise<boolean>} A promise resolving to true if successful, false otherwise.
- */
 async function updateEventTags(eventId, tagsString) {
   try {
     await prisma.event.update({
-      where: { id: eventId }, // Use 'id' field from schema
+      where: { id: eventId },
       data: {
-        categoryTags: tagsString, // Update the 'categoryTags' field
-        // 'updatedAt' is automatically handled by Prisma via @updatedAt
+        categoryTags: tagsString,
       },
     });
-    // console.log(`Successfully updated categoryTags for event ID: ${eventId}`);
     return true;
   } catch (error) {
     console.error(`Error updating categoryTags in database for event ID ${eventId}:`, error);
@@ -132,11 +111,6 @@ async function updateEventTags(eventId, tagsString) {
 
 // --- Gemini Tagging Function (Updated for Allowed List & String Output) ---
 
-/**
- * Generates category tags for an event using Gemini, constrained to the allowed list.
- * @param {object} event - The event data (id, title, description, organizerSponsor, location).
- * @returns {Promise<string | null>} A promise resolving to a comma-separated string of valid category names, or null on failure.
- */
 async function generateTagsWithGemini(event) {
   const title = event.title ?? '';
   let description = event.description ?? '';
@@ -149,7 +123,7 @@ async function generateTagsWithGemini(event) {
   }
 
   const prompt = `
-Analyze the following event information. Your goal is to select 1 to 3 relevant category tags ONLY from the provided list below.
+Analyze the following event information. Your goal is to select all relevant category tags ONLY from the provided list below.
 Return the selected tags separated only by commas (e.g., Tag1,Tag2,Tag3). Do NOT include any tags not in the list.
 
 Allowed Categories:
@@ -166,12 +140,10 @@ Selected Tags (1-3, comma-separated, strictly from the allowed list):
 
   let attempt = 1;
   const maxAttempts = 2;
-  const retryDelay = 10000; // 10 seconds
+  const retryDelay = 10000;
 
   while (attempt <= maxAttempts) {
     try {
-      // console.log(`--- Sending Prompt (Attempt ${attempt}) for Event ID: ${event.id} ---`);
-
       const result = await geminiModel.generateContent(prompt);
       const { response } = result;
 
@@ -180,31 +152,30 @@ Selected Tags (1-3, comma-separated, strictly from the allowed list):
         if (response?.promptFeedback?.blockReason) {
           console.warn(` -> Block Reason: ${response.promptFeedback.blockReason}`);
         }
+        // MODIFICATION: return null instead of retrying on empty/blocked response immediately
+        // If you want to retry, remove the 'return null' and let the loop handle it.
         return null;
       }
 
       const tagsText = response.text().trim();
-      let cleanedTagsText = tagsText.replace(/[`"']/g, '');
+      let cleanedTagsText = tagsText.replace(/[\`"']/g, '');
       cleanedTagsText = cleanedTagsText.replace(/^[^\w]+|[^\w]+$/g, '');
 
       const suggestedTags = cleanedTagsText.split(',')
         .map(tag => tag.trim())
         .filter(tag => tag.length > 0);
 
-      // Filter against the allowed categories set
       let validTags = suggestedTags.filter(tag => allowedCategoriesSet.has(tag));
-      validTags = validTags.slice(0, 3); // Limit to 3 tags
+      validTags = validTags.slice(0, 3);
 
       if (validTags.length === 0) {
         console.warn(`Warning: Gemini response didn't contain valid allowed tags (Attempt ${attempt}) for event ID: ${event.id}. Raw response: "${tagsText}"`);
+        // MODIFICATION: return null if no valid tags, don't retry from here
         return null;
       }
 
-      // Join the valid tags into a comma-separated string
-      const finalTagsString = validTags.join(', '); // Join with comma and space
-
-      // console.log(`Validated & Allowed Tags String: "${finalTagsString}"`);
-      return finalTagsString; // Return the comma-separated string
+      const finalTagsString = validTags.join(', ');
+      return finalTagsString;
     } catch (error) {
       console.error(`Error calling Gemini API (Attempt ${attempt}) for event ID ${event.id}:`, error);
       if (attempt === maxAttempts) {
@@ -227,11 +198,24 @@ async function main() {
   let totalEventsProcessed = 0;
   let totalEventsSuccessfullyTagged = 0;
   const batchSize = 50;
-  const delayBetweenApiCalls = 4000; // 4 seconds
+  const delayBetweenApiCalls = 4000;
 
   try {
+    // Fetch categories from DB and initialize allowedCategories and allowedCategoriesSet
+    const categoriesFromDB = await prisma.category.findMany({
+      select: { name: true },
+    });
+    allowedCategories = categoriesFromDB.map(c => c.name);
+    allowedCategoriesSet = new Set(allowedCategories);
+
+    if (allowedCategories.length === 0) {
+      console.error('No categories found in the database. Please ensure the Category table is populated. Exiting.');
+      await prisma.$disconnect();
+      process.exit(1);
+    }
+    console.log(`Dynamically loaded ${allowedCategories.length} allowed categories from the database: ${allowedCategories.join(', ')}`);
+
     while (true) {
-      // Use the updated function targeting 'categoryTags'
       const untaggedEvents = await fetchUntaggedEvents(batchSize);
 
       if (untaggedEvents.length === 0) {
@@ -243,15 +227,11 @@ async function main() {
 
       for (const event of untaggedEvents) {
         totalEventsProcessed++;
-        // Use event.id from schema
         console.log(`Processing Event ${totalEventsProcessed}: ID: ${event.id} | Title: ${event.title.substring(0, 50)}...`);
 
-        // Returns comma-separated string of valid tags or null
         const generatedTagsString = await generateTagsWithGemini(event);
 
         if (generatedTagsString) {
-          // Use the updated function to save the string to 'categoryTags'
-          // Pass event.id and the generated string
           const updateSuccess = await updateEventTags(event.id, generatedTagsString);
           if (updateSuccess) {
             console.log(`  -> Successfully tagged as: "${generatedTagsString}"`);
@@ -264,7 +244,7 @@ async function main() {
         }
 
         await sleep(delayBetweenApiCalls);
-      } // End for loop (batch processing)
+      }
 
       console.log('--- Batch Complete ---');
 
@@ -272,7 +252,7 @@ async function main() {
         console.log('Processed the last available batch of events.');
         break;
       }
-    } // End while loop (fetching batches)
+    }
   } catch (error) {
     console.error('An unexpected error occurred during the main processing loop:', error);
   } finally {

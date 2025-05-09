@@ -1,20 +1,21 @@
 // src/app/api/recommendations/ai-suggested/route.ts
-console.log('[DEBUG] ai-suggested/route.ts: Module load START');
+/* eslint-disable max-len */
+/* eslint-disable import/prefer-default-export */
 
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import type { Session } from 'next-auth';
-import type {
-  Event as PrismaEvent,
-  User as PrismaUser,
-  Category,
-  EventCategory,
-  Club as PrismaClub, // Import Club type
-  ClubCategory, // Import ClubCategory type
-} from '@prisma/client';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import nextAuthOptionsConfig from '@/lib/authOptions';
 import { prisma } from '@/lib/prisma';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import type {
+  Category, // Import Club type
+  ClubCategory, EventCategory,
+  Club as PrismaClub, Event as PrismaEvent,
+  User as PrismaUser, RSVP,
+} from '@prisma/client';
+import type { Session } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
+import { NextResponse } from 'next/server';
+
+console.log('[DEBUG] ai-suggested/route.ts: Module load START');
 
 console.log('[DEBUG] ai-suggested/route.ts: Imports loaded');
 
@@ -50,6 +51,7 @@ type UserWithInterests = PrismaUser & { interests: ({ category: Category }
 type EventWithDetails = PrismaEvent & {
   categories: (EventCategory & { category: Category })[];
   organizerClub: { name: string } | null; // Use 'organizerClub' based on Event schema
+  rsvps: RSVP[];
 };
 
 // Club type (using relevant fields)
@@ -198,6 +200,7 @@ async function fetchEventDetails(ids: string[]): Promise<EventWithDetails[]> {
     include: {
       categories: { include: { category: true } },
       organizerClub: { select: { name: true } }, // Renamed from hostClub to organizerClub
+      rsvps: true,
     },
     orderBy: { startDateTime: 'asc' }, // Keep ordering consistent if needed elsewhere
   });
@@ -354,8 +357,25 @@ export async function GET() {
   const cacheKey = `user-${userId}-recommendations`;
   const cached = recommendationCache.get(cacheKey);
   if (cached && (Date.now() - cached.timestamp < CACHE_TTL_MS)) {
-    console.log('[DEBUG] ai-suggested/route.ts: Returning cached recommendations');
-    return NextResponse.json(cached.data);
+    console.log('[DEBUG] ai-suggested/route.ts: Cache HIT for AiRankingResponse. Re-processing with fresh details.');
+    // We have cached AiRankingResponse (IDs), now we need to re-fetch and re-format.
+    const [potentialEvents, potentialClubs] = await Promise.all([
+      prisma.event.findMany({
+        where: { status: { in: ['APPROVED', 'PENDING'] }, startDateTime: { gte: new Date() } },
+        include: { categories: { include: { category: true } }, organizerClub: { select: { name: true } }, rsvps: true },
+        orderBy: { startDateTime: 'asc' },
+        take: 75,
+      }),
+      prisma.club.findMany({
+        where: { status: { in: ['APPROVED', 'PENDING'] } },
+        include: { categories: { include: { category: true } } },
+        orderBy: { name: 'asc' },
+        take: 75,
+      }),
+    ]);
+    console.log(`[DEBUG] ai-suggested/route.ts: Fetched ${potentialEvents.length} potential events, ${potentialClubs.length} potential clubs for cached ID processing`);
+    const processedCachedResponse = await processAndFormatResponse(cached.data, potentialEvents, potentialClubs); // cached.data is AiRankingResponse
+    return NextResponse.json(processedCachedResponse); // Return the newly PROCESSED response
   }
   console.log('[DEBUG] ai-suggested/route.ts: No cache or cache stale');
   // --- End Cache Check ---
@@ -369,10 +389,10 @@ export async function GET() {
     console.log('[DEBUG] ai-suggested/route.ts: User with interests fetched:', userWithInterests ? 'Yes' : 'No');
 
     console.log('[DEBUG] ai-suggested/route.ts: Attempting to fetch all approved events and clubs');
-    const [allEvents, allClubs] = await Promise.all([
+    const [eventsFromPrisma, clubsFromPrisma] = await Promise.all([
       prisma.event.findMany({
         where: { status: { in: ['APPROVED', 'PENDING'] }, startDateTime: { gte: new Date() } },
-        include: { categories: { include: { category: true } }, organizerClub: { select: { name: true } } },
+        include: { categories: { include: { category: true } }, organizerClub: { select: { name: true } }, rsvps: true },
         orderBy: { startDateTime: 'asc' },
         take: 75,
       }),
@@ -383,6 +403,8 @@ export async function GET() {
         take: 75, // Order clubs
       }),
     ]);
+    const allEvents: EventWithDetails[] = eventsFromPrisma;
+    const allClubs: ClubWithDetails[] = clubsFromPrisma;
     console.log(`[DEBUG] ai-suggested/route.ts: Fetched ${allEvents.length} events, ${allClubs.length} clubs`);
 
     if (!userWithInterests && allEvents.length === 0 && allClubs.length === 0) {
@@ -399,12 +421,17 @@ export async function GET() {
     const aiResponse = await getAiRankings(userWithInterests, allEvents, allClubs);
     console.log('[DEBUG] ai-suggested/route.ts: getAiRankings response:', aiResponse);
 
+    // Cache the raw AiRankingResponse (IDs) immediately after getting it from AI
+    if (aiResponse && (aiResponse.rankedEventIds?.length > 0 || aiResponse.branchOutEventIds?.length > 0
+      || aiResponse.rankedClubIds?.length > 0 || aiResponse.branchOutClubIds?.length > 0)) {
+      recommendationCache.set(cacheKey, { data: aiResponse, timestamp: Date.now() });
+      console.log('[DEBUG] ai-suggested/route.ts: Raw AI ID Response CACHED for user', userId);
+    }
+
     console.log('[DEBUG] ai-suggested/route.ts: Calling processAndFormatResponse');
     const formattedResponse = await processAndFormatResponse(aiResponse, allEvents, allClubs);
     console.log('[DEBUG] ai-suggested/route.ts: processAndFormatResponse response:', formattedResponse);
 
-    recommendationCache.set(cacheKey, { data: formattedResponse, timestamp: Date.now() });
-    console.log('[DEBUG] ai-suggested/route.ts: Recommendations cached. Returning response.');
     return NextResponse.json(formattedResponse);
   } catch (error) {
     console.error('[DEBUG] ai-suggested/route.ts: Error in GET handler:', error);

@@ -9,7 +9,6 @@ import {
   Col,
   Container,
   Form,
-  Image,
   InputGroup,
   Row,
   Stack,
@@ -18,7 +17,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Envelope,
-  Google,
   Lock,
 } from 'react-bootstrap-icons';
 
@@ -54,19 +52,6 @@ const SignIn = () => {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      // Redirect to dashboard on Google sign-in
-      await signIn('google', { callbackUrl: '/dashboard', redirect: true });
-    } catch (err) {
-      console.error('Google sign in failed:', err);
-      setError('Google sign in failed. Please try again.');
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="bg-light min-vh-100 d-flex flex-column">
       <Container className="py-4 py-md-5 flex-grow-1 d-flex flex-column">
@@ -75,36 +60,10 @@ const SignIn = () => {
             <Card className="shadow-sm border-light rounded-4">
               <Card.Body className="p-4 p-md-5">
                 <Stack direction="horizontal" gap={3} className="mb-4 align-items-center">
-                  <Image
-                    src="https://storage.googleapis.com/uxpilot-auth.appspot.com/d8899fadb3-5df15300b4c172c2ef67.png"
-                    alt="Manoa Compass Logo"
-                    style={{ width: '40px', height: 'auto' }}
-                  />
                   <Card.Title as="h2" className="h4 mb-0 fw-bold">
                     Welcome Back
                   </Card.Title>
                 </Stack>
-
-                <div className="text-center mb-4">
-                  <Button
-                    variant="outline-primary"
-                    onClick={handleGoogleSignIn}
-                    className="w-100"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      'Signing in...'
-                    ) : (
-                      <>
-                        <Google className="me-2" />
-                        Sign in with Google
-                      </>
-                    )}
-                  </Button>
-                  <div className="mt-3">
-                    <span className="text-muted">or</span>
-                  </div>
-                </div>
 
                 <Form onSubmit={handleSubmit}>
                   <Stack gap={3}>
