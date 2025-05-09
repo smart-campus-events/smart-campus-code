@@ -28,3 +28,20 @@ export const prisma = globalPrisma;
 if (process.env.NODE_ENV !== 'production') {
   globalThis.prisma = globalPrisma;
 }
+
+/**
+ * Tests the database connection by attempting a simple query.
+ * @returns {Promise<boolean>} True if the connection is successful, false otherwise.
+ */
+export async function testDatabaseConnection(): Promise<boolean> {
+  try {
+    // Perform a simple query to check the connection, e.g., count users or a raw query.
+    // Using `$queryRaw` for a minimal query.
+    await prisma.$queryRaw`SELECT 1`;
+    console.log('[DEBUG] prisma.ts: Database connection test successful.');
+    return true;
+  } catch (error) {
+    console.error('[DEBUG] prisma.ts: Database connection test failed:', error);
+    return false;
+  }
+}

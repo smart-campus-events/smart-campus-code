@@ -9,7 +9,7 @@ import type {
   Category, // Import Club type
   ClubCategory, EventCategory,
   Club as PrismaClub, Event as PrismaEvent,
-  User as PrismaUser, RSVP,
+  User as PrismaUser,
 } from '@prisma/client';
 import type { Session } from 'next-auth';
 import { getServerSession } from 'next-auth/next';
