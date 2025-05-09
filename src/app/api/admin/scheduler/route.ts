@@ -39,7 +39,12 @@ export async function POST(request: Request) {
   // --- Security Check ---
   const incomingSecret = request.headers.get('x-vercel-cron-secret');
   if (!SCHEDULER_SECRET || incomingSecret !== SCHEDULER_SECRET) {
-    console.warn('Scheduler endpoint called without valid secret.');
+    console.warn(
+      'Scheduler endpoint called without valid secret. Incoming secret:',
+      incomingSecret,
+      'Expected secret:',
+      SCHEDULER_SECRET,
+    );
     return NextResponse.json({ message: 'Unauthorized',
       secretReceived: incomingSecret,
       secretExpected: SCHEDULER_SECRET }, { status: 401 });
