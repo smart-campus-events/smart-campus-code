@@ -1,21 +1,13 @@
 'use client';
 
-import Link from 'next/link';
+import React from 'react';
 import {
-  Alert, Badge,
-  Button,
-  Card,
-  Col,
-  Container,
-  ListGroup,
-  Row,
+  Container, Row, Col, Card, Button, ListGroup, Alert, Badge,
 } from 'react-bootstrap';
 import {
-  ArrowRight,
-  Clock, GeoAltFill, Megaphone,
-  People,
-  Search,
+  ArrowRight, People, Clock, GeoAltFill, Megaphone, Search,
 } from 'react-bootstrap-icons';
+import Link from 'next/link';
 
 // TODO: Replace hardcoded data with actual fetched data (user name, recommendations, events, announcements)
 // TODO: Implement links for "See All", "View Calendar", "Find Connections", etc.
@@ -88,7 +80,7 @@ export default function DashboardPage() {
   // TODO: Fetch real data here
 
   return (
-    <div className="bg-light min-vh-100 overflow-auto">
+    <div className="bg-light min-vh-100">
       {/* Assuming Header/Navigation is handled by the main layout */}
       {/* Example simplified header if needed */}
       {/* <header className="bg-white shadow-sm py-3">

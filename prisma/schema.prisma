@@ -13,8 +13,8 @@ datasource db {
   // for local development
   // url       = env("DATABASE_URL")
   // for Vercel
-   url       = env("POSTGRES_PRISMA_URL")
-   directUrl = env("POSTGRES_URL_NON_POOLING")
+  url       = env("POSTGRES_PRISMA_URL")
+  directUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
 // --- Enums ---
@@ -150,7 +150,6 @@ model Club {
 
   // --- Core Club Details ---
   name                 String         @unique // Unique name of the club
-  logoUrl              String?        // Optional URL to a logo image file
   purpose              String         @db.Text // Core purpose/mission statement (required)
   categoryDescription  String?        // From schema2, use instead of single category field? Maybe store primary category via relation?
                                       // Using category relation instead based on Plan

@@ -5,6 +5,8 @@ import type { Session } from 'next-auth';
 import { getServerSession } from 'next-auth/next';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // ================= GET ==================
 
 export async function GET() {

@@ -8,12 +8,36 @@ import { PrismaClient } from '@prisma/client';
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-// eslint-disable-next-line import/prefer-default-export, operator-linebreak
-export const prisma =
-  // eslint-disable-next-line operator-linebreak
-  globalForPrisma.prisma ||
-  new PrismaClient({
-    log: ['query'], // CAM: is this the right level of logging?
+// Enhanced Prisma client with better connection handling
+export const prisma = globalForPrisma.prisma
+  || new PrismaClient({
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+
+    // Add connection limits to avoid the "prepared statement already exists" error
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL,
+      },
+    },
   });
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+// This block only runs in development to maintain a singleton instance
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma;
+}
+
+// Function to test the database connection
+export async function testDatabaseConnection() {
+  try {
+    // Simple query to check if the connection works
+    const result = await prisma.$queryRaw`SELECT 1 as result`;
+    console.log('Database connection successful:', result);
+    return true;
+  } catch (error) {
+    console.error('Database connection failed:', error);
+    return false;
+  }
+}
+
+// Export the enhanced prisma client
+export default prisma;

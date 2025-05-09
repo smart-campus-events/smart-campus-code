@@ -1,36 +1,48 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { ContentStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma'; // Reverted: Removed .ts extension
 /* eslint-disable max-len */
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/clubs - Get a list of clubs with optional filtering
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q') || '';
-  const categoryId = searchParams.get('category');
+  const categoryIds = searchParams.getAll('category');
   const page = parseInt(searchParams.get('page') || '1', 10);
-  const limit = parseInt(searchParams.get('limit') || '20', 10);
+  const limit = parseInt(searchParams.get('limit') || '1000', 10);
+  const sort = searchParams.get('sort') || 'A-Z';
   const skip = (page - 1) * limit;
 
   try {
     // Define the where clause with explicit type
     const where: Prisma.ClubWhereInput = {
       status: ContentStatus.APPROVED,
+      // Only include clubs with a contact email
+      contactEmail: {
+        not: null,
+      },
       ...(query ? {
         OR: [
           { name: { contains: query, mode: 'insensitive' } },
           { purpose: { contains: query, mode: 'insensitive' } },
         ],
       } : {}),
-      ...(categoryId ? {
+      ...(categoryIds.length > 0 ? {
         categories: {
           some: {
-            categoryId,
+            categoryId: {
+              in: categoryIds,
+            },
           },
         },
       } : {}),
     };
+
+    // Determine sort direction based on sort parameter
+    const sortDirection = sort === 'Z-A' ? 'desc' : 'asc';
 
     // Execute the query with pagination using the prisma instance
     const clubs = await prisma.club.findMany({
@@ -56,7 +68,7 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: {
-        name: 'asc',
+        name: sortDirection,
       },
       skip,
       take: limit,
@@ -84,7 +96,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/clubs - Create a new club (requires authentication)
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const session = await getServerSession();
 
@@ -100,7 +112,6 @@ export async function POST(request: NextRequest) {
 
     const {
       name,
-      logoUrl,
       purpose,
       primaryContactName,
       contactEmail,
@@ -162,7 +173,6 @@ export async function POST(request: NextRequest) {
     const club = await prisma.club.create({
       data: {
         name,
-        logoUrl,
         purpose,
         primaryContactName,
         contactEmail,

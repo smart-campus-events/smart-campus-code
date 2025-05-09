@@ -1,27 +1,28 @@
-// src/app/api/events/[eventId]/rsvp/route.ts
 import nextAuthOptionsConfig from '@/lib/authOptions';
 import { prisma } from '@/lib/prisma';
 import type { Session } from 'next-auth';
 import { getServerSession } from 'next-auth/next';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // Extend Session type inline to include user.id
 type SessionWithId = Session & { user: Session['user'] & { id: string } };
 
 interface RsvpParams {
   params: {
-    eventId: string // from URL
+    id: string // from URL - changed from eventId to id
   }
 }
 
-// POST /api/events/[eventId]/rsvp
+// POST /api/events/[id]/rsvp
 export async function POST(request: Request, { params }: RsvpParams) {
   const session = (await getServerSession(nextAuthOptionsConfig)) as SessionWithId;
   if (!session?.user?.id) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
   const userId = session.user.id;
-  const { eventId } = params;
+  const { id: eventId } = params; // Changed from destructuring eventId to id and aliasing
 
   // 2. Validate eventId
   if (!eventId || typeof eventId !== 'string') {
@@ -54,7 +55,7 @@ export async function POST(request: Request, { params }: RsvpParams) {
     });
     return NextResponse.json(newRsvp, { status: 201 });
   } catch (error: any) {
-    // 6. Handle unique constraint violation (already RSVP’d)
+    // 6. Handle unique constraint violation (already RSVP'd)
     if (error.code === 'P2002') {
       return NextResponse.json(
         { message: 'You have already RSVPed to this event' },
@@ -66,14 +67,14 @@ export async function POST(request: Request, { params }: RsvpParams) {
   }
 }
 
-// DELETE /api/events/[eventId]/rsvp
+// DELETE /api/events/[id]/rsvp
 export async function DELETE(request: Request, { params }: RsvpParams) {
   const session = (await getServerSession(nextAuthOptionsConfig)) as SessionWithId;
   if (!session?.user?.id) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
   const userId = session.user.id;
-  const { eventId } = params;
+  const { id: eventId } = params; // Changed from destructuring eventId to id and aliasing
 
   if (!eventId || typeof eventId !== 'string') {
     return NextResponse.json({ message: 'Invalid event ID' }, { status: 400 });
@@ -87,7 +88,7 @@ export async function DELETE(request: Request, { params }: RsvpParams) {
     // 5. Return 204 No Content on success
     return new Response(null, { status: 204 });
   } catch (error: any) {
-    // 4. Handle case where RSVP doesn’t exist
+    // 4. Handle case where RSVP doesn't exist
     if (error.code === 'P2025') {
       return NextResponse.json({ message: 'RSVP not found' }, { status: 404 });
     }
