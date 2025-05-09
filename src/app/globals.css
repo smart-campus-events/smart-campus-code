@@ -17,6 +17,24 @@ body {
   flex-direction: column;
 }
 
+.custom-suggestions-carousel .carousel-control-prev-icon,
+.custom-suggestions-carousel .carousel-control-next-icon {
+  background-color: black; /* makes them darker */
+  background-size: 70% 70%; /* makes them larger */
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%; /* optional: round background */
+  opacity: 1; /* ensure full visibility */
+  filter: drop-shadow(0 0 2px white); /* optional: outline for contrast */
+}
+
+.custom-suggestions-carousel .carousel-control-prev {
+  left: -8rem; /* adjust as needed */
+}
+.custom-suggestions-carousel .carousel-control-next {
+  right: -8rem; /* adjust as needed */
+}
+
 /* src/index.css */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;500;600;700;800;900&display=swap');
 

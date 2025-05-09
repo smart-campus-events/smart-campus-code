@@ -3,7 +3,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Alert, Col, Container, Row, Spinner } from 'react-bootstrap'; // Assuming use of react-bootstrap
+import { Alert, Col, Container, Row, Spinner, Carousel } from 'react-bootstrap'; // Assuming use of react-bootstrap
 // Import your EventCard component (adjust path as needed)
 import EventCard from '@/components/EventCard';
 // Import the NEW ClubCard component (adjust path as needed)
@@ -24,11 +24,12 @@ export default function SuggestionsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // ... (fetchSuggestions remains the same) ...
     const fetchSuggestions = async () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch('/api/recommendations/ai-suggested'); // Use the correct endpoint
+        const response = await fetch('/api/recommendations/ai-suggested');
         if (!response.ok) {
           throw new Error(`Failed to fetch suggestions: ${response.statusText}`);
         }
@@ -45,43 +46,97 @@ export default function SuggestionsPage() {
     fetchSuggestions();
   }, []);
 
-  const renderEventSection = (title: string, events: EventWithDetails[]) => (
-    <div className="mb-5">
-      <h2>{title}</h2>
-      {events.length > 0 ? (
-        <Row xs={1} md={2} lg={3} className="g-4">
-          {events.map((event) => (
-            <Col key={event.id}>
-              <EventCard
-                event={event}
-              />
-            </Col>
-          ))}
-        </Row>
-      ) : (
-        <p>No event suggestions in this category right now.</p>
-      )}
-    </div>
-  );
+  const renderEventSection = (title: string, events: EventWithDetails[]) => {
+    const itemsPerPage = 3;
+    const chunkedEvents: EventWithDetails[][] = [];
+    for (let i = 0; i < events.length; i += itemsPerPage) {
+      chunkedEvents.push(events.slice(i, i + itemsPerPage));
+    }
 
-  // New function to render club sections
-  const renderClubSection = (title: string, clubs: ClubWithDetails[]) => (
-    <div className="mb-5">
-      <h2>{title}</h2>
-      {clubs.length > 0 ? (
-        <Row xs={1} md={2} lg={3} className="g-4">
-          {clubs.map((club) => (
-            <Col key={club.id}>
-              {/* Use the new ClubCard component */}
-              <ClubCard club={club} />
-            </Col>
+    if (events.length === 0) {
+      return (
+        <div className="mb-5">
+          <h2>{title}</h2>
+          <p>No event suggestions in this category right now.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="mb-5">
+        <h2>{title}</h2>
+        <Carousel
+          interval={null}
+          variant="dark"
+          indicators={chunkedEvents.length > 1}
+          // Add a custom class for specific styling
+          className={`custom-suggestions-carousel ${chunkedEvents.length <= 1 ? 'no-navigation-arrows' : ''}`}
+        >
+          {chunkedEvents.map((eventChunk, index) => (
+            <Carousel.Item key={index}>
+              {/* Add a specific class to this Row for padding */}
+              <Row className="g-4 py-3 suggestions-carousel-item-row">
+                {eventChunk.map((event) => (
+                  <Col key={event.id} md={4}>
+                    <EventCard event={event} />
+                  </Col>
+                ))}
+                {Array(itemsPerPage - eventChunk.length).fill(null).map((_, placeholderIndex) => (
+                  <Col key={`placeholder-event-${index}-${placeholderIndex}`} md={4} />
+                ))}
+              </Row>
+            </Carousel.Item>
           ))}
-        </Row>
-      ) : (
-        <p>No club suggestions in this category right now.</p>
-      )}
-    </div>
-  );
+        </Carousel>
+      </div>
+    );
+  };
+
+  const renderClubSection = (title: string, clubs: ClubWithDetails[]) => {
+    const itemsPerPage = 3;
+    const chunkedClubs: ClubWithDetails[][] = [];
+    for (let i = 0; i < clubs.length; i += itemsPerPage) {
+      chunkedClubs.push(clubs.slice(i, i + itemsPerPage));
+    }
+
+    if (clubs.length === 0) {
+      return (
+        <div className="mb-5">
+          <h2>{title}</h2>
+          <p>No club suggestions in this category right now.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="mb-5">
+        <h2>{title}</h2>
+        <Carousel
+          interval={null}
+          variant="dark"
+          indicators={chunkedClubs.length > 1}
+          // Add the same custom class
+          className={`custom-suggestions-carousel ${chunkedClubs.length <= 1 ? 'no-navigation-arrows' : ''}`}
+        >
+          {chunkedClubs.map((clubChunk, index) => (
+            <Carousel.Item key={index}>
+              {/* Add the same specific class to this Row */}
+              <Row className="g-4 py-3 suggestions-carousel-item-row">
+                {clubChunk.map((club) => (
+                  <Col key={club.id} md={4}>
+                    <ClubCard club={club} />
+                  </Col>
+                ))}
+                {Array(itemsPerPage - clubChunk.length).fill(null).map((_, placeholderIndex) => (
+                  <Col key={`placeholder-club-${index}-${placeholderIndex}`} md={4} />
+                ))}
+              </Row>
+            </Carousel.Item>
+          ))}
+        </Carousel>
+      </div>
+    );
+  };
 
   return (
     <Container className="py-4">
