@@ -2,13 +2,11 @@
   "crons": [
     {
       "path": "/api/admin/worker",
-      "schedule": "* * * * *",
-      "token": "@WORKER_SECRET"
+      "schedule": "* * * * *"
     },
     {
       "path": "/api/admin/scheduler",
-      "schedule": "0 12 * * *",
-      "token": "@WORKER_SECRET"
+      "schedule": "0 12 * * *"
     }
   ]
 }
