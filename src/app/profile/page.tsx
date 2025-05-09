@@ -1,4 +1,4 @@
-/* eslint-disable react/no-unescaped-entities, react/no-array-index-key */
+/* eslint-disable react/no-unescaped-entities, react/no-array-index-key, no-template-curly-in-string */
 
 'use client';
 
@@ -61,20 +61,6 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [followedClubs, setFollowedClubs] = useState<FollowedClub[]>([]);
-
-  // dummy data for My RIOs
-  const myRios = [
-    {
-      imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg',
-      name: 'ACM Manoa',
-      description: 'Computer Science Club',
-    },
-    {
-      imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-3.jpg',
-      name: 'Hiking Club',
-      description: 'Outdoor Activities',
-    },
-  ];
 
   useEffect(() => {
     (async () => {
@@ -340,7 +326,7 @@ export default function ProfilePage() {
                       {c.purpose && (
                         <p className="text-muted mb-0">
                           {c.purpose.length > 60
-                            ? c.purpose.substring(0, 60) + '...'
+                            ? `${c.purpose.substring(0, 60)}...`
                             : c.purpose}
                         </p>
                       )}

@@ -23,7 +23,7 @@ export async function GET() {
 // POST to follow a club
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
@@ -43,7 +43,7 @@ export async function POST(
 // DELETE to unfollow a club
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {

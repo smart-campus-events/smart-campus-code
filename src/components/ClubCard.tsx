@@ -48,10 +48,10 @@ const ClubCard: React.FC<ClubCardProps> = ({ club }) => {
       router.push('/auth/signin');
       return;
     }
-  
+
     // flip immediately
     setIsFollowed(f => !f);
-  
+
     try {
       const res = await fetch(`/api/clubs/${club.id}/follow`, {
         method: isFollowed ? 'DELETE' : 'POST',
@@ -63,7 +63,6 @@ const ClubCard: React.FC<ClubCardProps> = ({ club }) => {
       setIsFollowed(f => !f);
     }
   };
-  
 
   const categories = club.categories || [];
   const categoriesPerPage = 3;
@@ -119,7 +118,8 @@ const ClubCard: React.FC<ClubCardProps> = ({ club }) => {
                 style={{ width: '20px', height: '20px', lineHeight: '1' }}
                 aria-label="Previous categories"
               >
-                <i className="fas fa-chevron-left small" />{' '}
+                <i className="fas fa-chevron-left small" />
+                {' '}
               </Button>
             )}
 
@@ -149,7 +149,8 @@ const ClubCard: React.FC<ClubCardProps> = ({ club }) => {
                 style={{ width: '20px', height: '20px', lineHeight: '1' }}
                 aria-label="Next categories"
               >
-                <i className="fas fa-chevron-right small" />{' '}
+                <i className="fas fa-chevron-right small" />
+                {' '}
               </Button>
             )}
           </Stack>
