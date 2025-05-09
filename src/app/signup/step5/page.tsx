@@ -119,12 +119,6 @@ export default function SignupStep5Page() {
                   <HouseDoorFill className="ms-1" />
                 </Button>
               </Link>
-              <p className="text-muted small mb-0">
-                Need help getting started? Check out our
-                {' '}
-                <Link href="/guide" className="fw-medium">quick guide</Link>
-                .
-              </p>
             </Stack>
           </Col>
         </Row>

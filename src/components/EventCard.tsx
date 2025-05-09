@@ -139,6 +139,7 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
           {formattedDate}
           {' '}
           at
+          {' '}
           {formattedTime}
         </Card.Subtitle>
 

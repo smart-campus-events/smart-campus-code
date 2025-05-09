@@ -40,27 +40,30 @@ const ClubCard: React.FC<ClubCardProps> = ({ club }) => {
         club.favoritedBy.some(f => f.id === session.user?.id),
       );
     }
-  }, [session, club.favoritedBy]);
+  }, []);
 
   // Toggle follow/unfollow
   const handleFollow = async () => {
     if (!session) {
-      // Redirect to sign-in if not logged in
       router.push('/auth/signin');
       return;
     }
-
+  
+    // flip immediately
+    setIsFollowed(f => !f);
+  
     try {
-      await fetch('/api/clubs/${club.id}', {
+      const res = await fetch(`/api/clubs/${club.id}/follow`, {
         method: isFollowed ? 'DELETE' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clubId: club.id }),
       });
-      setIsFollowed((prev) => !prev);
-    } catch (error) {
-      console.error('Failed to update follow status', error);
+      if (!res.ok) throw new Error();
+    } catch {
+      // revert on error
+      setIsFollowed(f => !f);
     }
   };
+  
 
   const categories = club.categories || [];
   const categoriesPerPage = 3;
@@ -73,11 +76,11 @@ const ClubCard: React.FC<ClubCardProps> = ({ club }) => {
   const currentCategories = categories.slice(startIndex, endIndex);
 
   const handleNext = () => {
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1));
+    setCurrentPage(prev => Math.min(prev + 1, totalPages - 1));
   };
 
   const handlePrev = () => {
-    setCurrentPage((prev) => Math.max(prev - 1, 0));
+    setCurrentPage(prev => Math.max(prev - 1, 0));
   };
 
   return (
@@ -116,8 +119,7 @@ const ClubCard: React.FC<ClubCardProps> = ({ club }) => {
                 style={{ width: '20px', height: '20px', lineHeight: '1' }}
                 aria-label="Previous categories"
               >
-                <i className="fas fa-chevron-left small" />
-                {' '}
+                <i className="fas fa-chevron-left small" />{' '}
               </Button>
             )}
 
@@ -147,8 +149,7 @@ const ClubCard: React.FC<ClubCardProps> = ({ club }) => {
                 style={{ width: '20px', height: '20px', lineHeight: '1' }}
                 aria-label="Next categories"
               >
-                <i className="fas fa-chevron-right small" />
-                {' '}
+                <i className="fas fa-chevron-right small" />{' '}
               </Button>
             )}
           </Stack>

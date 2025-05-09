@@ -47,6 +47,12 @@ interface SavedEvent {
   location: string;
 }
 
+interface FollowedClub {
+  id: string;
+  name: string;
+  purpose?: string;
+}
+
 export default function ProfilePage() {
   const router = useRouter();
 
@@ -54,6 +60,7 @@ export default function ProfilePage() {
   const [savedEvents, setSavedEvents] = useState<SavedEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [followedClubs, setFollowedClubs] = useState<FollowedClub[]>([]);
 
   // dummy data for My RIOs
   const myRios = [
@@ -90,10 +97,17 @@ export default function ProfilePage() {
           throw new Error(`Could not fetch saved events: ${evRes.status}`);
         }
         const allEvents: SavedEvent[] = await evRes.json();
+        const shuffledEvents = allEvents.sort(() => 0.5 - Math.random());
+        setSavedEvents(shuffledEvents.slice(0, 2));
 
-        // 3) shuffle & keep two at random
-        const shuffled = allEvents.sort(() => 0.5 - Math.random());
-        setSavedEvents(shuffled.slice(0, 2));
+        // 3) fetch all followed clubs
+        const fcRes = await fetch('/api/clubs/${club.id}/follow', { credentials: 'include' });
+        if (!fcRes.ok) {
+          throw new Error(`Could not fetch followed clubs: ${fcRes.status}`);
+        }
+        const allClubs: FollowedClub[] = await fcRes.json();
+        const shuffledClubs = allClubs.sort(() => 0.5 - Math.random());
+        setFollowedClubs(shuffledClubs.slice(0, 2));
       } catch (e: any) {
         setError(e.message);
       } finally {
@@ -307,6 +321,7 @@ export default function ProfilePage() {
                       </div>
                     );
                   })}
+
                   <div className="text-center mt-3">
                     <Button variant="primary" size="sm" onClick={() => router.push('/events')}>
                       View All Events
@@ -318,25 +333,22 @@ export default function ProfilePage() {
               {/* My RIOs */}
               <Card className="shadow-sm">
                 <Card.Body>
-                  <Card.Title className="h5 mb-4">My RIOs</Card.Title>
-                  {myRios.map((r, idx) => (
-                    <div key={idx} className="d-flex mb-3">
-                      <Image
-                        src={r.imageUrl}
-                        alt={r.name}
-                        roundedCircle
-                        style={{ width: 40, height: 40 }}
-                        className="me-3"
-                      />
-                      <div>
-                        <p className="fw-semibold mb-1">{r.name}</p>
-                        <p className="text-muted mb-0">{r.description}</p>
-                      </div>
+                  <Card.Title className="h5 mb-4">Followed Clubs</Card.Title>
+                  {followedClubs.map((c) => (
+                    <div key={c.id} className="mb-3">
+                      <p className="fw-semibold mb-1">{c.name}</p>
+                      {c.purpose && (
+                        <p className="text-muted mb-0">
+                          {c.purpose.length > 60
+                            ? c.purpose.substring(0, 60) + '...'
+                            : c.purpose}
+                        </p>
+                      )}
                     </div>
                   ))}
                   <div className="text-center mt-3">
                     <Button variant="primary" size="sm" onClick={() => router.push('/clubs')}>
-                      View All RIOs
+                      View All Clubs
                     </Button>
                   </div>
                 </Card.Body>
