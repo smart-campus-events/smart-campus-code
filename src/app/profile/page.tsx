@@ -1,11 +1,10 @@
 /* eslint-disable react/no-unescaped-entities, react/no-array-index-key, no-template-curly-in-string */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
 import InitialAvatar from '@/components/InitialAvatar';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import {
   Badge,
   Button,
@@ -56,7 +55,9 @@ interface FollowedClub {
 
 export default function ProfilePage() {
   const router = useRouter();
+
   const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [savedEvents, setSavedEvents] = useState<SavedEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [followedClubs, setFollowedClubs] = useState<FollowedClub[]>([]);
@@ -64,6 +65,7 @@ export default function ProfilePage() {
   useEffect(() => {
     (async () => {
       try {
+        // 1) load profile
         const res = await fetch('/api/profileapi/profile', { credentials: 'include' });
         if (res.status === 401) {
           router.push('/login');
@@ -129,8 +131,12 @@ export default function ProfilePage() {
     ? `${profile.firstName}${profile.lastName ? ` ${profile.lastName}` : ''}`
     : profile.email;
 
+  // helper to format date/time
+  const fmtDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+
   return (
-    <div className="bg-light min-vh-100">
+    <div className="bg-light min-vh-100 overflow-auto">
       <Container className="py-4 py-md-5">
         {/* Profile Header */}
         <Row className="justify-content-center mb-5">
@@ -154,8 +160,7 @@ export default function ProfilePage() {
                   's Profile
                 </h1>
                 <p className="text-muted mb-0">
-                  Member since
-                  {' '}
+                  Member since&nbsp;
                   {profile.createdAt
                     ? new Date(profile.createdAt).toLocaleDateString(undefined, {
                       year: 'numeric',
@@ -171,8 +176,7 @@ export default function ProfilePage() {
                 size="sm"
                 onClick={() => router.push('/profile/edit')}
               >
-                <PencilSquare className="me-1" size={16} />
-                {' '}
+                <PencilSquare className="me-1" />
                 Edit Profile
               </Button>
               <Button
@@ -180,8 +184,7 @@ export default function ProfilePage() {
                 size="sm"
                 onClick={() => router.push('/api/auth/signout')}
               >
-                <BoxArrowRight className="me-1" size={16} />
-                {' '}
+                <BoxArrowRight className="me-1" />
                 Logout
               </Button>
             </div>
@@ -189,7 +192,7 @@ export default function ProfilePage() {
         </Row>
 
         <Row className="justify-content-center">
-          {/* Profile Information */}
+          {/* Left Column */}
           <Col md={8} className="mb-4 mb-md-0">
             <div className="d-flex flex-column gap-4">
               {/* Basic Information */}
@@ -259,11 +262,7 @@ export default function ProfilePage() {
                       <Col sm={6} className="mb-3">
                         <p className="text-muted mb-1">Comfort Level</p>
                         <div className="d-flex text-warning">
-                          {[...Array(5)].map((_, i) => (
-                            i < comfortLevel
-                              ? <StarFill key={`star-filled-${i}`} size={16} />
-                              : <Star key={`star-empty-${i}`} size={16} />
-                          ))}
+                          {[...Array(5)].map((_, i) => (i < comfortLevel ? <StarFill key={i} /> : <Star key={i} />))}
                         </div>
                       </Col>
                     )}
