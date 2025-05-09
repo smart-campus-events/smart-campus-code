@@ -2,31 +2,13 @@
   "crons": [
     {
       "path": "/api/admin/worker",
-      "schedule": "* * * * *"
+      "schedule": "* * * * *",
+      "token": "@WORKER_SECRET"
     },
     {
       "path": "/api/admin/scheduler",
-      "schedule": "0 12 * * *"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/api/admin/worker/route.js",
-      "headers": [
-        {
-          "key": "Authorization",
-          "value": "Bearer 62f703f1e718df470c7a6cedbeb129b00502773ee0551c20e20c790947878912"
-        }
-      ]
-    },
-    {
-      "source": "/api/admin/scheduler/route.js",
-      "headers": [
-        {
-          "key": "Authorization",
-          "value": "Bearer 62f703f1e718df470c7a6cedbeb129b00502773ee0551c20e20c790947878912"
-        }
-      ]
+      "schedule": "0 12 * * *",
+      "token": "@WORKER_SECRET"
     }
   ]
 }
