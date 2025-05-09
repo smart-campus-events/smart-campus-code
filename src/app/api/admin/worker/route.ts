@@ -52,7 +52,10 @@ export async function POST(request: Request) {
   const incomingSecret = request.headers.get('x-vercel-cron-secret');
   if (!WORKER_SECRET || incomingSecret !== WORKER_SECRET) {
     console.warn('Worker endpoint called without valid secret.');
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ message: 'Unauthorized',
+      secretReceived: incomingSecret,
+      secretExpected: WORKER_SECRET,
+    }, { status: 401 });
   }
 
   // --------------------
