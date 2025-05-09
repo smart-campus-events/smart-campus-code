@@ -4,11 +4,13 @@ import type {
   Category,
   EventCategory,
   ClubCategory,
+  RSVP,
 } from '@prisma/client';
 
 export type EventWithDetails = PrismaEvent & {
   categories: (EventCategory & { category: Category })[];
   organizerClub: { name: string } | null;
+  rsvps: RSVP[];
 };
 
 export type ClubWithDetails = PrismaClub & {
