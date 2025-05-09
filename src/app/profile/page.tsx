@@ -1,10 +1,11 @@
 /* eslint-disable react/no-unescaped-entities, react/no-array-index-key */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 'use client';
 
+import React, { useEffect, useState } from 'react';
 import InitialAvatar from '@/components/InitialAvatar';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import {
   Badge,
   Button,
@@ -44,25 +45,6 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // dummy data for Saved Events / My RIOs
-  const savedEvents = [
-    { month: 'MAR', day: '15', name: 'Tech Meetup', details: '6:00 PM – Campus Center' },
-    { month: 'MAR', day: '20', name: 'Beach Cleanup', details: '9:00 AM – Ala Moana' },
-  ];
-
-  const myRios = [
-    {
-      imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg',
-      name: 'ACM Manoa',
-      description: 'Computer Science Club',
-    },
-    {
-      imageUrl: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-3.jpg',
-      name: 'Hiking Club',
-      description: 'Outdoor Activities',
-    },
-  ];
 
   useEffect(() => {
     (async () => {
@@ -156,7 +138,7 @@ export default function ProfilePage() {
                 size="sm"
                 onClick={() => router.push('/profile/edit')}
               >
-                <PencilSquare className="me-1" />
+                <PencilSquare className="me-1" size={16} />
                 {' '}
                 Edit Profile
               </Button>
@@ -165,7 +147,7 @@ export default function ProfilePage() {
                 size="sm"
                 onClick={() => router.push('/api/auth/signout')}
               >
-                <BoxArrowRight className="me-1" />
+                <BoxArrowRight className="me-1" size={16} />
                 {' '}
                 Logout
               </Button>
@@ -174,7 +156,7 @@ export default function ProfilePage() {
         </Row>
 
         <Row className="justify-content-center">
-          {/* Left Column */}
+          {/* Profile Information */}
           <Col md={8} className="mb-4 mb-md-0">
             <div className="d-flex flex-column gap-4">
               {/* Basic Information */}
@@ -244,7 +226,11 @@ export default function ProfilePage() {
                       <Col sm={6} className="mb-3">
                         <p className="text-muted mb-1">Comfort Level</p>
                         <div className="d-flex text-warning">
-                          {[...Array(5)].map((_, i) => (i < comfortLevel ? <StarFill key={i} /> : <Star key={i} />))}
+                          {[...Array(5)].map((_, i) => (
+                            i < comfortLevel
+                              ? <StarFill key={`star-filled-${i}`} size={16} />
+                              : <Star key={`star-empty-${i}`} size={16} />
+                          ))}
                         </div>
                       </Col>
                     )}
@@ -257,62 +243,6 @@ export default function ProfilePage() {
                       </Col>
                     </Row>
                   )}
-                </Card.Body>
-              </Card>
-            </div>
-          </Col>
-
-          {/* Right Column */}
-          <Col md={4}>
-            <div className="d-flex flex-column gap-4">
-              {/* Saved Events */}
-              <Card className="shadow-sm">
-                <Card.Body>
-                  <Card.Title className="h5 mb-4">Saved Events</Card.Title>
-                  {savedEvents.map((e, idx) => (
-                    <div key={idx} className="d-flex mb-3">
-                      <div className="text-center me-3">
-                        <h6 className="mb-0">{e.month}</h6>
-                        <p className="h4 mb-0">{e.day}</p>
-                      </div>
-                      <div>
-                        <p className="fw-semibold mb-1">{e.name}</p>
-                        <p className="text-muted mb-0">{e.details}</p>
-                      </div>
-                    </div>
-                  ))}
-                  <div className="text-center mt-3">
-                    <Button variant="primary" size="sm" onClick={() => router.push('/events')}>
-                      View All Events
-                    </Button>
-                  </div>
-                </Card.Body>
-              </Card>
-
-              {/* My RIOs */}
-              <Card className="shadow-sm">
-                <Card.Body>
-                  <Card.Title className="h5 mb-4">My RIOs</Card.Title>
-                  {myRios.map((r, idx) => (
-                    <div key={idx} className="d-flex mb-3">
-                      <Image
-                        src={r.imageUrl}
-                        alt={r.name}
-                        roundedCircle
-                        style={{ width: 40, height: 40 }}
-                        className="me-3"
-                      />
-                      <div>
-                        <p className="fw-semibold mb-1">{r.name}</p>
-                        <p className="text-muted mb-0">{r.description}</p>
-                      </div>
-                    </div>
-                  ))}
-                  <div className="text-center mt-3">
-                    <Button variant="primary" size="sm" onClick={() => router.push('/clubs')}>
-                      View All RIOs
-                    </Button>
-                  </div>
                 </Card.Body>
               </Card>
             </div>
