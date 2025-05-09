@@ -4,6 +4,8 @@ import { getServerSession } from 'next-auth/next';
 import { NextResponse } from 'next/server';
 // import { prisma } from '@/lib/prisma'; // Assuming prisma might be needed for validation
 
+export const dynamic = 'force-dynamic';
+
 // Extend Session type inline to include user.id
 type SessionWithId = Session & { user: Session['user'] & { id: string } };
 

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ContentStatus } from '@prisma/client';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/categories
 // Fetches the list of all available categories with counts for clubs and/or events
 // Optional query param: ?context=events or ?context=clubs

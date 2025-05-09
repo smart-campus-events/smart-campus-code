@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 // import { prisma } from '@/lib/prisma';
 // import type { Session } from 'next-auth';
 
+export const dynamic = 'force-dynamic';
+
 // Type for session with user ID
 // type SessionWithId = Session & { user: Session['user'] & { id: string } };
 

@@ -33,7 +33,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  const { searchParams } = request.nextUrl;
+  const { searchParams } = new URL(request.url);
   const statusFilter = searchParams.get('status') as string | null;
   const page = parseInt(searchParams.get('page') || '1', 10);
   const limit = parseInt(searchParams.get('limit') || '10', 10); // Default limit 10

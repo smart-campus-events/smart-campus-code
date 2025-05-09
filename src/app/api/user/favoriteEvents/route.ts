@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { Session } from 'next-auth';
 
+export const dynamic = 'force-dynamic';
+
 // Type for session with user ID
 /* eslint-disable @typescript-eslint/no-unused-vars */
 type SessionWithId = Session & { user: Session['user'] & { id: string } };

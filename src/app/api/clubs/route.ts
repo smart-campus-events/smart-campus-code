@@ -1,12 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { ContentStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma'; // Reverted: Removed .ts extension
 /* eslint-disable max-len */
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/clubs - Get a list of clubs with optional filtering
-export async function GET(request: NextRequest) {
-  const { searchParams } = request.nextUrl;
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
   const query = searchParams.get('q') || '';
   const categoryIds = searchParams.getAll('category');
   const page = parseInt(searchParams.get('page') || '1', 10);
@@ -94,7 +96,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/clubs - Create a new club (requires authentication)
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const session = await getServerSession();
 

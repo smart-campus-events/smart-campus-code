@@ -4,6 +4,8 @@ import { ContentStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 /* eslint-disable max-len */
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/clubs/[id] - Get details for a specific club
 export async function GET(
   request: NextRequest,

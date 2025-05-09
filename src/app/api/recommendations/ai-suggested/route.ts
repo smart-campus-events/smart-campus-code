@@ -14,6 +14,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import nextAuthOptionsConfig from '@/lib/authOptions';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 // --- Gemini API Integration ---
 const API_KEY = process.env.GEMINI_API_KEY;
 if (!API_KEY) console.error('GEMINI_API_KEY environment variable not set.');

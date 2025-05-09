@@ -6,6 +6,8 @@ import { NextResponse } from 'next/server';
 // Import Prisma utility types
 import { Prisma } from '@prisma/client';
 
+export const dynamic = 'force-dynamic';
+
 // Extend Session type inline to include user.id
 type SessionWithId = Session & { user: Session['user'] & { id: string } };
 
